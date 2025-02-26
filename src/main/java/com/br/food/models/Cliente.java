@@ -1,5 +1,7 @@
 package com.br.food.models;
 
+import com.br.food.forms.ClienteForm;
+
 import jakarta.persistence.*;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -23,9 +25,19 @@ public class Cliente {
 	@Column(length = 15, nullable = false)
 	private String telefone;
 
+	@Column(nullable = false)
+	private Boolean bloqueado;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "fk_Id_Endereco", foreignKey = @ForeignKey(name = "FK_FROM_TBENDERECO_FOR_TBCLIENTE"))
 	private Endereco endereco;
+
+	public Cliente(ClienteForm form) {
+		this.bloqueado = false;
+		this.nome = form.getNome();
+		this.cpf = form.getCpf();
+		this.telefone = form.getTelefone();
+	}
 
 	public Long getId() {
 		return id;
@@ -62,4 +74,13 @@ public class Cliente {
 	public void setEndereco(Endereco endereco) {
 		this.endereco = endereco;
 	}
+
+	public Boolean getBloqueado() {
+		return bloqueado;
+	}
+
+	public void setBloqueado(Boolean bloqueado) {
+		this.bloqueado = bloqueado;
+	}
+
 }

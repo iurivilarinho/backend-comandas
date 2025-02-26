@@ -20,12 +20,17 @@ public class Mesa {
 	@Column(nullable = false)
 	private Boolean status;
 
-	public Long getId() {
-		return id;
+	@Column(nullable = false)
+	private Boolean ocupada;
+
+	public Mesa(String numero) {
+		this.ocupada = false;
+		this.status = true;
+		this.numero = numero;
 	}
 
-	public void setId(Long id) {
-		this.id = id;
+	public Long getId() {
+		return id;
 	}
 
 	public String getNumero() {
@@ -43,4 +48,13 @@ public class Mesa {
 	public void setStatus(Boolean status) {
 		this.status = status;
 	}
+
+	public Boolean getOcupada() {
+		return ocupada;
+	}
+
+	public void setOcupada(Boolean ocupada) {
+		this.ocupada = ocupada;
+	}
+
 }

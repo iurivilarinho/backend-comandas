@@ -7,7 +7,9 @@ import java.util.List;
 
 import com.br.food.enums.Status.StatusPedido;
 import com.br.food.enums.Tipos.TipoPedido;
+import com.br.food.forms.PedidoForm;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -46,7 +48,7 @@ public class Pedido {
 	@JoinColumn(name = "fk_Id_FormaDePagamento", foreignKey = @ForeignKey(name = "FK_FROM_TBFORMADEPAGAMENTO_FOR_TBPEDIDO"))
 	private FormaDePagamento formaDePagamento;
 
-	@OneToMany(mappedBy = "pedido")
+	@OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	private List<ItemPedido> itens = new ArrayList<>();
 
 	@Column(length = 10)
@@ -56,18 +58,27 @@ public class Pedido {
 	private StatusPedido status;
 
 	@Column(length = 3)
-	private Integer percentualDesconto;
+	private BigDecimal percentualDesconto;
 
 	@Column(nullable = false)
 	private BigDecimal valorTotal;
 
 	@Column(nullable = false)
-	private LocalDateTime horaAbertura;
+	private LocalDateTime horaAbertura = LocalDateTime.now();
 
 	private LocalDateTime horaFim;
 
 	@Enumerated(EnumType.STRING)
 	private TipoPedido tipo;
+
+	public Pedido(PedidoForm form, Cliente cliente, String codigo, Mesa mesa) {
+
+		this.cliente = cliente;
+		this.codigo = codigo;
+		this.mesa = mesa;
+		this.valorTotal = BigDecimal.ZERO;
+		this.status = StatusPedido.AGUARDANDO_APROVACAO;
+	}
 
 	public String getCodigo() {
 		return codigo;
@@ -85,11 +96,11 @@ public class Pedido {
 		this.status = status;
 	}
 
-	public Integer getPercentualDesconto() {
+	public BigDecimal getPercentualDesconto() {
 		return percentualDesconto;
 	}
 
-	public void setPercentualDesconto(Integer percentualDesconto) {
+	public void setPercentualDesconto(BigDecimal percentualDesconto) {
 		this.percentualDesconto = percentualDesconto;
 	}
 

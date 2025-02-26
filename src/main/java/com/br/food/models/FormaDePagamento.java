@@ -31,6 +31,11 @@ public class FormaDePagamento {
 	@Column(nullable = false)
 	private BigDecimal valorPago;
 
+	public FormaDePagamento(TipoPagamento tipoPagamento, BigDecimal valorPago) {
+		this.tipoPagamento = tipoPagamento;
+		this.valorPago = valorPago;
+	}
+
 	public Long getId() {
 		return id;
 	}
