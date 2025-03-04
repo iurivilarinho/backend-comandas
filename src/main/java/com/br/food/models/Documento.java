@@ -6,10 +6,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
-import lombok.NoArgsConstructor;
 
 @Entity
-@NoArgsConstructor
 @Table(name = "tbDocumento")
 public class Documento {
 
@@ -25,6 +23,17 @@ public class Documento {
 
 	@Lob
 	private byte[] documento;
+
+	public Documento() {
+
+	}
+
+	public Documento(String nome, String contentType, byte[] documento) {
+
+		this.nome = nome;
+		this.contentType = contentType;
+		this.documento = documento;
+	}
 
 	public String getNome() {
 		return nome;

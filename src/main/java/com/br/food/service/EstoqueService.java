@@ -44,7 +44,7 @@ public class EstoqueService {
 	@Transactional
 	public void adicionarEstoqueProduto(EstoqueForm form) {
 		Produto produto = produtoService.buscarProdutoPorId(form.getIdProduto());
-		Estoque estoque = new Estoque(form, produto);
+		Estoque estoque = new Estoque(form, produto, null);
 
 		estoqueRepository.save(estoque);
 	}

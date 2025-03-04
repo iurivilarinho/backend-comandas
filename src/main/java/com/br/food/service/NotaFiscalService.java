@@ -1,9 +1,14 @@
 package com.br.food.service;
 
+import java.io.IOException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.br.food.enums.Status.StatusNotaFiscal;
 import com.br.food.forms.NotaFiscalForm;
@@ -23,23 +28,31 @@ public class NotaFiscalService {
 	@Autowired
 	private ProdutoService produtoService;
 
+	@Autowired
+	private DocumentoService documentoService;
+
 	@Transactional
-	public NotaFiscal cadastroNotaFiscal(NotaFiscalForm form) {
+	public NotaFiscal cadastroNotaFiscal(NotaFiscalForm form, MultipartFile anexo) throws IOException {
 
 		validaNotaJaRegistrada(form.getChaveNFE());
-		NotaFiscal notaFiscal = new NotaFiscal(form);
+		NotaFiscal notaFiscal = new NotaFiscal(form, documentoService.converterEmDocumento(anexo, false));
 
 		form.getItens().forEach(i -> {
 			Produto produto = produtoService.buscarProdutoPorId(i.getIdProduto());
-			notaFiscal.getItens().add(new Estoque(i, produto));
+			notaFiscal.getItens().add(new Estoque(i, produto, notaFiscal));
 		});
 		return notaFiscalRepository.save(notaFiscal);
 	}
 
 	@Transactional(readOnly = true)
-	public NotaFiscal buscarNotaFiscalPorId(Long id) {
+	public NotaFiscal buscarNotaFiscalPorId(long id) {
 		return notaFiscalRepository.findById(id)
 				.orElseThrow(() -> new EntityNotFoundException("Nota Fiscal não encontrada para ID " + id));
+	}
+
+	@Transactional(readOnly = true)
+	public Page<NotaFiscal> buscarNotaFiscal(Pageable page) {
+		return notaFiscalRepository.findAll(page);
 	}
 
 	@Transactional(readOnly = true)
@@ -51,11 +64,15 @@ public class NotaFiscalService {
 	}
 
 	@Transactional
-	public NotaFiscal atualizarNotaFiscal(NotaFiscalForm form, Long id) {
+	public NotaFiscal atualizarNotaFiscal(NotaFiscalForm form, MultipartFile anexo, long id) throws IOException {
 		NotaFiscal notaFiscal = buscarNotaFiscalPorId(id);
 
 		if (form.getChaveNFE() != notaFiscal.getChaveNFE()) {
 			validaNotaJaRegistrada(form.getChaveNFE());
+		}
+
+		if (anexo != null) {
+			notaFiscal.setAnexo(documentoService.converterEmDocumento(anexo, false));
 		}
 
 		notaFiscal.setChaveNFE(form.getChaveNFE());
@@ -67,13 +84,13 @@ public class NotaFiscalService {
 
 		form.getItens().forEach(i -> {
 			Produto produto = produtoService.buscarProdutoPorId(i.getIdProduto());
-			notaFiscal.getItens().add(new Estoque(i, produto));
+			notaFiscal.getItens().add(new Estoque(i, produto, notaFiscal));
 		});
 		return notaFiscalRepository.save(notaFiscal);
 	}
 
 	@Transactional
-	public void alterarStatusNotaFiscal(StatusNotaFiscal status, Long idNotaFiscal) {
+	public void alterarStatusNotaFiscal(StatusNotaFiscal status, long idNotaFiscal) {
 		NotaFiscal notaFiscal = buscarNotaFiscalPorId(idNotaFiscal);
 
 		validarAlteracaoStatus(notaFiscal, status);
@@ -108,7 +125,7 @@ public class NotaFiscalService {
 		// Impede transição direta de EMITIDA para CONSUMIDA
 		if (statusAtual == StatusNotaFiscal.ALOCADA && novoStatus == StatusNotaFiscal.CONSUMIDA) {
 			throw new DataIntegrityViolationException(
-					"Uma nota emitida não pode ser diretamente marcada como consumida");
+					"Uma nota alocada não pode ser diretamente marcada como consumida");
 		}
 	}
 }

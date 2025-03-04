@@ -3,7 +3,9 @@ package com.br.food.models;
 import java.math.BigDecimal;
 
 import com.br.food.enums.Tipos.TipoProduto;
+import com.br.food.forms.ProdutoForm;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,9 +17,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
+
 @Entity
 @Table(name = "tbProduto")
 public class Produto {
@@ -35,7 +36,7 @@ public class Produto {
 	@Column(length = 6)
 	private String codigo;
 
-	@ManyToOne
+	@ManyToOne(cascade = CascadeType.ALL)
 	@JoinColumn(name = "fk_Id_Documento", foreignKey = @ForeignKey(name = "FK_FROM_TBDOCUMENTO_FOR_TBPRODUTO"))
 	private Documento imagem;
 
@@ -44,6 +45,20 @@ public class Produto {
 
 	@Column(nullable = false)
 	private BigDecimal valor;
+
+	public Produto() {
+
+	}
+
+	public Produto(ProdutoForm form, Documento imagem) {
+
+		this.tipo = form.getTipo();
+		this.descricao = form.getDescricao();
+		this.codigo = form.getCodigo();
+		this.imagem = imagem;
+		this.status = true;
+		this.valor = form.getValor();
+	}
 
 	public TipoProduto getTipo() {
 		return tipo;

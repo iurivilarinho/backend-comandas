@@ -3,6 +3,7 @@ package com.br.food.models;
 import java.math.BigDecimal;
 
 import com.br.food.forms.EstoqueForm;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,9 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 @Entity
 @Table(name = "tbEstoque")
 public class Estoque {
@@ -25,10 +24,11 @@ public class Estoque {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne
 	@JoinColumn(name = "fk_Id_Produto", foreignKey = @ForeignKey(name = "FK_FROM_TBPRODUTO_FOR_TBESTOQUE"))
 	private Produto produto;
 
+	@JsonIgnore
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "fk_Id_NotaFiscal", foreignKey = @ForeignKey(name = "FK_FROM_TBNOTAFISCAL_FOR_TBESTOQUE"))
 	private NotaFiscal notaFiscal;
@@ -48,7 +48,7 @@ public class Estoque {
 	@Column(nullable = false)
 	private BigDecimal quantidadeEntrada;
 
-	public Estoque(EstoqueForm form, Produto produto) {
+	public Estoque(EstoqueForm form, Produto produto, NotaFiscal notaFiscal) {
 
 		this.produto = produto;
 		this.lote = form.getLote();
@@ -56,6 +56,7 @@ public class Estoque {
 		this.quantidadeEntrada = form.getQuantidade();
 		this.quantidadeReservada = BigDecimal.ZERO;
 		this.quantidadeVendida = BigDecimal.ZERO;
+		this.notaFiscal = notaFiscal;
 
 	}
 
