@@ -4,19 +4,21 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.br.food.enums.Status.StatusNotaFiscal;
+import com.br.food.forms.NotaFiscalForm;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "tbNotaFiscal")
 public class NotaFiscal {
@@ -37,8 +39,19 @@ public class NotaFiscal {
 	@Column(nullable = false)
 	private LocalDate dataEmissao;
 
-	@OneToMany(mappedBy = "notaFiscal", fetch = FetchType.LAZY)
+	@OneToMany(mappedBy = "notaFiscal", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<Estoque> itens = new ArrayList<>();
+
+	@Enumerated(EnumType.STRING)
+	private StatusNotaFiscal status;
+
+	public NotaFiscal(NotaFiscalForm form) {
+
+		this.numeroNota = form.getNumeroNota();
+		this.numeroSerie = form.getNumeroSerie();
+		this.chaveNFE = form.getChaveNFE();
+		this.dataEmissao = form.getDataEmissao();
+	}
 
 	public Long getId() {
 		return id;
@@ -82,6 +95,14 @@ public class NotaFiscal {
 
 	public void setItens(List<Estoque> itens) {
 		this.itens = itens;
+	}
+
+	public StatusNotaFiscal getStatus() {
+		return status;
+	}
+
+	public void setStatus(StatusNotaFiscal status) {
+		this.status = status;
 	}
 
 }

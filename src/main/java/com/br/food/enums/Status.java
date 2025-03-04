@@ -10,4 +10,8 @@ public class Status {
 		ATENDIDO, EM_PREPARO, PENDENTE, RECUSADO
 	}
 
+	public static enum StatusNotaFiscal {
+		ALOCADA, EM_CONSUMO, CONSUMIDA, CANCELADA
+	}
+
 }

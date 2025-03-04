@@ -60,9 +60,4 @@ public class EstoqueService {
 		estoque.setQuantidadeVendida(estoque.getQuantidadeVendida().add(quantidade));
 	}
 
-	@Transactional
-	public void reservarEstoque(Long idProduto, BigDecimal quantidade) {
-
-	}
-
 }
