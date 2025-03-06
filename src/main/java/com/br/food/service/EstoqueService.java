@@ -38,7 +38,7 @@ public class EstoqueService {
 	@Transactional(readOnly = true)
 	public Page<Estoque> consultarEstoque(String codigoProduto, String like, Pageable page) {
 
-		return estoqueFiltro.filtro(codigoProduto, codigoProduto, page);
+		return estoqueFiltro.filtro(codigoProduto, like, page);
 	}
 
 	@Transactional

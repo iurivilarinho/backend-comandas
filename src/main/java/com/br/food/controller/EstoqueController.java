@@ -22,6 +22,8 @@ public class EstoqueController {
 	public Page<Estoque> consultarEstoquePorProduto(@RequestParam(required = false) String codigoProduto,
 			@RequestParam(required = false) String like, Pageable page) {
 
+		System.out.println(like);
+
 		return estoqueService.consultarEstoque(codigoProduto, like, page);
 	}
 
