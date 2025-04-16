@@ -1,6 +1,8 @@
 package com.br.food.models;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.br.food.enums.Tipos.TipoProduto;
 import com.br.food.forms.ProdutoForm;
@@ -15,9 +17,10 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-
 
 @Entity
 @Table(name = "tbProduto")
@@ -44,7 +47,17 @@ public class Produto {
 	private Boolean status;
 
 	@Column(nullable = false)
+	private Boolean complemento;
+
+	@Column(nullable = false)
+	private Boolean exibeCardapio;
+
+	@Column(nullable = false)
 	private BigDecimal valor;
+
+	@ManyToMany(cascade = CascadeType.ALL)
+	@JoinTable(name = "tbProduto_X_Complemento", joinColumns = @JoinColumn(name = "fk_Id_Produto"), foreignKey = @ForeignKey(name = "FK_FROM_TBPRODUTO_FOR_TBPRODUTO-COMPLEMENTO"), inverseJoinColumns = @JoinColumn(name = "fk_Id_ProdutoComplemento"), inverseForeignKey = @ForeignKey(name = "FK_FROMTBPRODUTO-COMPLEMENTO_FOR_TBPRODUTO"))
+	private List<Produto> complementos = new ArrayList<>();
 
 	public Produto() {
 
@@ -110,6 +123,30 @@ public class Produto {
 
 	public Long getId() {
 		return id;
+	}
+
+	public Boolean getExibeCardapio() {
+		return exibeCardapio;
+	}
+
+	public void setExibeCardapio(Boolean exibeCardapio) {
+		this.exibeCardapio = exibeCardapio;
+	}
+
+	public Boolean getComplemento() {
+		return complemento;
+	}
+
+	public void setComplemento(Boolean complemento) {
+		this.complemento = complemento;
+	}
+
+	public List<Produto> getComplementos() {
+		return complementos;
+	}
+
+	public void setComplementos(List<Produto> complementos) {
+		this.complementos = complementos;
 	}
 
 }

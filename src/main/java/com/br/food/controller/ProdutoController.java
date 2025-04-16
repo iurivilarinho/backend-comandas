@@ -3,7 +3,6 @@ package com.br.food.controller;
 import java.io.IOException;
 import java.net.URI;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
@@ -35,8 +34,11 @@ import jakarta.validation.Valid;
 @Tag(name = "Produtos", description = "Endpoints para gerenciamento de produtos")
 public class ProdutoController {
 
-	@Autowired
-	private ProdutoService produtoService;
+	private final ProdutoService produtoService;
+
+	public ProdutoController(ProdutoService produtoService) {
+		this.produtoService = produtoService;
+	}
 
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@Operation(summary = "Cadastra um novo produto", description = "Cria um novo produto com dados do formulário e imagem opcional")
@@ -90,6 +92,28 @@ public class ProdutoController {
 	public ResponseEntity<Void> ativarDesativarProduto(@PathVariable Long id, @RequestParam("status") boolean status)
 			throws IOException {
 		produtoService.ativarDesativarProduto(id, status);
+		return ResponseEntity.noContent().build();
+	}
+
+	@PostMapping("/vincular/{idProduto}/{idProdutoComplemento}")
+	@Operation(summary = "Vincula um produto a um complemento", description = "Associação de produtos quando insumo")
+	@ApiResponses({ @ApiResponse(responseCode = "204", description = "Complemento vinculado com sucesso"),
+			@ApiResponse(responseCode = "404", description = "Produto não encontrado"),
+			@ApiResponse(responseCode = "500", description = "Erro interno no servidor") })
+	public ResponseEntity<Void> vincularComplementoProduto(@PathVariable Long idProduto,
+			@PathVariable Long idProdutoComplemento) throws IOException {
+		produtoService.vincularProdutoEmComplemento(idProduto, idProdutoComplemento);
+		return ResponseEntity.noContent().build();
+	}
+
+	@PutMapping("/desvincular/{idProduto}/{idProdutoComplemento}")
+	@Operation(summary = "Desvincula um produto a um complemento", description = "Desassociação de produtos quando insumo")
+	@ApiResponses({ @ApiResponse(responseCode = "204", description = "Complemento desvinculado com sucesso"),
+			@ApiResponse(responseCode = "404", description = "Produto não encontrado"),
+			@ApiResponse(responseCode = "500", description = "Erro interno no servidor") })
+	public ResponseEntity<Void> desvincularComplementoProduto(@PathVariable Long idProduto,
+			@PathVariable Long idProdutoComplemento) throws IOException {
+		produtoService.desvincularProdutoEmComplemento(idProduto, idProdutoComplemento);
 		return ResponseEntity.noContent().build();
 	}
 

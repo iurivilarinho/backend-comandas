@@ -2,7 +2,7 @@ package com.br.food.service;
 
 import java.io.IOException;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,11 +18,13 @@ import jakarta.persistence.EntityNotFoundException;
 @Service
 public class ProdutoService {
 
-	@Autowired
-	private ProdutoRepository produtoRepository;
+	private final ProdutoRepository produtoRepository;
+	private final DocumentoService documentoService;
 
-	@Autowired
-	private DocumentoService documentoService;
+	public ProdutoService(ProdutoRepository produtoRepository, DocumentoService documentoService) {
+		this.produtoRepository = produtoRepository;
+		this.documentoService = documentoService;
+	}
 
 	@Transactional(readOnly = true)
 	public Produto buscarProdutoPorId(long id) {
@@ -62,5 +64,25 @@ public class ProdutoService {
 
 		Produto produto = buscarProdutoPorId(idProduto);
 		produto.setStatus(status);
+	}
+
+	@Transactional
+	public void vincularProdutoEmComplemento(Long idProduto, Long idComplemento) {
+		Produto produto = buscarProdutoPorId(idProduto);
+		Produto complemento = buscarProdutoPorId(idProduto);
+
+		if (!complemento.getComplemento()) {
+			throw new DataIntegrityViolationException("Este produto não é um complemento!");
+		}
+
+		produto.getComplementos().add(complemento);
+		produtoRepository.save(produto);
+	}
+
+	@Transactional
+	public void desvincularProdutoEmComplemento(Long idProduto, Long idComplemento) {
+		Produto produto = buscarProdutoPorId(idProduto);
+		produto.getComplementos().removeIf(c -> c.getId().equals(idComplemento));
+		produtoRepository.save(produto);
 	}
 }
