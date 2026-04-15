@@ -97,23 +97,23 @@ public class RefreshTokenService {
     }
 
     // Helpers de cookie (usar em controllers)
-    public void writeRefreshCookie(HttpServletResponse resp, String rawToken) {
+    public void writeRefreshCookie(HttpServletResponse resp, String rawToken, boolean secure) {
         Cookie cookie = new Cookie("refresh_token", rawToken);
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);     // true em produÃ§Ã£o (HTTPS)
+        cookie.setSecure(secure);
         cookie.setPath("/");
         cookie.setMaxAge(60 * 60 * 24 * refreshExpirationDays);
-        cookie.setAttribute("SameSite", "Lax");
+        cookie.setAttribute("SameSite", secure ? "None" : "Lax");
         resp.addCookie(cookie);
     }
 
-    public void clearRefreshCookie(HttpServletResponse resp) {
+    public void clearRefreshCookie(HttpServletResponse resp, boolean secure) {
         Cookie cookie = new Cookie("refresh_token", "");
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);
+        cookie.setSecure(secure);
         cookie.setPath("/");
         cookie.setMaxAge(0);
-        cookie.setAttribute("SameSite", "Lax");
+        cookie.setAttribute("SameSite", secure ? "None" : "Lax");
         resp.addCookie(cookie);
     }
 }

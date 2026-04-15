@@ -80,19 +80,20 @@ public class LoginController {
 
 		var active = refreshTokenService.mustFindActive(refreshRaw);
 		User user = active.getUsuario();
+		boolean secure = isSecureRequest(request);
 
 		String newRefreshRaw = refreshTokenService.rotate(refreshRaw, request.getRemoteAddr(),
 				request.getHeader("User-Agent"));
-		refreshTokenService.writeRefreshCookie(response, newRefreshRaw);
+		refreshTokenService.writeRefreshCookie(response, newRefreshRaw, secure);
 
 		String newAccess = tokenService.generateToken(user);
 
 		Cookie access = new Cookie("token", newAccess);
 		access.setHttpOnly(true);
-		access.setSecure(true);
+		access.setSecure(secure);
 		access.setPath("/");
 		access.setMaxAge(300);
-		access.setAttribute("SameSite", "None");
+		access.setAttribute("SameSite", secure ? "None" : "Lax");
 		response.addCookie(access);
 
 		return ResponseEntity.ok().build();
@@ -114,10 +115,10 @@ public class LoginController {
 		String userAgent = request.getHeader("User-Agent");
 		boolean isMobile = userAgent != null && (userAgent.contains("Mobi") || userAgent.contains("okhttp")
 				|| userAgent.contains("Android") || userAgent.contains("iPhone"));
-		boolean secure = true;
+		boolean secure = isSecureRequest(request);
 
 		ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshRaw).httpOnly(true).secure(secure)
-				.sameSite("None").path("/").maxAge(Duration.ofDays(15)).build();
+				.sameSite(secure ? "None" : "Lax").path("/").maxAge(Duration.ofDays(15)).build();
 		headers.add(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
 		if (isMobile) {
@@ -126,9 +127,14 @@ public class LoginController {
 		}
 
 		ResponseCookie accessCookie = ResponseCookie.from("token", tokenJWT).httpOnly(true).secure(secure)
-				.sameSite("None").path("/").maxAge(Duration.ofMinutes(5)).build();
+				.sameSite(secure ? "None" : "Lax").path("/").maxAge(Duration.ofMinutes(5)).build();
 		headers.add(HttpHeaders.SET_COOKIE, accessCookie.toString());
 		return headers;
+	}
+
+	private boolean isSecureRequest(HttpServletRequest request) {
+		String forwardedProto = request.getHeader("X-Forwarded-Proto");
+		return request.isSecure() || (forwardedProto != null && forwardedProto.equalsIgnoreCase("https"));
 	}
 
 	private String readCookie(HttpServletRequest request, String name) {

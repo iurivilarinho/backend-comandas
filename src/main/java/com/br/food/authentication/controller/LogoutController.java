@@ -25,6 +25,7 @@ public class LogoutController {
     @Operation(summary = "Logout", description = "Revoga o refresh token atual e apaga cookies de autenticaÃ§Ã£o.")
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+        boolean secure = isSecureRequest(request);
         String refreshRaw = readCookie(request, "refresh_token");
         if (refreshRaw != null) {
             try {
@@ -33,18 +34,23 @@ public class LogoutController {
             }
         }
         // limpa refresh
-        refreshService.clearRefreshCookie(response);
+        refreshService.clearRefreshCookie(response, secure);
 
         // limpa access
         Cookie access = new Cookie("token", "");
         access.setHttpOnly(true);
-        access.setSecure(true);
+        access.setSecure(secure);
         access.setPath("/");
         access.setMaxAge(0);
-        access.setAttribute("SameSite", "Strict");
+        access.setAttribute("SameSite", secure ? "None" : "Lax");
         response.addCookie(access);
 
         return ResponseEntity.noContent().build();
+    }
+
+    private boolean isSecureRequest(HttpServletRequest request) {
+        String forwardedProto = request.getHeader("X-Forwarded-Proto");
+        return request.isSecure() || (forwardedProto != null && forwardedProto.equalsIgnoreCase("https"));
     }
 
     private String readCookie(HttpServletRequest request, String name) {
