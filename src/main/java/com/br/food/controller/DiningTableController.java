@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -69,6 +70,13 @@ public class DiningTableController {
 	@PatchMapping("/{id}/status")
 	public ResponseEntity<Void> updateStatus(@PathVariable Long id, @RequestParam Boolean active) {
 		diningTableService.updateStatus(id, active);
+		return ResponseEntity.noContent().build();
+	}
+
+	@Operation(summary = "Delete dining table")
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> delete(@PathVariable Long id) {
+		diningTableService.delete(id);
 		return ResponseEntity.noContent().build();
 	}
 }

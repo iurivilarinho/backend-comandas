@@ -9,6 +9,7 @@ import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,16 +17,22 @@ import com.br.food.enums.Types.OrderChannel;
 import com.br.food.enums.Types.OrderItemStatus;
 import com.br.food.enums.Types.OrderStatus;
 import com.br.food.enums.Types.PaymentMethod;
+import com.br.food.enums.Types.ProductType;
 import com.br.food.models.Customer;
-import com.br.food.models.Event;
-import com.br.food.models.Payment;
 import com.br.food.models.DiningTable;
 import com.br.food.models.Order;
 import com.br.food.models.OrderItem;
+import com.br.food.models.OrderPayment;
 import com.br.food.models.Product;
+import com.br.food.models.RecipeItem;
+import com.br.food.repository.OrderPaymentRepository;
 import com.br.food.repository.OrderRepository;
+import com.br.food.repository.OrderSpecification;
+import com.br.food.request.CloseOrderRequest;
 import com.br.food.request.OrderItemRequest;
 import com.br.food.request.OrderRequest;
+import com.br.food.request.PaymentLineRequest;
+import com.br.food.response.OrderCheckoutResponse;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -33,57 +40,77 @@ import jakarta.persistence.EntityNotFoundException;
 public class OrderService {
 
 	private final OrderRepository orderRepository;
+	private final OrderPaymentRepository orderPaymentRepository;
 	private final CustomerService customerService;
 	private final DiningTableService diningTableService;
-	private final EventService eventService;
 	private final ProductService productService;
 	private final PaymentService paymentService;
+	private final RecipeService recipeService;
+	private final StockEntryService stockEntryService;
+	private final AuditLogService auditLogService;
+	private final SystemSettingService systemSettingService;
 
 	public OrderService(
 			OrderRepository orderRepository,
+			OrderPaymentRepository orderPaymentRepository,
 			CustomerService customerService,
 			DiningTableService diningTableService,
-			EventService eventService,
 			ProductService productService,
-			PaymentService paymentService) {
+			PaymentService paymentService,
+			RecipeService recipeService,
+			StockEntryService stockEntryService,
+			AuditLogService auditLogService,
+			SystemSettingService systemSettingService) {
 		this.orderRepository = orderRepository;
+		this.orderPaymentRepository = orderPaymentRepository;
 		this.customerService = customerService;
 		this.diningTableService = diningTableService;
-		this.eventService = eventService;
 		this.productService = productService;
 		this.paymentService = paymentService;
+		this.recipeService = recipeService;
+		this.stockEntryService = stockEntryService;
+		this.auditLogService = auditLogService;
+		this.systemSettingService = systemSettingService;
 	}
 
 	@Transactional
-	public Order create(OrderRequest request) throws AccessDeniedException {
+	public Order create(OrderRequest request, String actorName) throws AccessDeniedException {
+		validateOrderRequest(request);
 		Customer customer = customerService.findById(request.getCustomerId());
+		if (Boolean.TRUE.equals(customer.getBlocked())) {
+			throw new DataIntegrityViolationException("Blocked customers cannot create new orders.");
+		}
 		DiningTable table = diningTableService.findByNumber(request.getTableNumber());
 		Order order = new Order(request, customer, generateOrderCode(), table);
-		diningTableService.reserveTable(table.getId());
-		addEventChargeIfNeeded(order);
+		if (request.getChannel() == OrderChannel.DINE_IN) {
+			diningTableService.reserveTable(table.getId());
+		}
 		addItems(order, request.getItems());
-		order.setTotalAmount(calculateDiscountedTotal(order));
-		return orderRepository.save(order);
+		recalculateTotals(order);
+		Order savedOrder = orderRepository.save(order);
+		auditLogService.register("Order", savedOrder.getId(), "ORDER_CREATED", actorName, "Order code " + savedOrder.getCode());
+		return savedOrder;
 	}
 
 	@Transactional
-	public Order update(Long id, OrderRequest request) throws AccessDeniedException {
+	public Order update(Long id, OrderRequest request, String actorName) throws AccessDeniedException {
+		validateOrderRequest(request);
 		Order order = findById(id);
-		DiningTable table = diningTableService.findByNumber(request.getTableNumber());
-		Payment paymentMethod = request.getPaymentMethod() != null
-				? paymentService.findByPaymentMethod(request.getPaymentMethod())
-				: null;
+		if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.CANCELED) {
+			throw new DataIntegrityViolationException("Closed or canceled orders cannot be updated.");
+		}
 
-		if (!order.getDiningTable().getId().equals(table.getId())) {
+		DiningTable table = diningTableService.findByNumber(request.getTableNumber());
+		if (order.getDiningTable() != null && !order.getDiningTable().getId().equals(table.getId()) && order.getChannel() == OrderChannel.DINE_IN) {
 			diningTableService.releaseTable(order.getDiningTable().getId());
 			diningTableService.reserveTable(table.getId());
 		}
 
-		order.update(request, table, paymentMethod);
+		order.update(request, table);
 		order.getItems().clear();
-		addEventChargeIfNeeded(order);
 		addItems(order, request.getItems());
-		order.setTotalAmount(calculateDiscountedTotal(order));
+		recalculateTotals(order);
+		auditLogService.register("Order", order.getId(), "ORDER_UPDATED", actorName, "Order items replaced.");
 		return orderRepository.save(order);
 	}
 
@@ -94,37 +121,189 @@ public class OrderService {
 	}
 
 	@Transactional(readOnly = true)
-	public Page<Order> findAll(Pageable pageable) {
-		return orderRepository.findAll(pageable);
+	public Page<Order> search(OrderStatus status, String tableNumber, String code, Pageable pageable) {
+		Specification<Order> specification = Specification.where(OrderSpecification.hasStatus(status))
+				.and(OrderSpecification.hasTableNumber(tableNumber))
+				.and(OrderSpecification.hasCode(code));
+		return orderRepository.findAll(specification, pageable);
 	}
 
 	@Transactional
-	public void updateStatus(Long id, OrderStatus targetStatus) {
+	public Order addItems(Long id, List<OrderItemRequest> items, String actorName) {
+		if (items == null || items.isEmpty()) {
+			throw new DataIntegrityViolationException("At least one order item is required.");
+		}
 		Order order = findById(id);
-		OrderStatus.validateTransition(order.getStatus(), targetStatus);
-		order.setStatus(targetStatus);
-	}
-
-	@Transactional
-	public Order addItems(Long id, List<OrderItemRequest> items) {
-		Order order = findById(id);
+		if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.CANCELED) {
+			throw new DataIntegrityViolationException("Cannot add items to closed or canceled orders.");
+		}
 		addItems(order, items);
-		order.setTotalAmount(calculateDiscountedTotal(order));
+		recalculateTotals(order);
+		auditLogService.register("Order", order.getId(), "ORDER_ITEMS_ADDED", actorName, "Added " + items.size() + " items.");
 		return orderRepository.save(order);
 	}
 
 	@Transactional
-	public void closeOrder(Long id, PaymentMethod paymentMethod) {
+	public OrderCheckoutResponse checkout(Long id, CloseOrderRequest request, String actorName) {
 		Order order = findById(id);
-		validateNoItemsInPreparation(order);
-		OrderStatus.validateTransition(order.getStatus(), OrderStatus.COMPLETED);
-		order.setStatus(OrderStatus.COMPLETED);
-		order.setClosedAt(LocalDateTime.now());
+		validateOrderReadyForCheckout(order);
+		recalculateTotals(order);
+		order.setSplitByPersonCount(request.getSplitByPersonCount());
 
-		BigDecimal totalAmount = calculateDiscountedTotal(order);
-		order.setTotalAmount(totalAmount);
-		order.setPayment(paymentService.createOrReuse(paymentMethod, totalAmount));
-		diningTableService.releaseTable(order.getDiningTable().getId());
+		BigDecimal newPaidAmount = registerPayments(order, request.getPayments(), actorName);
+		order.setPaidAmount(order.getPaidAmount().add(newPaidAmount));
+
+		BigDecimal remainingAmount = order.getTotalAmount().subtract(order.getPaidAmount()).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+		BigDecimal changeAmount = calculateChange(request.getPayments(), order.getTotalAmount(), order.getPaidAmount());
+		BigDecimal amountPerPerson = calculateAmountPerPerson(order);
+
+		boolean fullyPaid = remainingAmount.compareTo(BigDecimal.ZERO) == 0;
+		if (fullyPaid) {
+			order.setStatus(OrderStatus.CLOSED);
+			order.setClosedAt(LocalDateTime.now());
+			if (order.getDiningTable() != null && order.getChannel() == OrderChannel.DINE_IN) {
+				diningTableService.releaseTable(order.getDiningTable().getId());
+			}
+		} else {
+			order.setStatus(OrderStatus.READY_TO_CLOSE);
+		}
+
+		auditLogService.register("Order", order.getId(), "ORDER_CHECKOUT", actorName,
+				"Paid=" + order.getPaidAmount() + ", remaining=" + remainingAmount);
+		return new OrderCheckoutResponse(order, remainingAmount, changeAmount, amountPerPerson, fullyPaid);
+	}
+
+	@Transactional
+	public void cancelItem(Long orderId, Long itemId, String reason, String actorName) {
+		Order order = findById(orderId);
+		OrderItem item = order.getItems().stream()
+				.filter(orderItem -> orderItem.getId().equals(itemId))
+				.findFirst()
+				.orElseThrow(() -> new EntityNotFoundException("Order item not found for id " + itemId + "."));
+		if (item.getStatus() == OrderItemStatus.SERVED) {
+			throw new DataIntegrityViolationException("Served items cannot be canceled.");
+		}
+		if (item.getStatus() == OrderItemStatus.CANCELED || item.getStatus() == OrderItemStatus.DECLINED) {
+			return;
+		}
+		if (!item.getStockConsumptions().isEmpty()) {
+			stockEntryService.restoreConsumptions(item);
+		}
+		item.setCancellationReason(reason);
+		item.setStatus(OrderItemStatus.CANCELED);
+		recalculateTotals(order);
+		refundRegisteredPaymentsIfNeeded(order);
+		auditLogService.register("OrderItem", item.getId(), "ORDER_ITEM_CANCELED", actorName, reason);
+	}
+
+	@Transactional
+	public void cancelOrder(Long orderId, String reason, String actorName) {
+		Order order = findById(orderId);
+		if (order.getStatus() == OrderStatus.CLOSED) {
+			throw new DataIntegrityViolationException("Closed orders cannot be canceled.");
+		}
+		for (OrderItem item : order.getItems()) {
+			if (item.getStatus() != OrderItemStatus.CANCELED && item.getStatus() != OrderItemStatus.DECLINED) {
+				cancelItem(orderId, item.getId(), reason, actorName);
+			}
+		}
+		order.setStatus(OrderStatus.CANCELED);
+		if (order.getDiningTable() != null && order.getChannel() == OrderChannel.DINE_IN) {
+			diningTableService.releaseTable(order.getDiningTable().getId());
+		}
+		auditLogService.register("Order", order.getId(), "ORDER_CANCELED", actorName, reason);
+	}
+
+	@Transactional
+	public Order reopen(Long orderId, String actorName) throws AccessDeniedException {
+		Order order = findById(orderId);
+		if (order.getStatus() != OrderStatus.CLOSED) {
+			throw new DataIntegrityViolationException("Only closed orders can be reopened.");
+		}
+		if (order.getDiningTable() != null && order.getChannel() == OrderChannel.DINE_IN) {
+			diningTableService.reserveTable(order.getDiningTable().getId());
+		}
+		order.setStatus(OrderStatus.OPEN);
+		order.setClosedAt(null);
+		auditLogService.register("Order", order.getId(), "ORDER_REOPENED", actorName, "Order reopened.");
+		return order;
+	}
+
+	@Transactional
+	public Order transfer(Long orderId, String targetTableNumber, String actorName) throws AccessDeniedException {
+		Order order = findById(orderId);
+		DiningTable targetTable = diningTableService.findByNumber(targetTableNumber);
+		if (order.getDiningTable() != null) {
+			diningTableService.releaseTable(order.getDiningTable().getId());
+		}
+		diningTableService.reserveTable(targetTable.getId());
+		order.setDiningTable(targetTable);
+		auditLogService.register("Order", order.getId(), "ORDER_TRANSFERRED", actorName, "Transferred to table " + targetTableNumber);
+		return order;
+	}
+
+	@Transactional
+	public Order merge(Long targetOrderId, Long sourceOrderId, String actorName) {
+		Order targetOrder = findById(targetOrderId);
+		Order sourceOrder = findById(sourceOrderId);
+		if (targetOrder.getId().equals(sourceOrder.getId())) {
+			throw new DataIntegrityViolationException("Source and target orders must be different.");
+		}
+		for (OrderItem item : sourceOrder.getItems()) {
+			item.setOrder(targetOrder);
+			targetOrder.getItems().add(item);
+		}
+		sourceOrder.getItems().clear();
+		sourceOrder.setStatus(OrderStatus.CANCELED);
+		recalculateTotals(targetOrder);
+		auditLogService.register("Order", targetOrder.getId(), "ORDER_MERGED", actorName, "Merged order " + sourceOrderId);
+		return targetOrder;
+	}
+
+	@Transactional
+	public Order split(Long orderId, Long destinationTableId, List<Long> orderItemIds, String actorName) throws AccessDeniedException {
+		Order sourceOrder = findById(orderId);
+		DiningTable destinationTable = diningTableService.findById(destinationTableId);
+		diningTableService.reserveTable(destinationTableId);
+		Order splitOrder = new Order();
+		splitOrder.setCustomer(sourceOrder.getCustomer());
+		splitOrder.setCode(generateOrderCode());
+		splitOrder.setDiningTable(destinationTable);
+		splitOrder.setStatus(OrderStatus.OPEN);
+		splitOrder.setChannel(sourceOrder.getChannel());
+		splitOrder.setDiscountPercentage(sourceOrder.getDiscountPercentage());
+		splitOrder.setOpenedAt(LocalDateTime.now());
+
+		List<OrderItem> selectedItems = sourceOrder.getItems().stream()
+				.filter(item -> orderItemIds.contains(item.getId()))
+				.toList();
+		if (selectedItems.isEmpty()) {
+			throw new DataIntegrityViolationException("At least one order item must be selected for splitting.");
+		}
+
+		sourceOrder.getItems().removeIf(item -> orderItemIds.contains(item.getId()));
+		for (OrderItem item : selectedItems) {
+			item.setOrder(splitOrder);
+			splitOrder.getItems().add(item);
+		}
+		recalculateTotals(sourceOrder);
+		recalculateTotals(splitOrder);
+		Order savedSplitOrder = orderRepository.save(splitOrder);
+		auditLogService.register("Order", savedSplitOrder.getId(), "ORDER_SPLIT", actorName, "Split from order " + orderId);
+		return savedSplitOrder;
+	}
+
+	@Transactional
+	public void serveItem(Long orderId, Long itemId, String actorName) {
+		Order order = findById(orderId);
+		OrderItem item = order.getItems().stream()
+				.filter(orderItem -> orderItem.getId().equals(itemId))
+				.findFirst()
+				.orElseThrow(() -> new EntityNotFoundException("Order item not found for id " + itemId + "."));
+		OrderItemStatus.validateTransition(item.getStatus(), OrderItemStatus.SERVED);
+		item.setStatus(OrderItemStatus.SERVED);
+		refreshOrderStatus(order);
+		auditLogService.register("OrderItem", itemId, "ORDER_ITEM_SERVED", actorName, "Item served.");
 	}
 
 	@Transactional(readOnly = true)
@@ -135,53 +314,169 @@ public class OrderService {
 	}
 
 	BigDecimal calculateItemsTotal(Order order) {
-		return order.getItems().stream().map(item -> {
-			BigDecimal unitPrice = item.getProduct() != null ? item.getProduct().getPrice()
-					: item.getEvent() != null ? item.getEvent().getValue() : BigDecimal.ZERO;
-			return unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
-		}).reduce(BigDecimal.ZERO, BigDecimal::add);
+		return order.getItems().stream()
+				.filter(item -> item.getStatus() != OrderItemStatus.CANCELED && item.getStatus() != OrderItemStatus.DECLINED)
+				.map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
 	}
 
 	BigDecimal applyDiscount(BigDecimal totalAmount, BigDecimal discountPercentage) {
 		BigDecimal safeDiscount = discountPercentage != null ? discountPercentage : BigDecimal.ZERO;
-		BigDecimal discountValue = totalAmount.multiply(safeDiscount)
-				.divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+		BigDecimal discountValue = totalAmount.multiply(safeDiscount).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
 		return totalAmount.subtract(discountValue);
 	}
 
-	private BigDecimal calculateDiscountedTotal(Order order) {
-		return applyDiscount(calculateItemsTotal(order), order.getDiscountPercentage());
-	}
-
-	private void validateNoItemsInPreparation(Order order) {
-		List<String> itemsInPreparation = order.getItems().stream()
-				.filter(item -> item.getStatus() == OrderItemStatus.IN_PREPARATION)
-				.map(item -> item.getProduct() != null ? item.getProduct().getDescription() : "Event charge")
-				.toList();
-
-		if (!itemsInPreparation.isEmpty()) {
-			throw new DataIntegrityViolationException(
-					"These items are still in preparation: " + String.join(", ", itemsInPreparation));
+	private void validateOrderRequest(OrderRequest request) {
+		if (request.getItems() == null || request.getItems().isEmpty()) {
+			throw new DataIntegrityViolationException("Orders must contain at least one item.");
 		}
-	}
-
-	private void addEventChargeIfNeeded(Order order) {
-		if (order.getChannel() != OrderChannel.DINE_IN) {
-			return;
-		}
-		Event event = eventService.findOpenEvent();
-		if (event != null) {
-			order.getItems().add(new OrderItem(order, event, 1));
+		if (request.getChannel() == OrderChannel.DELIVERY && request.getTableNumber() == null) {
+			throw new DataIntegrityViolationException("Table number must be informed for operational tracking.");
 		}
 	}
 
 	private void addItems(Order order, List<OrderItemRequest> items) {
 		for (OrderItemRequest itemRequest : items) {
 			Product product = productService.findById(itemRequest.getProductId());
+			validateProductForOrder(product);
 			order.getItems().add(new OrderItem(order, product, itemRequest));
 		}
-		if (order.getStatus() == OrderStatus.PENDING_APPROVAL && !order.getItems().isEmpty()) {
-			order.setStatus(OrderStatus.IN_PROGRESS);
+		refreshOrderStatus(order);
+	}
+
+	private void validateProductForOrder(Product product) {
+		if (!Boolean.TRUE.equals(product.getActive())) {
+			throw new DataIntegrityViolationException("Inactive products cannot be ordered.");
+		}
+		if (Boolean.TRUE.equals(product.getComplement())) {
+			throw new DataIntegrityViolationException("Complement products cannot be ordered as standalone items.");
+		}
+	}
+
+	private void validateOrderReadyForCheckout(Order order) {
+		if (order.getItems().isEmpty()) {
+			throw new DataIntegrityViolationException("Orders cannot be checked out without items.");
+		}
+		boolean hasOpenKitchenItem = order.getItems().stream().anyMatch(item -> item.getStatus() == OrderItemStatus.RECEIVED
+				|| item.getStatus() == OrderItemStatus.QUEUED
+				|| item.getStatus() == OrderItemStatus.IN_PREPARATION);
+		if (hasOpenKitchenItem) {
+			throw new DataIntegrityViolationException("There are still items pending in the kitchen workflow.");
+		}
+	}
+
+	private BigDecimal registerPayments(Order order, List<PaymentLineRequest> paymentLines, String actorName) {
+		BigDecimal totalPaidNow = BigDecimal.ZERO;
+		for (PaymentLineRequest paymentLine : paymentLines) {
+			paymentService.findByPaymentMethod(paymentLine.getPaymentMethod());
+			validateCashPayment(paymentLine);
+			OrderPayment orderPayment = new OrderPayment(
+					order,
+					paymentLine.getPaymentMethod(),
+					paymentLine.getAmount().setScale(2, RoundingMode.HALF_UP),
+					paymentLine.getCashReceived(),
+					safeActor(actorName));
+			order.getPayments().add(orderPaymentRepository.save(orderPayment));
+			totalPaidNow = totalPaidNow.add(orderPayment.getAmount());
+		}
+		return totalPaidNow.setScale(2, RoundingMode.HALF_UP);
+	}
+
+	private void validateCashPayment(PaymentLineRequest paymentLine) {
+		if (paymentLine.getPaymentMethod() != PaymentMethod.CASH) {
+			return;
+		}
+		if (paymentLine.getCashReceived() == null || paymentLine.getCashReceived().compareTo(paymentLine.getAmount()) < 0) {
+			throw new DataIntegrityViolationException("Cash received must be greater than or equal to the cash payment amount.");
+		}
+	}
+
+	private BigDecimal calculateChange(List<PaymentLineRequest> paymentLines, BigDecimal totalAmount, BigDecimal totalPaid) {
+		BigDecimal cashReceived = paymentLines.stream()
+				.filter(paymentLine -> paymentLine.getPaymentMethod() == PaymentMethod.CASH && paymentLine.getCashReceived() != null)
+				.map(PaymentLineRequest::getCashReceived)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal cashPaid = paymentLines.stream()
+				.filter(paymentLine -> paymentLine.getPaymentMethod() == PaymentMethod.CASH)
+				.map(PaymentLineRequest::getAmount)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		if (cashReceived.compareTo(BigDecimal.ZERO) == 0) {
+			return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+		}
+		BigDecimal cashExcess = cashReceived.subtract(cashPaid);
+		return cashExcess.max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+	}
+
+	private BigDecimal calculateAmountPerPerson(Order order) {
+		if (order.getSplitByPersonCount() == null || order.getSplitByPersonCount() <= 0) {
+			return null;
+		}
+		return order.getTotalAmount().divide(BigDecimal.valueOf(order.getSplitByPersonCount()), 2, RoundingMode.HALF_UP);
+	}
+
+	private void refundRegisteredPaymentsIfNeeded(Order order) {
+		if (order.getPaidAmount().compareTo(BigDecimal.ZERO) <= 0) {
+			return;
+		}
+		recalculateTotals(order);
+		if (order.getPaidAmount().compareTo(order.getTotalAmount()) > 0) {
+			order.setPaidAmount(order.getTotalAmount());
+		}
+	}
+
+	private void recalculateTotals(Order order) {
+		BigDecimal subtotal = applyDiscount(calculateItemsTotal(order), order.getDiscountPercentage()).setScale(2, RoundingMode.HALF_UP);
+		BigDecimal serviceFeeAmount = calculateServiceFee(order, subtotal);
+		BigDecimal coverChargeAmount = calculateCoverCharge(order);
+		order.setSubtotalAmount(subtotal);
+		order.setServiceFeeAmount(serviceFeeAmount);
+		order.setCoverChargeAmount(coverChargeAmount);
+		order.setTotalAmount(subtotal.add(serviceFeeAmount).add(coverChargeAmount).setScale(2, RoundingMode.HALF_UP));
+		refreshOrderStatus(order);
+	}
+
+	private BigDecimal calculateServiceFee(Order order, BigDecimal subtotal) {
+		if (order.getChannel() != OrderChannel.DINE_IN) {
+			return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+		}
+		BigDecimal serviceFeePercent = systemSettingService.getDecimal(SystemSettingService.SERVICE_FEE_PERCENT, BigDecimal.ZERO);
+		return subtotal.multiply(serviceFeePercent).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+	}
+
+	private BigDecimal calculateCoverCharge(Order order) {
+		if (order.getChannel() != OrderChannel.DINE_IN) {
+			return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+		}
+		return systemSettingService.getDecimal(SystemSettingService.COVER_CHARGE_AMOUNT, BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+	}
+
+	private void refreshOrderStatus(Order order) {
+		if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.CANCELED) {
+			return;
+		}
+		boolean allCompleted = order.getItems().stream()
+				.filter(item -> item.getStatus() != OrderItemStatus.CANCELED && item.getStatus() != OrderItemStatus.DECLINED)
+				.allMatch(item -> item.getStatus() == OrderItemStatus.READY || item.getStatus() == OrderItemStatus.SERVED);
+		order.setStatus(allCompleted ? OrderStatus.READY_TO_CLOSE : OrderStatus.OPEN);
+	}
+
+	private String safeActor(String actorName) {
+		return actorName == null || actorName.isBlank() ? "system" : actorName.trim();
+	}
+
+	@Transactional
+	public void consumeRecipeForItem(OrderItem orderItem) {
+		if (orderItem.getProduct() == null || orderItem.getProduct().getType() != ProductType.FINISHED) {
+			return;
+		}
+		if (!orderItem.getStockConsumptions().isEmpty()) {
+			return;
+		}
+		List<RecipeItem> recipeItems = recipeService.findByProductId(orderItem.getProduct().getId());
+		for (RecipeItem recipeItem : recipeItems) {
+			BigDecimal totalIngredientQuantity = recipeItem.getQuantity().multiply(BigDecimal.valueOf(orderItem.getQuantity()));
+			orderItem.getStockConsumptions().addAll(
+					stockEntryService.decreaseStockForProduct(recipeItem.getIngredientProduct().getId(), totalIngredientQuantity, orderItem));
 		}
 	}
 }

@@ -6,6 +6,7 @@ import com.br.food.enums.Types.OrderChannel;
 import com.br.food.enums.Types.OrderItemStatus;
 import com.br.food.enums.Types.OrderStatus;
 import com.br.food.models.Order;
+import com.br.food.models.OrderItem;
 
 public class PendingOrderResponse {
 
@@ -22,12 +23,18 @@ public class PendingOrderResponse {
 		this.customer = order.getCustomer() != null ? new CustomerResponse(order.getCustomer()) : null;
 		this.diningTable = order.getDiningTable() != null ? new DiningTableResponse(order.getDiningTable()) : null;
 		this.items = order.getItems().stream()
-				.filter(item -> item.getStatus() == OrderItemStatus.PENDING)
+				.filter(this::isPendingForKitchen)
 				.map(OrderItemResponse::new)
 				.toList();
 		this.code = order.getCode();
 		this.status = order.getStatus();
 		this.channel = order.getChannel();
+	}
+
+	private boolean isPendingForKitchen(OrderItem item) {
+		return item.getStatus() == OrderItemStatus.RECEIVED
+				|| item.getStatus() == OrderItemStatus.QUEUED
+				|| item.getStatus() == OrderItemStatus.IN_PREPARATION;
 	}
 
 	public Long getId() {

@@ -10,19 +10,23 @@ public class OrderItemResponse {
 	private final Long id;
 	private final ProductBasicResponse product;
 	private final Integer quantity;
+	private final java.math.BigDecimal unitPrice;
 	private final String notes;
 	private final LocalDateTime requestedAt;
 	private final OrderItemStatus status;
 	private final String declineReason;
+	private final String cancellationReason;
 
 	public OrderItemResponse(OrderItem item) {
 		this.id = item.getId();
 		this.product = item.getProduct() != null ? new ProductBasicResponse(item.getProduct()) : null;
 		this.quantity = item.getQuantity();
+		this.unitPrice = item.getUnitPrice();
 		this.notes = item.getNotes();
 		this.requestedAt = item.getRequestedAt();
 		this.status = item.getStatus();
 		this.declineReason = item.getDeclineReason();
+		this.cancellationReason = item.getCancellationReason();
 	}
 
 	public Long getId() {
@@ -35,6 +39,10 @@ public class OrderItemResponse {
 
 	public Integer getQuantity() {
 		return quantity;
+	}
+
+	public java.math.BigDecimal getUnitPrice() {
+		return unitPrice;
 	}
 
 	public String getNotes() {
@@ -51,5 +59,9 @@ public class OrderItemResponse {
 
 	public String getDeclineReason() {
 		return declineReason;
+	}
+
+	public String getCancellationReason() {
+		return cancellationReason;
 	}
 }

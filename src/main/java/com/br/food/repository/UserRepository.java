@@ -8,5 +8,6 @@ import com.br.food.models.acesso.User;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
+	User findByLogin(String login);
 }
 

@@ -52,16 +52,14 @@ public final class Types {
 
     @Schema(description = "Order status")
     public enum OrderStatus {
-        @Schema(description = "Waiting for approval")
-        PENDING_APPROVAL("Waiting for approval"),
-        @Schema(description = "In progress")
-        IN_PROGRESS("In progress"),
-        @Schema(description = "Out for delivery")
-        ON_THE_WAY("Out for delivery"),
-        @Schema(description = "Canceled")
-        CANCELED("Canceled"),
-        @Schema(description = "Completed")
-        COMPLETED("Completed");
+        @Schema(description = "Open order receiving items and service operations")
+        OPEN("Open"),
+        @Schema(description = "Order fully prepared and ready for checkout")
+        READY_TO_CLOSE("Ready to close"),
+        @Schema(description = "Order closed after full payment")
+        CLOSED("Closed"),
+        @Schema(description = "Order canceled")
+        CANCELED("Canceled");
 
         private static final Map<OrderStatus, Set<OrderStatus>> TRANSITIONS = buildTransitions();
 
@@ -91,25 +89,30 @@ public final class Types {
 
         private static Map<OrderStatus, Set<OrderStatus>> buildTransitions() {
             Map<OrderStatus, Set<OrderStatus>> transitions = new EnumMap<>(OrderStatus.class);
-            transitions.put(PENDING_APPROVAL, Set.of(IN_PROGRESS, CANCELED));
-            transitions.put(IN_PROGRESS, Set.of(ON_THE_WAY, COMPLETED, CANCELED));
-            transitions.put(ON_THE_WAY, Set.of(COMPLETED, CANCELED));
+            transitions.put(OPEN, Set.of(READY_TO_CLOSE, CANCELED));
+            transitions.put(READY_TO_CLOSE, Set.of(OPEN, CLOSED, CANCELED));
+            transitions.put(CLOSED, Collections.emptySet());
             transitions.put(CANCELED, Collections.emptySet());
-            transitions.put(COMPLETED, Collections.emptySet());
             return Collections.unmodifiableMap(transitions);
         }
     }
 
     @Schema(description = "Order item status")
     public enum OrderItemStatus {
-        @Schema(description = "Pending item")
-        PENDING("Pending"),
+        @Schema(description = "Item received by service")
+        RECEIVED("Received"),
+        @Schema(description = "Item queued by kitchen")
+        QUEUED("Queued"),
         @Schema(description = "Item in preparation")
         IN_PREPARATION("In preparation"),
-        @Schema(description = "Served item")
+        @Schema(description = "Item ready for service")
+        READY("Ready"),
+        @Schema(description = "Item served to the guest")
         SERVED("Served"),
         @Schema(description = "Declined item")
-        DECLINED("Declined");
+        DECLINED("Declined"),
+        @Schema(description = "Canceled item")
+        CANCELED("Canceled");
 
         private static final Map<OrderItemStatus, Set<OrderItemStatus>> TRANSITIONS = buildTransitions();
 
@@ -139,10 +142,13 @@ public final class Types {
 
         private static Map<OrderItemStatus, Set<OrderItemStatus>> buildTransitions() {
             Map<OrderItemStatus, Set<OrderItemStatus>> transitions = new EnumMap<>(OrderItemStatus.class);
-            transitions.put(PENDING, Set.of(IN_PREPARATION, DECLINED, SERVED));
-            transitions.put(IN_PREPARATION, Set.of(SERVED, DECLINED));
+            transitions.put(RECEIVED, Set.of(QUEUED, DECLINED, CANCELED));
+            transitions.put(QUEUED, Set.of(IN_PREPARATION, DECLINED, CANCELED));
+            transitions.put(IN_PREPARATION, Set.of(READY, DECLINED, CANCELED));
+            transitions.put(READY, Set.of(SERVED, CANCELED));
             transitions.put(SERVED, Collections.emptySet());
             transitions.put(DECLINED, Collections.emptySet());
+            transitions.put(CANCELED, Collections.emptySet());
             return Collections.unmodifiableMap(transitions);
         }
     }

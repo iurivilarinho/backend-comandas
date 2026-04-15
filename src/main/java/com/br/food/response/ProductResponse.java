@@ -18,6 +18,7 @@ public class ProductResponse {
 	private final Boolean visibleOnMenu;
 	private final DocumentResponse image;
 	private final List<ProductBasicResponse> complements;
+	private final List<RecipeItemResponse> recipeItems;
 
 	public ProductResponse(Product product) {
 		this.id = product.getId();
@@ -30,6 +31,7 @@ public class ProductResponse {
 		this.visibleOnMenu = product.getVisibleOnMenu();
 		this.image = product.getImage() != null ? new DocumentResponse(product.getImage()) : null;
 		this.complements = product.getComplements().stream().map(ProductBasicResponse::new).toList();
+		this.recipeItems = product.getRecipeItems().stream().map(RecipeItemResponse::new).toList();
 	}
 
 	public Long getId() {
@@ -70,5 +72,9 @@ public class ProductResponse {
 
 	public List<ProductBasicResponse> getComplements() {
 		return complements;
+	}
+
+	public List<RecipeItemResponse> getRecipeItems() {
+		return recipeItems;
 	}
 }

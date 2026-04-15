@@ -8,8 +8,8 @@ import com.br.food.models.DiningTable;
 
 public interface DiningTableRepository extends JpaRepository<DiningTable, Long> {
 
-	Optional<DiningTable> findByNumero(String numero);
+	Optional<DiningTable> findByNumber(String number);
 
-	DiningTable findTopByOrderByNumeroDesc();
+	DiningTable findTopByOrderByNumberDesc();
 
 }

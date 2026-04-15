@@ -10,29 +10,29 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "tbDiningTable")
+@Table(name = "dining_tables")
 public class DiningTable {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(length = 10, nullable = false)
-	private String numero;
+	@Column(name = "table_number", length = 10, nullable = false, unique = true)
+	private String number;
 
-	@Column(nullable = false)
-	private Boolean status;
+	@Column(name = "active", nullable = false)
+	private Boolean active;
 
-	@Column(nullable = false)
-	private Boolean ocupada;
+	@Column(name = "occupied", nullable = false)
+	private Boolean occupied;
 
 	public DiningTable() {
 	}
 
-	public DiningTable(String numero) {
-		this.ocupada = false;
-		this.status = true;
-		this.numero = numero;
+	public DiningTable(String number) {
+		this.number = number;
+		this.active = true;
+		this.occupied = false;
 	}
 
 	public DiningTable(DiningTableRequest request) {
@@ -40,51 +40,58 @@ public class DiningTable {
 	}
 
 	public void update(DiningTableRequest request) {
-		this.numero = request.getNumber();
+		this.number = request.getNumber();
 	}
 
 	public Long getId() {
 		return id;
 	}
 
-	public String getNumero() {
-		return numero;
-	}
-
 	public String getNumber() {
-		return numero;
+		return number;
 	}
 
-	public void setNumero(String numero) {
-		this.numero = numero;
+	public String getNumero() {
+		return number;
 	}
 
 	public void setNumber(String number) {
-		this.numero = number;
+		this.number = number;
+	}
+
+	public void setNumero(String number) {
+		this.number = number;
 	}
 
 	public Boolean getStatus() {
-		return status;
+		return active;
 	}
 
-	public void setStatus(Boolean status) {
-		this.status = status;
+	public Boolean getActive() {
+		return active;
 	}
 
-	public Boolean getOcupada() {
-		return ocupada;
+	public void setStatus(Boolean active) {
+		this.active = active;
+	}
+
+	public void setActive(Boolean active) {
+		this.active = active;
 	}
 
 	public Boolean getOccupied() {
-		return ocupada;
+		return occupied;
 	}
 
-	public void setOcupada(Boolean ocupada) {
-		this.ocupada = ocupada;
+	public Boolean getOcupada() {
+		return occupied;
 	}
 
 	public void setOccupied(Boolean occupied) {
-		this.ocupada = occupied;
+		this.occupied = occupied;
 	}
 
+	public void setOcupada(Boolean occupied) {
+		this.occupied = occupied;
+	}
 }

@@ -1,11 +1,15 @@
 package com.br.food.models;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.br.food.enums.Types.OrderItemStatus;
 import com.br.food.request.OrderItemRequest;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -17,6 +21,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -42,8 +47,14 @@ public class OrderItem {
 	@JoinColumn(name = "fk_event_id", foreignKey = @ForeignKey(name = "fk_order_item_event"))
 	private Event event;
 
+	@OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<StockConsumption> stockConsumptions = new ArrayList<>();
+
 	@Column(name = "quantity", nullable = false)
 	private Integer quantity;
+
+	@Column(name = "unit_price", nullable = false, precision = 12, scale = 2)
+	private BigDecimal unitPrice;
 
 	@Column(name = "notes", length = 255)
 	private String notes;
@@ -58,6 +69,9 @@ public class OrderItem {
 	@Column(name = "decline_reason")
 	private String declineReason;
 
+	@Column(name = "cancellation_reason")
+	private String cancellationReason;
+
 	@Column(name = "created_at", updatable = false, nullable = false)
 	private LocalDateTime createdAt;
 
@@ -71,6 +85,7 @@ public class OrderItem {
 		this.order = order;
 		this.event = event;
 		this.quantity = quantity;
+		this.unitPrice = event.getValue();
 		this.status = OrderItemStatus.SERVED;
 		this.requestedAt = LocalDateTime.now();
 	}
@@ -80,7 +95,8 @@ public class OrderItem {
 		this.product = product;
 		this.quantity = request.getQuantity();
 		this.notes = request.getNotes();
-		this.status = OrderItemStatus.PENDING;
+		this.unitPrice = product.getPrice();
+		this.status = OrderItemStatus.RECEIVED;
 		this.requestedAt = LocalDateTime.now();
 	}
 
@@ -127,12 +143,24 @@ public class OrderItem {
 		this.event = event;
 	}
 
+	public List<StockConsumption> getStockConsumptions() {
+		return stockConsumptions;
+	}
+
 	public Integer getQuantity() {
 		return quantity;
 	}
 
 	public void setQuantity(Integer quantity) {
 		this.quantity = quantity;
+	}
+
+	public BigDecimal getUnitPrice() {
+		return unitPrice;
+	}
+
+	public void setUnitPrice(BigDecimal unitPrice) {
+		this.unitPrice = unitPrice;
 	}
 
 	public String getNotes() {
@@ -161,5 +189,13 @@ public class OrderItem {
 
 	public void setDeclineReason(String declineReason) {
 		this.declineReason = declineReason;
+	}
+
+	public String getCancellationReason() {
+		return cancellationReason;
+	}
+
+	public void setCancellationReason(String cancellationReason) {
+		this.cancellationReason = cancellationReason;
 	}
 }

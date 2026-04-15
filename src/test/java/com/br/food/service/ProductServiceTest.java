@@ -32,6 +32,7 @@ class ProductServiceTest {
 		Product product = new Product();
 		Product complement = new Product();
 		complement.setComplement(true);
+		complement.setActive(true);
 
 		when(productRepository.findById(1L)).thenReturn(Optional.of(product));
 		when(productRepository.findById(2L)).thenReturn(Optional.of(complement));

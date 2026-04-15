@@ -1,17 +1,34 @@
 package com.br.food.request;
 
-import com.br.food.enums.Types.PaymentMethod;
+import java.util.ArrayList;
+import java.util.List;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 
-@Schema(description = "Payload used to close an order")
 public class CloseOrderRequest {
 
-	@NotNull(message = "Payment method is required.")
-	private PaymentMethod paymentMethod;
+	@Valid
+	@NotEmpty(message = "At least one payment line is required.")
+	private List<PaymentLineRequest> payments = new ArrayList<>();
 
-	public PaymentMethod getPaymentMethod() {
-		return paymentMethod;
+	@Min(value = 1, message = "Split by person count must be at least one.")
+	private Integer splitByPersonCount;
+
+	@Size(max = 255, message = "Notes must have at most 255 characters.")
+	private String notes;
+
+	public List<PaymentLineRequest> getPayments() {
+		return payments;
+	}
+
+	public Integer getSplitByPersonCount() {
+		return splitByPersonCount;
+	}
+
+	public String getNotes() {
+		return notes;
 	}
 }

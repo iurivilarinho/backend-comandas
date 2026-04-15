@@ -9,6 +9,6 @@ import com.br.food.models.Payment;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
-	Optional<Payment> findByTipoPagamento(PaymentMethod paymentMethod);
+	Optional<Payment> findByPaymentMethod(PaymentMethod paymentMethod);
 
 }

@@ -48,4 +48,9 @@ public class CustomerService {
 		Customer customer = findById(id);
 		customer.setBlocked(blocked);
 	}
+
+	@Transactional
+	public void delete(Long id) {
+		customerRepository.delete(findById(id));
+	}
 }

@@ -38,7 +38,7 @@ public class DiningTableService {
 
 	@Transactional(readOnly = true)
 	public String generateTableNumber() {
-		DiningTable highestTable = diningTableRepository.findTopByOrderByNumeroDesc();
+		DiningTable highestTable = diningTableRepository.findTopByOrderByNumberDesc();
 		int nextNumber = highestTable != null ? Integer.parseInt(highestTable.getNumber()) + 1 : 1;
 		return String.valueOf(nextNumber);
 	}
@@ -58,7 +58,7 @@ public class DiningTableService {
 
 	@Transactional(readOnly = true)
 	public DiningTable findByNumber(String number) {
-		return diningTableRepository.findByNumero(number)
+		return diningTableRepository.findByNumber(number)
 				.orElseThrow(() -> new EntityNotFoundException("Table not found for number " + number + "."));
 	}
 
@@ -70,12 +70,15 @@ public class DiningTableService {
 	@Transactional
 	public void updateStatus(Long id, Boolean active) {
 		DiningTable table = findById(id);
-		table.setStatus(active);
+		table.setActive(active);
 	}
 
 	@Transactional
 	public void reserveTable(Long id) throws AccessDeniedException {
 		DiningTable table = findById(id);
+		if (!Boolean.TRUE.equals(table.getActive())) {
+			throw new AccessDeniedException("Table is inactive.");
+		}
 		if (Boolean.TRUE.equals(table.getOccupied())) {
 			throw new AccessDeniedException("Table is already occupied.");
 		}
@@ -86,5 +89,10 @@ public class DiningTableService {
 	public void releaseTable(Long id) {
 		DiningTable table = findById(id);
 		table.setOccupied(false);
+	}
+
+	@Transactional
+	public void delete(Long id) {
+		diningTableRepository.delete(findById(id));
 	}
 }

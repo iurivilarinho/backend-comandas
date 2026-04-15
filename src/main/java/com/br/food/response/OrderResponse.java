@@ -15,12 +15,18 @@ public class OrderResponse {
 	private final CustomerResponse customer;
 	private final DiningTableResponse table;
 	private final BigDecimal discountPercentage;
+	private final BigDecimal subtotalAmount;
+	private final BigDecimal serviceFeeAmount;
+	private final BigDecimal coverChargeAmount;
+	private final BigDecimal paidAmount;
 	private final BigDecimal totalAmount;
+	private final Integer splitByPersonCount;
 	private final LocalDateTime openedAt;
 	private final LocalDateTime closedAt;
 	private final OrderStatus status;
 	private final OrderChannel channel;
 	private final List<OrderItemResponse> items;
+	private final List<OrderPaymentResponse> payments;
 
 	public OrderResponse(Order order) {
 		this.id = order.getId();
@@ -28,12 +34,18 @@ public class OrderResponse {
 		this.customer = order.getCustomer() != null ? new CustomerResponse(order.getCustomer()) : null;
 		this.table = order.getDiningTable() != null ? new DiningTableResponse(order.getDiningTable()) : null;
 		this.discountPercentage = order.getDiscountPercentage();
+		this.subtotalAmount = order.getSubtotalAmount();
+		this.serviceFeeAmount = order.getServiceFeeAmount();
+		this.coverChargeAmount = order.getCoverChargeAmount();
+		this.paidAmount = order.getPaidAmount();
 		this.totalAmount = order.getTotalAmount();
+		this.splitByPersonCount = order.getSplitByPersonCount();
 		this.openedAt = order.getOpenedAt();
 		this.closedAt = order.getClosedAt();
 		this.status = order.getStatus();
 		this.channel = order.getChannel();
 		this.items = order.getItems().stream().map(OrderItemResponse::new).toList();
+		this.payments = order.getPayments().stream().map(OrderPaymentResponse::new).toList();
 	}
 
 	public Long getId() {
@@ -56,8 +68,28 @@ public class OrderResponse {
 		return discountPercentage;
 	}
 
+	public BigDecimal getSubtotalAmount() {
+		return subtotalAmount;
+	}
+
+	public BigDecimal getServiceFeeAmount() {
+		return serviceFeeAmount;
+	}
+
+	public BigDecimal getCoverChargeAmount() {
+		return coverChargeAmount;
+	}
+
+	public BigDecimal getPaidAmount() {
+		return paidAmount;
+	}
+
 	public BigDecimal getTotalAmount() {
 		return totalAmount;
+	}
+
+	public Integer getSplitByPersonCount() {
+		return splitByPersonCount;
 	}
 
 	public LocalDateTime getOpenedAt() {
@@ -78,5 +110,9 @@ public class OrderResponse {
 
 	public List<OrderItemResponse> getItems() {
 		return items;
+	}
+
+	public List<OrderPaymentResponse> getPayments() {
+		return payments;
 	}
 }

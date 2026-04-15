@@ -40,6 +40,7 @@ public class ProductService {
 
 	@Transactional
 	public Product create(ProductRequest request, MultipartFile image) throws IOException {
+		validateUniqueCode(request.getCode(), null);
 		Document document = documentService.toDocument(image, false);
 		return productRepository.save(new Product(request, document));
 	}
@@ -47,6 +48,7 @@ public class ProductService {
 	@Transactional
 	public Product update(Long id, ProductRequest request, MultipartFile image) throws IOException {
 		Product product = findById(id);
+		validateUniqueCode(request.getCode(), id);
 		Document document = image != null ? documentService.toDocument(image, false) : null;
 		product.update(request, document);
 		return productRepository.save(product);
@@ -59,12 +61,24 @@ public class ProductService {
 	}
 
 	@Transactional
+	public void delete(Long id) {
+		Product product = findById(id);
+		productRepository.delete(product);
+	}
+
+	@Transactional
 	public void addComplement(Long productId, Long complementId) {
 		Product product = findById(productId);
 		Product complement = findById(complementId);
 
 		if (!Boolean.TRUE.equals(complement.getComplement())) {
 			throw new DataIntegrityViolationException("Only products flagged as complement can be linked.");
+		}
+		if (!Boolean.TRUE.equals(complement.getActive())) {
+			throw new DataIntegrityViolationException("Inactive complements cannot be linked.");
+		}
+		if (productId.equals(complementId)) {
+			throw new DataIntegrityViolationException("A product cannot complement itself.");
 		}
 
 		boolean alreadyLinked = product.getComplements().stream()
@@ -78,5 +92,15 @@ public class ProductService {
 	public void removeComplement(Long productId, Long complementId) {
 		Product product = findById(productId);
 		product.getComplements().removeIf(complement -> complement.getId().equals(complementId));
+	}
+
+	private void validateUniqueCode(String code, Long currentId) {
+		productRepository.findAll().stream()
+				.filter(product -> product.getCode().equalsIgnoreCase(code))
+				.filter(product -> currentId == null || !product.getId().equals(currentId))
+				.findFirst()
+				.ifPresent(product -> {
+					throw new DataIntegrityViolationException("There is already a product using code " + code + ".");
+				});
 	}
 }

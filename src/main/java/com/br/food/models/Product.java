@@ -22,6 +22,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -65,6 +66,9 @@ public class Product {
 	@JoinTable(name = "product_complement", joinColumns = @JoinColumn(name = "fk_Id_Product"),
 			inverseJoinColumns = @JoinColumn(name = "fk_Id_Complement"))
 	private List<Product> complements = new ArrayList<>();
+
+	@OneToMany(mappedBy = "finalProduct", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<RecipeItem> recipeItems = new ArrayList<>();
 
 	@Column(name = "created_at", updatable = false, nullable = false)
 	private LocalDateTime createdAt;
@@ -184,5 +188,9 @@ public class Product {
 
 	public void setComplements(List<Product> complements) {
 		this.complements = complements;
+	}
+
+	public List<RecipeItem> getRecipeItems() {
+		return recipeItems;
 	}
 }

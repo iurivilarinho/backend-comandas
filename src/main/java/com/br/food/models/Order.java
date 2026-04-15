@@ -44,12 +44,11 @@ public class Order {
 	@JoinColumn(name = "fk_table_id", foreignKey = @ForeignKey(name = "fk_order_table"))
 	private DiningTable diningTable;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "fk_payment_id", foreignKey = @ForeignKey(name = "fk_order_payment"))
-	private Payment payment;
-
 	@OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<OrderItem> items = new ArrayList<>();
+
+	@OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<OrderPayment> payments = new ArrayList<>();
 
 	@Column(name = "code", nullable = false, length = 10, unique = true)
 	private String code;
@@ -61,8 +60,23 @@ public class Order {
 	@Column(name = "discount_percentage", nullable = false, precision = 5, scale = 2)
 	private BigDecimal discountPercentage;
 
+	@Column(name = "subtotal_amount", nullable = false, precision = 12, scale = 2)
+	private BigDecimal subtotalAmount;
+
+	@Column(name = "service_fee_amount", nullable = false, precision = 12, scale = 2)
+	private BigDecimal serviceFeeAmount;
+
+	@Column(name = "cover_charge_amount", nullable = false, precision = 12, scale = 2)
+	private BigDecimal coverChargeAmount;
+
+	@Column(name = "paid_amount", nullable = false, precision = 12, scale = 2)
+	private BigDecimal paidAmount;
+
 	@Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
 	private BigDecimal totalAmount;
+
+	@Column(name = "split_by_person_count")
+	private Integer splitByPersonCount;
 
 	@Column(name = "opened_at", nullable = false)
 	private LocalDateTime openedAt;
@@ -87,20 +101,21 @@ public class Order {
 		this.customer = customer;
 		this.code = code;
 		this.diningTable = diningTable;
-		this.status = OrderStatus.PENDING_APPROVAL;
+		this.status = OrderStatus.OPEN;
 		this.channel = request.getChannel();
-		this.discountPercentage = request.getDiscountPercentage() != null ? request.getDiscountPercentage()
-				: BigDecimal.ZERO;
+		this.discountPercentage = request.getDiscountPercentage() != null ? request.getDiscountPercentage() : BigDecimal.ZERO;
+		this.subtotalAmount = BigDecimal.ZERO;
+		this.serviceFeeAmount = BigDecimal.ZERO;
+		this.coverChargeAmount = BigDecimal.ZERO;
+		this.paidAmount = BigDecimal.ZERO;
 		this.totalAmount = BigDecimal.ZERO;
 		this.openedAt = LocalDateTime.now();
 	}
 
-	public void update(OrderRequest request, DiningTable diningTable, Payment payment) {
+	public void update(OrderRequest request, DiningTable diningTable) {
 		this.diningTable = diningTable;
-		this.payment = payment;
 		this.channel = request.getChannel();
-		this.discountPercentage = request.getDiscountPercentage() != null ? request.getDiscountPercentage()
-				: BigDecimal.ZERO;
+		this.discountPercentage = request.getDiscountPercentage() != null ? request.getDiscountPercentage() : BigDecimal.ZERO;
 	}
 
 	@PrePersist
@@ -113,6 +128,18 @@ public class Order {
 		}
 		if (this.discountPercentage == null) {
 			this.discountPercentage = BigDecimal.ZERO;
+		}
+		if (this.subtotalAmount == null) {
+			this.subtotalAmount = BigDecimal.ZERO;
+		}
+		if (this.serviceFeeAmount == null) {
+			this.serviceFeeAmount = BigDecimal.ZERO;
+		}
+		if (this.coverChargeAmount == null) {
+			this.coverChargeAmount = BigDecimal.ZERO;
+		}
+		if (this.paidAmount == null) {
+			this.paidAmount = BigDecimal.ZERO;
 		}
 		if (this.totalAmount == null) {
 			this.totalAmount = BigDecimal.ZERO;
@@ -144,20 +171,16 @@ public class Order {
 		this.diningTable = diningTable;
 	}
 
-	public Payment getPayment() {
-		return payment;
-	}
-
-	public void setPayment(Payment payment) {
-		this.payment = payment;
-	}
-
 	public List<OrderItem> getItems() {
 		return items;
 	}
 
 	public void setItems(List<OrderItem> items) {
 		this.items = items;
+	}
+
+	public List<OrderPayment> getPayments() {
+		return payments;
 	}
 
 	public String getCode() {
@@ -184,12 +207,52 @@ public class Order {
 		this.discountPercentage = discountPercentage;
 	}
 
+	public BigDecimal getSubtotalAmount() {
+		return subtotalAmount;
+	}
+
+	public void setSubtotalAmount(BigDecimal subtotalAmount) {
+		this.subtotalAmount = subtotalAmount;
+	}
+
+	public BigDecimal getServiceFeeAmount() {
+		return serviceFeeAmount;
+	}
+
+	public void setServiceFeeAmount(BigDecimal serviceFeeAmount) {
+		this.serviceFeeAmount = serviceFeeAmount;
+	}
+
+	public BigDecimal getCoverChargeAmount() {
+		return coverChargeAmount;
+	}
+
+	public void setCoverChargeAmount(BigDecimal coverChargeAmount) {
+		this.coverChargeAmount = coverChargeAmount;
+	}
+
+	public BigDecimal getPaidAmount() {
+		return paidAmount;
+	}
+
+	public void setPaidAmount(BigDecimal paidAmount) {
+		this.paidAmount = paidAmount;
+	}
+
 	public BigDecimal getTotalAmount() {
 		return totalAmount;
 	}
 
 	public void setTotalAmount(BigDecimal totalAmount) {
 		this.totalAmount = totalAmount;
+	}
+
+	public Integer getSplitByPersonCount() {
+		return splitByPersonCount;
+	}
+
+	public void setSplitByPersonCount(Integer splitByPersonCount) {
+		this.splitByPersonCount = splitByPersonCount;
 	}
 
 	public LocalDateTime getOpenedAt() {

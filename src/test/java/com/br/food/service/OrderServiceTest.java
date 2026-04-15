@@ -2,8 +2,6 @@ package com.br.food.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -17,12 +15,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.br.food.enums.Types.OrderItemStatus;
 import com.br.food.enums.Types.OrderStatus;
-import com.br.food.enums.Types.PaymentMethod;
-import com.br.food.models.Payment;
-import com.br.food.models.OrderItem;
-import com.br.food.models.DiningTable;
 import com.br.food.models.Order;
+import com.br.food.models.OrderItem;
 import com.br.food.models.Product;
+import com.br.food.repository.OrderPaymentRepository;
 import com.br.food.repository.OrderRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,13 +28,13 @@ class OrderServiceTest {
 	private OrderRepository orderRepository;
 
 	@Mock
+	private OrderPaymentRepository orderPaymentRepository;
+
+	@Mock
 	private CustomerService customerService;
 
 	@Mock
 	private DiningTableService diningTableService;
-
-	@Mock
-	private EventService eventService;
 
 	@Mock
 	private ProductService productService;
@@ -46,58 +42,55 @@ class OrderServiceTest {
 	@Mock
 	private PaymentService paymentService;
 
+	@Mock
+	private RecipeService recipeService;
+
+	@Mock
+	private StockEntryService stockEntryService;
+
+	@Mock
+	private AuditLogService auditLogService;
+
+	@Mock
+	private SystemSettingService systemSettingService;
+
 	@InjectMocks
 	private OrderService orderService;
 
 	@Test
-	void closeOrderShouldSetPaymentReleaseTableAndCompleteOrder() {
+	void calculateItemsTotalShouldIgnoreCanceledItems() {
 		Order order = new Order();
-		DiningTable table = new DiningTable("12");
-		Product product = new Product();
-		product.setDescription("Burger");
-		product.setPrice(new BigDecimal("35.00"));
 
-		OrderItem item = new OrderItem();
-		item.setProduct(product);
-		item.setQuantity(2);
-		item.setStatus(OrderItemStatus.SERVED);
+		Product activeProduct = new Product();
+		activeProduct.setPrice(new BigDecimal("35.00"));
+		OrderItem activeItem = new OrderItem();
+		activeItem.setProduct(activeProduct);
+		activeItem.setUnitPrice(new BigDecimal("35.00"));
+		activeItem.setQuantity(2);
+		activeItem.setStatus(OrderItemStatus.READY);
 
-		order.setDiningTable(table);
-		order.setStatus(OrderStatus.IN_PROGRESS);
-		order.setDiscountPercentage(new BigDecimal("10"));
-		order.getItems().add(item);
+		Product canceledProduct = new Product();
+		canceledProduct.setPrice(new BigDecimal("50.00"));
+		OrderItem canceledItem = new OrderItem();
+		canceledItem.setProduct(canceledProduct);
+		canceledItem.setUnitPrice(new BigDecimal("50.00"));
+		canceledItem.setQuantity(1);
+		canceledItem.setStatus(OrderItemStatus.CANCELED);
 
-		when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-		when(paymentService.createOrReuse(PaymentMethod.PIX, new BigDecimal("63.00")))
-				.thenReturn(new Payment(PaymentMethod.PIX, new BigDecimal("63.00")));
+		order.getItems().add(activeItem);
+		order.getItems().add(canceledItem);
 
-		orderService.closeOrder(1L, PaymentMethod.PIX);
-
-		assertEquals(OrderStatus.COMPLETED, order.getStatus());
-		assertEquals(new BigDecimal("63.00"), order.getTotalAmount());
-		assertEquals(PaymentMethod.PIX, order.getPayment().getPaymentMethod());
-		verify(diningTableService).releaseTable(null);
+		assertEquals(new BigDecimal("70.00"), orderService.calculateItemsTotal(order));
 	}
 
 	@Test
-	void closeOrderShouldRejectWhenThereAreItemsInPreparation() {
+	void cancelOrderShouldRejectClosedOrder() {
 		Order order = new Order();
-		Product product = new Product();
-		product.setDescription("Pizza");
+		order.setStatus(OrderStatus.CLOSED);
 
-		OrderItem item = new OrderItem();
-		item.setProduct(product);
-		item.setQuantity(1);
-		item.setStatus(OrderItemStatus.IN_PREPARATION);
-
-		order.setStatus(OrderStatus.IN_PROGRESS);
-		order.getItems().add(item);
-
-		when(orderRepository.findById(2L)).thenReturn(Optional.of(order));
+		when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
 		assertThrows(org.springframework.dao.DataIntegrityViolationException.class,
-				() -> orderService.closeOrder(2L, PaymentMethod.CASH));
-		verify(paymentService, never()).createOrReuse(PaymentMethod.CASH, BigDecimal.ZERO);
+				() -> orderService.cancelOrder(1L, "customer request", "tester"));
 	}
 }
-
