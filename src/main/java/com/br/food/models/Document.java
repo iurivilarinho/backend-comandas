@@ -1,5 +1,10 @@
 package com.br.food.models;
 
+import java.io.IOException;
+
+import org.springframework.web.multipart.MultipartFile;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,41 +20,42 @@ public class Document {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	private String nome;
+	@Column(nullable = true)
+	private Long size;
+
+	private String name;
 
 	private String contentType;
-
-	private Long tamanho;
-
 	@Lob
-	private byte[] documento;
+	@Column(name = "document")
+	private byte[] document;
 
 	public Document() {
 
 	}
 
-	public Document(String nome, String contentType, byte[] documento) {
+	public Document(MultipartFile file) throws IOException {
 
-		this.nome = nome;
-		this.contentType = contentType;
-		this.tamanho = documento != null ? (long) documento.length : null;
-		this.documento = documento;
+		this.name = file.getOriginalFilename();
+		this.contentType = file.getContentType();
+		this.document = file.getBytes();
+		this.size = file.getSize();
 	}
 
-	public String getNome() {
-		return nome;
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
 	}
 
 	public String getName() {
-		return nome;
-	}
-
-	public void setNome(String nome) {
-		this.nome = nome;
+		return name;
 	}
 
 	public void setName(String name) {
-		this.nome = name;
+		this.name = name;
 	}
 
 	public String getContentType() {
@@ -60,32 +66,19 @@ public class Document {
 		this.contentType = contentType;
 	}
 
-	public Long getTamanho() {
-		return tamanho;
+	public byte[] getDocument() {
+		return document;
+	}
+
+	public void setDocument(byte[] document) {
+		this.document = document;
 	}
 
 	public Long getSize() {
-		return tamanho;
-	}
-
-	public void setTamanho(Long tamanho) {
-		this.tamanho = tamanho;
+		return size;
 	}
 
 	public void setSize(Long size) {
-		this.tamanho = size;
+		this.size = size;
 	}
-
-	public byte[] getDocument() {
-		return documento;
-	}
-
-	public void setDocument(byte[] documento) {
-		this.documento = documento;
-	}
-
-	public Long getId() {
-		return id;
-	}
-
 }

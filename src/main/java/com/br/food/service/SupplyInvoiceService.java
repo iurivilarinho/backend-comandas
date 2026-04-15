@@ -27,9 +27,7 @@ public class SupplyInvoiceService {
 	private final ProductService productService;
 	private final DocumentService documentService;
 
-	public SupplyInvoiceService(
-			SupplyInvoiceRepository supplyInvoiceRepository,
-			ProductService productService,
+	public SupplyInvoiceService(SupplyInvoiceRepository supplyInvoiceRepository, ProductService productService,
 			DocumentService documentService) {
 		this.supplyInvoiceRepository = supplyInvoiceRepository;
 		this.productService = productService;
@@ -39,7 +37,7 @@ public class SupplyInvoiceService {
 	@Transactional
 	public SupplyInvoice create(SupplyInvoiceRequest request, MultipartFile attachment) throws IOException {
 		validateUniqueAccessKey(request.getAccessKey());
-		Document document = documentService.toDocument(attachment, false);
+		Document document = documentService.convertToDocument(attachment);
 		SupplyInvoice invoice = new SupplyInvoice(request, document);
 		fillInvoiceItems(invoice, request);
 		return supplyInvoiceRepository.save(invoice);
@@ -63,7 +61,7 @@ public class SupplyInvoiceService {
 			validateUniqueAccessKey(request.getAccessKey());
 		}
 
-		Document document = attachment != null ? documentService.toDocument(attachment, false) : null;
+		Document document = attachment != null ? documentService.convertToDocument(attachment) : null;
 		invoice.update(request, document);
 		invoice.getItems().clear();
 		fillInvoiceItems(invoice, request);
@@ -79,9 +77,11 @@ public class SupplyInvoiceService {
 
 	@Transactional(readOnly = true)
 	public void validateUniqueAccessKey(String accessKey) {
-		supplyInvoiceRepository.findByAccessKeyAndStatusNot(accessKey, SupplyInvoiceStatus.CANCELED).ifPresent(invoice -> {
-			throw new DataIntegrityViolationException("There is already an active supply invoice for this access key.");
-		});
+		supplyInvoiceRepository.findByAccessKeyAndStatusNot(accessKey, SupplyInvoiceStatus.CANCELED)
+				.ifPresent(invoice -> {
+					throw new DataIntegrityViolationException(
+							"There is already an active supply invoice for this access key.");
+				});
 	}
 
 	private void fillInvoiceItems(SupplyInvoice invoice, SupplyInvoiceRequest request) {

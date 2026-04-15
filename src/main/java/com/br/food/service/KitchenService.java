@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.br.food.enums.Types.OrderItemStatus;
-import com.br.food.models.Order;
 import com.br.food.models.OrderItem;
 import com.br.food.repository.OrderItemRepository;
 import com.br.food.response.PendingOrderResponse;

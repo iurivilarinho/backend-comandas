@@ -1,18 +1,13 @@
 package com.br.food.service;
 
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URLConnection;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.ImageOutputStream;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,95 +20,127 @@ import jakarta.persistence.EntityNotFoundException;
 @Service
 public class DocumentService {
 
-	@Autowired
-	public DocumentRepository documentoRepository;
+	private final DocumentRepository documentRepository;
 
-	public Document toDocument(MultipartFile file, Boolean compress) throws IOException {
+	public DocumentService(DocumentRepository documentRepository) {
+		this.documentRepository = documentRepository;
+	}
+
+	public Document convertToDocument(MultipartFile file) throws IOException {
 		if (file != null) {
-			return new Document(file.getOriginalFilename(), file.getContentType(),
-					compress ? compressImage(file) : file.getBytes());
+			return new Document(file);
 		}
 		return null;
 	}
 
-	public Set<Document> toDocumentList(Set<MultipartFile> file) throws IOException {
+	public Set<Document> converterEmListaDocumento(Set<MultipartFile> file) throws IOException {
 
 		if (file != null) {
-			Set<Document> documentos = new HashSet<>();
+			Set<Document> documents = new HashSet<>();
 			file.forEach(f -> {
 				if (!f.isEmpty()) {
 					try {
-						documentos.add(new Document(f.getOriginalFilename(), f.getContentType(), f.getBytes()));
+						documents.add(new Document(f));
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
 				}
 			});
-			return documentos;
+			return documents;
 		} else {
 			return null;
 		}
 
 	}
 
-	@Transactional(readOnly = true)
-	public Document findById(Long id) {
-		return documentoRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Document nÃ£o encontrado para ID " + id));
+	public Document converterEmDocumento(byte[] bytes, String nameFile) {
+		if (bytes == null || bytes.length == 0) {
+			return null;
+		}
+
+		Document doc = new Document();
+		doc.setName(nameFile);
+		doc.setDocument(bytes);
+		doc.setSize((long) bytes.length);
+
+		// Define o content type manualmente com base na extensão
+		String lower = nameFile.toLowerCase();
+		if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+			doc.setContentType("image/jpeg");
+		} else if (lower.endsWith(".png")) {
+			doc.setContentType("image/png");
+		} else if (lower.endsWith(".webp")) {
+			doc.setContentType("image/webp");
+		} else {
+			doc.setContentType("application/octet-stream"); // fallback
+		}
+
+		return doc;
 	}
 
-	private byte[] compressImage(MultipartFile file) throws IOException {
-		// ObtÃ©m o formato do tipo MIME
-		String contentType = file.getContentType().contains("png") ? "originalimage/jpeg" : file.getContentType();
-
-		if (contentType == null || (!contentType.contains("jpeg") && !contentType.contains("png"))) {
-			throw new IllegalArgumentException("Formato de arquivo nÃ£o suportado: " + contentType);
+	public Document convertGoogleProfileImageToDocument(String imageUrl, String fallbackName) {
+		if (imageUrl == null || imageUrl.isBlank()) {
+			return null;
 		}
 
-		// Define o formato baseado no tipo MIME
-		String format = contentType.contains("jpeg") ? "jpeg" : "png";
+		try {
+			URI uri = URI.create(imageUrl);
+			URLConnection connection = uri.toURL().openConnection();
+			String contentType = connection.getContentType();
 
-		// LÃª a imagem original
-		BufferedImage originalImage = ImageIO.read(file.getInputStream());
+			try (InputStream inputStream = connection.getInputStream();
+					ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+				inputStream.transferTo(outputStream);
+				byte[] bytes = outputStream.toByteArray();
 
-		// Converte para RGB, se necessÃ¡rio
-		BufferedImage rgbImage = new BufferedImage(originalImage.getWidth(), originalImage.getHeight(),
-				BufferedImage.TYPE_INT_RGB);
-		Graphics2D graphics = rgbImage.createGraphics();
+				if (bytes.length == 0) {
+					return null;
+				}
 
-		graphics.setPaint(java.awt.Color.WHITE);
-		graphics.fillRect(0, 0, rgbImage.getWidth(), rgbImage.getHeight());
-
-		graphics.drawImage(originalImage, 0, 0, null);
-		graphics.dispose();
-
-		// Configura o stream para salvar a imagem compactada
-		ByteArrayOutputStream compressedOutputStream = new ByteArrayOutputStream();
-
-		try (ImageOutputStream outputStream = ImageIO.createImageOutputStream(compressedOutputStream)) {
-			// Configura o escritor de imagem para o formato especificado
-			ImageWriter writer = ImageIO.getImageWritersByFormatName(format).next();
-			writer.setOutput(outputStream);
-
-			// Configura os parÃ¢metros de compactaÃ§Ã£o
-			ImageWriteParam param = writer.getDefaultWriteParam();
-			if ("jpeg".equalsIgnoreCase(format)) {
-				param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-				param.setCompressionQuality((float) 0.7); // Qualidade entre 0.0 (ruim) e 1.0 (Ã³tima)
+				String extension = resolveExtension(contentType, imageUrl);
+				Document document = converterEmDocumento(bytes, fallbackName + extension);
+				if (document != null && contentType != null && !contentType.isBlank()) {
+					document.setContentType(contentType);
+				}
+				return document;
 			}
+		} catch (IllegalArgumentException | IOException exception) {
+			return null;
+		}
+	}
 
-			// Escreve a imagem compactada no stream
-			writer.write(null, new javax.imageio.IIOImage(rgbImage, null, null), param);
-			writer.dispose();
+	private String resolveExtension(String contentType, String imageUrl) {
+		if (contentType != null) {
+			if ("image/jpeg".equalsIgnoreCase(contentType)) {
+				return ".jpg";
+			}
+			if ("image/png".equalsIgnoreCase(contentType)) {
+				return ".png";
+			}
+			if ("image/webp".equalsIgnoreCase(contentType)) {
+				return ".webp";
+			}
+			if ("image/gif".equalsIgnoreCase(contentType)) {
+				return ".gif";
+			}
 		}
 
-		// Retorna os bytes compactados
-		return compressedOutputStream.toByteArray();
+		String lowerUrl = imageUrl.toLowerCase();
+		if (lowerUrl.contains(".png")) {
+			return ".png";
+		}
+		if (lowerUrl.contains(".webp")) {
+			return ".webp";
+		}
+		if (lowerUrl.contains(".gif")) {
+			return ".gif";
+		}
+		return ".jpg";
 	}
 
 	@Transactional
-	public Document save(Document document) {
-		return documentoRepository.save(document);
+	public Document buscarPorId(Long id) {
+		return documentRepository.findById(id)
+				.orElseThrow(() -> new EntityNotFoundException("Document não encontrado para ID " + id));
 	}
-
 }

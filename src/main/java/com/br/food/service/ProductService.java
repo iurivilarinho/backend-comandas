@@ -41,7 +41,7 @@ public class ProductService {
 	@Transactional
 	public Product create(ProductRequest request, MultipartFile image) throws IOException {
 		validateUniqueCode(request.getCode(), null);
-		Document document = documentService.toDocument(image, false);
+		Document document = documentService.convertToDocument(image);
 		return productRepository.save(new Product(request, document));
 	}
 
@@ -49,7 +49,7 @@ public class ProductService {
 	public Product update(Long id, ProductRequest request, MultipartFile image) throws IOException {
 		Product product = findById(id);
 		validateUniqueCode(request.getCode(), id);
-		Document document = image != null ? documentService.toDocument(image, false) : null;
+		Document document = image != null ? documentService.convertToDocument(image) : null;
 		product.update(request, document);
 		return productRepository.save(product);
 	}
@@ -95,10 +95,8 @@ public class ProductService {
 	}
 
 	private void validateUniqueCode(String code, Long currentId) {
-		productRepository.findAll().stream()
-				.filter(product -> product.getCode().equalsIgnoreCase(code))
-				.filter(product -> currentId == null || !product.getId().equals(currentId))
-				.findFirst()
+		productRepository.findAll().stream().filter(product -> product.getCode().equalsIgnoreCase(code))
+				.filter(product -> currentId == null || !product.getId().equals(currentId)).findFirst()
 				.ifPresent(product -> {
 					throw new DataIntegrityViolationException("There is already a product using code " + code + ".");
 				});
