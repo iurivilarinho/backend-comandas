@@ -1,6 +1,7 @@
 package com.br.food.models;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import com.br.food.request.StockEntryRequest;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -50,6 +51,15 @@ public class StockEntry {
 	@Column(name = "input_quantity", nullable = false)
 	private BigDecimal inputQuantity;
 
+	@Column(name = "manufacturing_date")
+	private LocalDate manufacturingDate;
+
+	@Column(name = "expiration_date")
+	private LocalDate expirationDate;
+
+	@Column(name = "retained", nullable = false)
+	private boolean retained;
+
 	public StockEntry() {
 	}
 
@@ -65,6 +75,9 @@ public class StockEntry {
 		this.reservedQuantity = BigDecimal.ZERO;
 		this.soldQuantity = BigDecimal.ZERO;
 		this.inputQuantity = request.getQuantity();
+		this.manufacturingDate = request.getManufacturingDate();
+		this.expirationDate = request.getExpirationDate();
+		this.retained = false;
 	}
 
 	public Long getId() {
@@ -125,5 +138,29 @@ public class StockEntry {
 
 	public void setInputQuantity(BigDecimal inputQuantity) {
 		this.inputQuantity = inputQuantity;
+	}
+
+	public LocalDate getManufacturingDate() {
+		return manufacturingDate;
+	}
+
+	public void setManufacturingDate(LocalDate manufacturingDate) {
+		this.manufacturingDate = manufacturingDate;
+	}
+
+	public LocalDate getExpirationDate() {
+		return expirationDate;
+	}
+
+	public void setExpirationDate(LocalDate expirationDate) {
+		this.expirationDate = expirationDate;
+	}
+
+	public boolean isRetained() {
+		return retained;
+	}
+
+	public void setRetained(boolean retained) {
+		this.retained = retained;
 	}
 }

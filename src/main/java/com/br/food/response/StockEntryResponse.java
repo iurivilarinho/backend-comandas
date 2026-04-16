@@ -1,6 +1,7 @@
 package com.br.food.response;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import com.br.food.models.StockEntry;
 
@@ -13,6 +14,9 @@ public class StockEntryResponse {
 	private final BigDecimal reservedQuantity;
 	private final BigDecimal soldQuantity;
 	private final BigDecimal inputQuantity;
+	private final LocalDate manufacturingDate;
+	private final LocalDate expirationDate;
+	private final boolean retained;
 
 	public StockEntryResponse(StockEntry stockEntry) {
 		this.id = stockEntry.getId();
@@ -22,6 +26,9 @@ public class StockEntryResponse {
 		this.reservedQuantity = stockEntry.getReservedQuantity();
 		this.soldQuantity = stockEntry.getSoldQuantity();
 		this.inputQuantity = stockEntry.getInputQuantity();
+		this.manufacturingDate = stockEntry.getManufacturingDate();
+		this.expirationDate = stockEntry.getExpirationDate();
+		this.retained = stockEntry.isRetained();
 	}
 
 	public Long getId() {
@@ -50,5 +57,17 @@ public class StockEntryResponse {
 
 	public BigDecimal getInputQuantity() {
 		return inputQuantity;
+	}
+
+	public LocalDate getManufacturingDate() {
+		return manufacturingDate;
+	}
+
+	public LocalDate getExpirationDate() {
+		return expirationDate;
+	}
+
+	public boolean isRetained() {
+		return retained;
 	}
 }

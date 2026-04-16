@@ -50,6 +50,9 @@ public class OrderItem {
 	@OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<StockConsumption> stockConsumptions = new ArrayList<>();
 
+	@OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<OrderItemIngredient> ingredients = new ArrayList<>();
+
 	@Column(name = "quantity", nullable = false)
 	private Integer quantity;
 
@@ -90,12 +93,12 @@ public class OrderItem {
 		this.requestedAt = LocalDateTime.now();
 	}
 
-	public OrderItem(Order order, Product product, OrderItemRequest request) {
+	public OrderItem(Order order, Product product, OrderItemRequest request, BigDecimal unitPrice) {
 		this.order = order;
 		this.product = product;
 		this.quantity = request.getQuantity();
 		this.notes = request.getNotes();
-		this.unitPrice = product.getPrice();
+		this.unitPrice = unitPrice;
 		this.status = OrderItemStatus.RECEIVED;
 		this.requestedAt = LocalDateTime.now();
 	}
@@ -145,6 +148,10 @@ public class OrderItem {
 
 	public List<StockConsumption> getStockConsumptions() {
 		return stockConsumptions;
+	}
+
+	public List<OrderItemIngredient> getIngredients() {
+		return ingredients;
 	}
 
 	public Integer getQuantity() {

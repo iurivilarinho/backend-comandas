@@ -1,6 +1,6 @@
 package com.br.food.repository;
 
-import java.util.Optional;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,7 +10,10 @@ import com.br.food.models.StockEntry;
 
 public interface StockEntryRepository extends JpaRepository<StockEntry, Long>, JpaSpecificationExecutor<StockEntry> {
 
-	List<StockEntry> findByProductIdAndAvailableQuantityGreaterThanOrderByIdAsc(Long productId, java.math.BigDecimal quantity);
+	List<StockEntry> findByProductIdAndRetainedFalseAndAvailableQuantityGreaterThanOrderByIdAsc(Long productId,
+			java.math.BigDecimal quantity);
 
-	Optional<StockEntry> findFirstByProductIdAndBatchIgnoreCase(Long productId, String batch);
+	List<StockEntry> findAllByProductIdAndBatchIgnoreCase(Long productId, String batch);
+
+	List<StockEntry> findAllByRetainedFalseAndExpirationDateBefore(LocalDate expirationDate);
 }

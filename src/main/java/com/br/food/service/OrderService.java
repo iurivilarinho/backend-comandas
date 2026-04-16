@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -22,6 +24,7 @@ import com.br.food.models.Customer;
 import com.br.food.models.DiningTable;
 import com.br.food.models.Order;
 import com.br.food.models.OrderItem;
+import com.br.food.models.OrderItemIngredient;
 import com.br.food.models.OrderPayment;
 import com.br.food.models.Product;
 import com.br.food.models.RecipeItem;
@@ -29,6 +32,7 @@ import com.br.food.repository.OrderPaymentRepository;
 import com.br.food.repository.OrderRepository;
 import com.br.food.repository.OrderSpecification;
 import com.br.food.request.CloseOrderRequest;
+import com.br.food.request.OrderItemIngredientRequest;
 import com.br.food.request.OrderItemRequest;
 import com.br.food.request.OrderRequest;
 import com.br.food.request.PaymentLineRequest;
@@ -247,6 +251,13 @@ public class OrderService {
 			throw new DataIntegrityViolationException("Only closed orders can be reopened.");
 		}
 		if (order.getDiningTable() != null && order.getChannel() == OrderChannel.DINE_IN) {
+			if (!Boolean.TRUE.equals(order.getDiningTable().getActive())) {
+				throw new DataIntegrityViolationException("Cannot reopen order because the original table is inactive.");
+			}
+			if (Boolean.TRUE.equals(order.getDiningTable().getOccupied())) {
+				throw new DataIntegrityViolationException(
+						"Cannot reopen order because table " + order.getDiningTable().getNumber() + " is currently occupied.");
+			}
 			diningTableService.reserveTable(order.getDiningTable().getId());
 		}
 		order.setStatus(OrderStatus.OPEN);
@@ -258,7 +269,16 @@ public class OrderService {
 	@Transactional
 	public Order transfer(Long orderId, String targetTableNumber, String actorName) throws AccessDeniedException {
 		Order order = findById(orderId);
+		if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.CANCELED) {
+			throw new DataIntegrityViolationException("Closed or canceled orders cannot be transferred.");
+		}
+		if (order.getChannel() != OrderChannel.DINE_IN) {
+			throw new DataIntegrityViolationException("Only dine-in orders can be transferred between tables.");
+		}
 		DiningTable targetTable = diningTableService.findByNumber(targetTableNumber);
+		if (order.getDiningTable() != null && order.getDiningTable().getId().equals(targetTable.getId())) {
+			throw new DataIntegrityViolationException("Order is already assigned to the selected table.");
+		}
 		if (order.getDiningTable() != null) {
 			diningTableService.releaseTable(order.getDiningTable().getId());
 		}
@@ -275,6 +295,20 @@ public class OrderService {
 		if (targetOrder.getId().equals(sourceOrder.getId())) {
 			throw new DataIntegrityViolationException("Source and target orders must be different.");
 		}
+		if (targetOrder.getStatus() == OrderStatus.CLOSED || targetOrder.getStatus() == OrderStatus.CANCELED
+				|| sourceOrder.getStatus() == OrderStatus.CLOSED || sourceOrder.getStatus() == OrderStatus.CANCELED) {
+			throw new DataIntegrityViolationException("Only active orders can be merged.");
+		}
+		if (targetOrder.getChannel() != sourceOrder.getChannel()) {
+			throw new DataIntegrityViolationException("Orders from different channels cannot be merged.");
+		}
+		if (targetOrder.getChannel() == OrderChannel.DINE_IN) {
+			String targetTableNumber = targetOrder.getDiningTable() != null ? targetOrder.getDiningTable().getNumber() : null;
+			String sourceTableNumber = sourceOrder.getDiningTable() != null ? sourceOrder.getDiningTable().getNumber() : null;
+			if (targetTableNumber == null || sourceTableNumber == null || !targetTableNumber.equals(sourceTableNumber)) {
+				throw new DataIntegrityViolationException("Dine-in orders can only be merged when they belong to the same table.");
+			}
+		}
 		for (OrderItem item : sourceOrder.getItems()) {
 			item.setOrder(targetOrder);
 			targetOrder.getItems().add(item);
@@ -289,7 +323,16 @@ public class OrderService {
 	@Transactional
 	public Order split(Long orderId, Long destinationTableId, List<Long> orderItemIds, String actorName) throws AccessDeniedException {
 		Order sourceOrder = findById(orderId);
+		if (sourceOrder.getStatus() == OrderStatus.CLOSED || sourceOrder.getStatus() == OrderStatus.CANCELED) {
+			throw new DataIntegrityViolationException("Closed or canceled orders cannot be split.");
+		}
+		if (sourceOrder.getChannel() != OrderChannel.DINE_IN) {
+			throw new DataIntegrityViolationException("Only dine-in orders can be split between tables.");
+		}
 		DiningTable destinationTable = diningTableService.findById(destinationTableId);
+		if (sourceOrder.getDiningTable() != null && sourceOrder.getDiningTable().getId().equals(destinationTableId)) {
+			throw new DataIntegrityViolationException("Split destination must be a different table.");
+		}
 		diningTableService.reserveTable(destinationTableId);
 		Order splitOrder = new Order();
 		splitOrder.setCustomer(sourceOrder.getCustomer());
@@ -305,6 +348,12 @@ public class OrderService {
 				.toList();
 		if (selectedItems.isEmpty()) {
 			throw new DataIntegrityViolationException("At least one order item must be selected for splitting.");
+		}
+		long movableItemsCount = sourceOrder.getItems().stream()
+				.filter(item -> item.getStatus() != OrderItemStatus.CANCELED && item.getStatus() != OrderItemStatus.DECLINED)
+				.count();
+		if (selectedItems.size() >= movableItemsCount) {
+			throw new DataIntegrityViolationException("Split must keep at least one item in the original order. Use transfer to move the whole order.");
 		}
 
 		sourceOrder.getItems().removeIf(item -> orderItemIds.contains(item.getId()));
@@ -365,7 +414,10 @@ public class OrderService {
 		for (OrderItemRequest itemRequest : items) {
 			Product product = productService.findById(itemRequest.getProductId());
 			validateProductForOrder(product);
-			order.getItems().add(new OrderItem(order, product, itemRequest));
+			BigDecimal unitPrice = calculateCustomizedUnitPrice(product, itemRequest);
+			OrderItem orderItem = new OrderItem(order, product, itemRequest, unitPrice);
+			applyCustomizedIngredients(orderItem, product, itemRequest);
+			order.getItems().add(orderItem);
 		}
 		refreshOrderStatus(order);
 	}
@@ -377,6 +429,50 @@ public class OrderService {
 		if (Boolean.TRUE.equals(product.getComplement())) {
 			throw new DataIntegrityViolationException("Complement products cannot be ordered as standalone items.");
 		}
+	}
+
+	private BigDecimal calculateCustomizedUnitPrice(Product product, OrderItemRequest itemRequest) {
+		BigDecimal unitPrice = product.getPrice().setScale(2, RoundingMode.HALF_UP);
+		Map<Long, RecipeItem> recipeItemsByIngredientId = buildRecipeItemsMap(product);
+
+		for (OrderItemIngredientRequest ingredientRequest : itemRequest.getIngredients()) {
+			Product ingredientProduct = productService.findById(ingredientRequest.getIngredientProductId());
+			if (ingredientProduct.getType() != ProductType.INGREDIENT) {
+				throw new DataIntegrityViolationException("Customized ingredients must use products of type INGREDIENT.");
+			}
+
+			BigDecimal baseQuantity = recipeItemsByIngredientId.containsKey(ingredientProduct.getId())
+					? recipeItemsByIngredientId.get(ingredientProduct.getId()).getQuantity()
+					: BigDecimal.ZERO;
+			BigDecimal additionalQuantity = ingredientRequest.getQuantity().subtract(baseQuantity).max(BigDecimal.ZERO);
+
+			unitPrice = unitPrice.add(ingredientProduct.getPrice().multiply(additionalQuantity));
+		}
+
+		return unitPrice.setScale(2, RoundingMode.HALF_UP);
+	}
+
+	private void applyCustomizedIngredients(OrderItem orderItem, Product product, OrderItemRequest itemRequest) {
+		Map<Long, RecipeItem> recipeItemsByIngredientId = buildRecipeItemsMap(product);
+
+		for (OrderItemIngredientRequest ingredientRequest : itemRequest.getIngredients()) {
+			Product ingredientProduct = productService.findById(ingredientRequest.getIngredientProductId());
+			BigDecimal baseQuantity = recipeItemsByIngredientId.containsKey(ingredientProduct.getId())
+					? recipeItemsByIngredientId.get(ingredientProduct.getId()).getQuantity()
+					: BigDecimal.ZERO;
+
+			orderItem.getIngredients().add(new OrderItemIngredient(orderItem, ingredientProduct, ingredientRequest.getQuantity(), baseQuantity));
+		}
+	}
+
+	private Map<Long, RecipeItem> buildRecipeItemsMap(Product product) {
+		Map<Long, RecipeItem> recipeItemsByIngredientId = new LinkedHashMap<>();
+
+		for (RecipeItem recipeItem : recipeService.findByProductId(product.getId())) {
+			recipeItemsByIngredientId.put(recipeItem.getIngredientProduct().getId(), recipeItem);
+		}
+
+		return recipeItemsByIngredientId;
 	}
 
 	private void validateOrderReadyForCheckout(Order order) {
@@ -515,6 +611,15 @@ public class OrderService {
 		if (!orderItem.getStockConsumptions().isEmpty()) {
 			return;
 		}
+		if (!orderItem.getIngredients().isEmpty()) {
+			for (OrderItemIngredient ingredient : orderItem.getIngredients()) {
+				BigDecimal totalIngredientQuantity = ingredient.getQuantity().multiply(BigDecimal.valueOf(orderItem.getQuantity()));
+				orderItem.getStockConsumptions().addAll(
+						stockEntryService.decreaseStockForProduct(ingredient.getIngredientProduct().getId(), totalIngredientQuantity, orderItem));
+			}
+			return;
+		}
+
 		List<RecipeItem> recipeItems = recipeService.findByProductId(orderItem.getProduct().getId());
 		for (RecipeItem recipeItem : recipeItems) {
 			BigDecimal totalIngredientQuantity = recipeItem.getQuantity().multiply(BigDecimal.valueOf(orderItem.getQuantity()));

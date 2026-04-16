@@ -1,8 +1,10 @@
 package com.br.food.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -60,7 +62,9 @@ public class StockEntryService {
 	@Transactional
 	public StockEntry createOrMerge(Product product, StockEntryRequest request, com.br.food.models.SupplyInvoice supplyInvoice) {
 		String normalizedBatch = normalizeBatch(request.getBatch());
-		return stockEntryRepository.findFirstByProductIdAndBatchIgnoreCase(product.getId(), normalizedBatch)
+		return stockEntryRepository.findAllByProductIdAndBatchIgnoreCase(product.getId(), normalizedBatch).stream()
+				.filter(existingStockEntry -> sameDates(existingStockEntry, request))
+				.findFirst()
 				.map(existingStockEntry -> mergeIntoExisting(existingStockEntry, request, normalizedBatch))
 				.orElseGet(() -> stockEntryRepository.save(new StockEntry(request, product, supplyInvoice, normalizedBatch)));
 	}
@@ -73,7 +77,8 @@ public class StockEntryService {
 
 	@Transactional
 	public List<StockConsumption> decreaseStockForProduct(Long productId, BigDecimal quantity, OrderItem orderItem) {
-		List<StockEntry> stockEntries = stockEntryRepository.findByProductIdAndAvailableQuantityGreaterThanOrderByIdAsc(productId, BigDecimal.ZERO);
+		List<StockEntry> stockEntries = stockEntryRepository
+				.findByProductIdAndRetainedFalseAndAvailableQuantityGreaterThanOrderByIdAsc(productId, BigDecimal.ZERO);
 		BigDecimal remainingQuantity = quantity;
 		List<StockConsumption> consumptions = new ArrayList<>();
 
@@ -91,7 +96,11 @@ public class StockEntryService {
 		}
 
 		if (remainingQuantity.signum() > 0) {
-			throw new DataIntegrityViolationException("Insufficient stock to consume product " + productId + ".");
+			Product product = productService.findById(productId);
+			String productLabel = (product.getCode() != null ? product.getCode() : "SEM-CODIGO")
+					+ " - "
+					+ (product.getDescription() != null ? product.getDescription() : "Produto");
+			throw new DataIntegrityViolationException("Estoque insuficiente para " + productLabel + ".");
 		}
 
 		return consumptions;
@@ -109,6 +118,23 @@ public class StockEntryService {
 		orderItem.getStockConsumptions().clear();
 	}
 
+	@Transactional
+	public StockEntry updateRetention(Long stockEntryId, boolean retained) {
+		StockEntry stockEntry = findById(stockEntryId);
+		stockEntry.setRetained(retained);
+		return stockEntryRepository.save(stockEntry);
+	}
+
+	@Transactional
+	public int retainExpiredEntries(LocalDate referenceDate) {
+		List<StockEntry> expiredEntries = stockEntryRepository.findAllByRetainedFalseAndExpirationDateBefore(referenceDate);
+		for (StockEntry stockEntry : expiredEntries) {
+			stockEntry.setRetained(true);
+		}
+		stockEntryRepository.saveAll(expiredEntries);
+		return expiredEntries.size();
+	}
+
 	private void decrease(StockEntry stockEntry, BigDecimal quantity) {
 		if (stockEntry.getAvailableQuantity().compareTo(quantity) < 0) {
 			throw new DataIntegrityViolationException(
@@ -122,10 +148,17 @@ public class StockEntryService {
 		existingStockEntry.setBatch(normalizedBatch);
 		existingStockEntry.setInputQuantity(existingStockEntry.getInputQuantity().add(request.getQuantity()));
 		existingStockEntry.setAvailableQuantity(existingStockEntry.getAvailableQuantity().add(request.getQuantity()));
+		existingStockEntry.setManufacturingDate(request.getManufacturingDate());
+		existingStockEntry.setExpirationDate(request.getExpirationDate());
 		return stockEntryRepository.save(existingStockEntry);
 	}
 
 	private String normalizeBatch(String batch) {
 		return batch == null ? null : batch.trim();
+	}
+
+	private boolean sameDates(StockEntry stockEntry, StockEntryRequest request) {
+		return Objects.equals(stockEntry.getManufacturingDate(), request.getManufacturingDate())
+				&& Objects.equals(stockEntry.getExpirationDate(), request.getExpirationDate());
 	}
 }

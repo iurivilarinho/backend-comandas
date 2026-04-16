@@ -62,6 +62,9 @@ public class Product {
 	@Column(name = "price", nullable = false)
 	private BigDecimal price;
 
+	@Column(name = "minimum_stock")
+	private BigDecimal minimumStock;
+
 	@ManyToMany(cascade = CascadeType.ALL)
 	@JoinTable(name = "product_complement", joinColumns = @JoinColumn(name = "fk_Id_Product"),
 			inverseJoinColumns = @JoinColumn(name = "fk_Id_Complement"))
@@ -88,6 +91,7 @@ public class Product {
 		this.complement = request.getComplement();
 		this.visibleOnMenu = request.getVisibleOnMenu();
 		this.price = request.getPrice();
+		this.minimumStock = request.getMinimumStock();
 	}
 
 	public void update(ProductRequest request, Document image) {
@@ -95,6 +99,7 @@ public class Product {
 		this.description = request.getDescription();
 		this.code = request.getCode();
 		this.price = request.getPrice();
+		this.minimumStock = request.getMinimumStock();
 		this.complement = request.getComplement();
 		this.visibleOnMenu = request.getVisibleOnMenu();
 		if (image != null) {
@@ -180,6 +185,14 @@ public class Product {
 
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+	}
+
+	public BigDecimal getMinimumStock() {
+		return minimumStock;
+	}
+
+	public void setMinimumStock(BigDecimal minimumStock) {
+		this.minimumStock = minimumStock;
 	}
 
 	public List<Product> getComplements() {

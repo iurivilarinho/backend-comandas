@@ -1,12 +1,15 @@
 package com.br.food.integration;
 
 import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -226,6 +229,69 @@ class RestaurantFlowIntegrationTest {
 		org.junit.jupiter.api.Assertions.assertEquals(new BigDecimal("0.00"), updatedOrder.getTotalAmount());
 	}
 
+	@Test
+	void retainedStockShouldBeIgnoredDuringRecipeConsumption() throws Exception {
+		Customer customer = customerRepository.save(buildCustomer("Customer Three", "12345678903"));
+		DiningTable table = diningTableRepository.save(new DiningTable("12"));
+
+		Product ingredient = productRepository.save(buildProduct("ING-3", "Cheese", ProductType.INGREDIENT, new BigDecimal("1.00")));
+		Product finishedProduct = productRepository.save(buildProduct("FIN-3", "Toast", ProductType.FINISHED, new BigDecimal("12.00")));
+		recipeItemRepository.save(new RecipeItem(finishedProduct, ingredient, new BigDecimal("1.000")));
+
+		StockEntry retainedEntry = buildStockEntry(ingredient, new BigDecimal("5.000"), "BATCH-3A");
+		retainedEntry.setRetained(true);
+		stockEntryRepository.save(retainedEntry);
+		stockEntryRepository.save(buildStockEntry(ingredient, new BigDecimal("3.000"), "BATCH-3B"));
+
+		MvcResult createResult = mockMvc.perform(post("/orders")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("X-Actor", "waiter")
+				.content("""
+						{
+						  "customerId": %d,
+						  "tableNumber": "%s",
+						  "channel": "DINE_IN",
+						  "discountPercentage": 0,
+						  "items": [
+						    {
+						      "productId": %d,
+						      "quantity": 2,
+						      "notes": ""
+						    }
+						  ]
+						}
+						""".formatted(customer.getId(), table.getNumber(), finishedProduct.getId())))
+				.andExpect(status().isCreated())
+				.andReturn();
+
+		Long itemId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("items").get(0).get("id").asLong();
+
+		mockMvc.perform(post("/kitchen/accept/{itemId}", itemId).header("X-Actor", "cook"))
+				.andExpect(status().isNoContent());
+		mockMvc.perform(post("/kitchen/start-preparation/{itemId}", itemId).header("X-Actor", "cook"))
+				.andExpect(status().isNoContent());
+
+		List<StockEntry> entries = stockEntryRepository.findAll();
+		StockEntry stillRetained = entries.stream().filter(StockEntry::isRetained).findFirst().orElseThrow();
+		StockEntry consumedReleased = entries.stream().filter(entry -> !entry.isRetained()).findFirst().orElseThrow();
+
+		org.junit.jupiter.api.Assertions.assertEquals(0, stillRetained.getAvailableQuantity().compareTo(new BigDecimal("5.000")));
+		org.junit.jupiter.api.Assertions.assertEquals(0, consumedReleased.getAvailableQuantity().compareTo(new BigDecimal("1.000")));
+	}
+
+	@Test
+	void updateRetentionEndpointShouldToggleStockEntryStatus() throws Exception {
+		Product ingredient = productRepository.save(buildProduct("ING-4", "Sauce", ProductType.INGREDIENT, new BigDecimal("1.00")));
+		StockEntry stockEntry = stockEntryRepository.save(buildStockEntry(ingredient, new BigDecimal("2.000"), "BATCH-4"));
+
+		mockMvc.perform(patch("/stock/{id}/retention", stockEntry.getId()).param("retained", "true"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.retained", is(true)));
+
+		StockEntry updatedStockEntry = stockEntryRepository.findById(stockEntry.getId()).orElseThrow();
+		org.junit.jupiter.api.Assertions.assertEquals(true, updatedStockEntry.isRetained());
+	}
+
 	private Customer buildCustomer(String name, String documentNumber) {
 		Customer customer = new Customer();
 		customer.setName(name);
@@ -255,6 +321,7 @@ class RestaurantFlowIntegrationTest {
 		stockEntry.setInputQuantity(quantity);
 		stockEntry.setReservedQuantity(BigDecimal.ZERO);
 		stockEntry.setSoldQuantity(BigDecimal.ZERO);
+		stockEntry.setRetained(false);
 		return stockEntry;
 	}
 }

@@ -28,6 +28,9 @@ public class ProductRequest {
     @DecimalMin(value = "0.01", message = "Price must be greater than zero.")
     private BigDecimal price;
 
+    @DecimalMin(value = "0.0", message = "Minimum stock cannot be negative.")
+    private BigDecimal minimumStock;
+
     @NotNull(message = "Menu visibility is required.")
     private Boolean visibleOnMenu;
 
@@ -48,6 +51,10 @@ public class ProductRequest {
 
     public BigDecimal getPrice() {
         return price;
+    }
+
+    public BigDecimal getMinimumStock() {
+        return minimumStock;
     }
 
     public Boolean getVisibleOnMenu() {

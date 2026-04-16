@@ -16,6 +16,7 @@ public class OrderItemResponse {
 	private final OrderItemStatus status;
 	private final String declineReason;
 	private final String cancellationReason;
+	private final java.util.List<OrderItemIngredientResponse> ingredients;
 
 	public OrderItemResponse(OrderItem item) {
 		this.id = item.getId();
@@ -27,6 +28,7 @@ public class OrderItemResponse {
 		this.status = item.getStatus();
 		this.declineReason = item.getDeclineReason();
 		this.cancellationReason = item.getCancellationReason();
+		this.ingredients = item.getIngredients().stream().map(OrderItemIngredientResponse::new).toList();
 	}
 
 	public Long getId() {
@@ -63,5 +65,9 @@ public class OrderItemResponse {
 
 	public String getCancellationReason() {
 		return cancellationReason;
+	}
+
+	public java.util.List<OrderItemIngredientResponse> getIngredients() {
+		return ingredients;
 	}
 }

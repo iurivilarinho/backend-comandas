@@ -1,6 +1,9 @@
 package com.br.food.request;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+
+import org.springframework.format.annotation.DateTimeFormat;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -21,6 +24,12 @@ public class StockEntryRequest {
 	@Size(min = 1, max = 50, message = "Batch must have between 1 and 50 characters.")
 	private String batch;
 
+	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+	private LocalDate manufacturingDate;
+
+	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+	private LocalDate expirationDate;
+
 	public Long getProductId() {
 		return productId;
 	}
@@ -31,5 +40,13 @@ public class StockEntryRequest {
 
 	public String getBatch() {
 		return batch;
+	}
+
+	public LocalDate getManufacturingDate() {
+		return manufacturingDate;
+	}
+
+	public LocalDate getExpirationDate() {
+		return expirationDate;
 	}
 }
