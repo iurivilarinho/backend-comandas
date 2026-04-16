@@ -16,6 +16,7 @@ public class OrderResponse {
 	private final CustomerResponse customer;
 	private final DiningTableResponse table;
 	private final BigDecimal discountPercentage;
+	private final BigDecimal discountAmount;
 	private final BigDecimal subtotalAmount;
 	private final BigDecimal serviceFeeAmount;
 	private final BigDecimal coverChargeAmount;
@@ -38,6 +39,7 @@ public class OrderResponse {
 		this.customer = order.getCustomer() != null ? new CustomerResponse(order.getCustomer()) : null;
 		this.table = order.getDiningTable() != null ? new DiningTableResponse(order.getDiningTable()) : null;
 		this.discountPercentage = order.getDiscountPercentage();
+		this.discountAmount = order.getDiscountAmount();
 		this.subtotalAmount = order.getSubtotalAmount();
 		this.serviceFeeAmount = order.getServiceFeeAmount();
 		this.coverChargeAmount = order.getCoverChargeAmount();
@@ -73,6 +75,10 @@ public class OrderResponse {
 
 	public BigDecimal getDiscountPercentage() {
 		return discountPercentage;
+	}
+
+	public BigDecimal getDiscountAmount() {
+		return discountAmount;
 	}
 
 	public BigDecimal getSubtotalAmount() {

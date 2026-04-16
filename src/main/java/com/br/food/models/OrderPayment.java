@@ -69,6 +69,10 @@ public class OrderPayment {
 		return id;
 	}
 
+	public Order getOrder() {
+		return order;
+	}
+
 	public PaymentMethod getPaymentMethod() {
 		return paymentMethod;
 	}

@@ -152,6 +152,7 @@ public class OrderService {
 	public OrderCheckoutResponse checkout(Long id, CloseOrderRequest request, String actorName) {
 		Order order = findById(id);
 		validateOrderReadyForCheckout(order);
+		applyCheckoutAdjustments(order, request);
 		recalculateTotals(order);
 		order.setSplitByPersonCount(request.getSplitByPersonCount());
 
@@ -177,7 +178,7 @@ public class OrderService {
 		}
 
 		auditLogService.register("Order", order.getId(), "ORDER_CHECKOUT", actorName,
-				"Paid=" + order.getPaidAmount() + ", remaining=" + remainingAmount);
+				"Paid=" + order.getPaidAmount() + ", remaining=" + remainingAmount + ", notes=" + sanitizeCheckoutNotes(request.getNotes()));
 		return new OrderCheckoutResponse(order, remainingAmount, changeAmount, amountPerPerson, fullyPaid);
 	}
 
@@ -341,6 +342,7 @@ public class OrderService {
 		splitOrder.setStatus(OrderStatus.OPEN);
 		splitOrder.setChannel(sourceOrder.getChannel());
 		splitOrder.setDiscountPercentage(sourceOrder.getDiscountPercentage());
+		splitOrder.setDiscountAmount(sourceOrder.getDiscountAmount());
 		splitOrder.setOpenedAt(LocalDateTime.now());
 
 		List<OrderItem> selectedItems = sourceOrder.getItems().stream()
@@ -395,10 +397,20 @@ public class OrderService {
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 	}
 
-	BigDecimal applyDiscount(BigDecimal totalAmount, BigDecimal discountPercentage) {
+	BigDecimal applyDiscount(BigDecimal totalAmount, BigDecimal discountPercentage, BigDecimal discountAmount) {
 		BigDecimal safeDiscount = discountPercentage != null ? discountPercentage : BigDecimal.ZERO;
+		BigDecimal safeDiscountAmount = discountAmount != null ? discountAmount : BigDecimal.ZERO;
 		BigDecimal discountValue = totalAmount.multiply(safeDiscount).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-		return totalAmount.subtract(discountValue);
+		return totalAmount.subtract(discountValue).subtract(safeDiscountAmount).max(BigDecimal.ZERO);
+	}
+
+	private void applyCheckoutAdjustments(Order order, CloseOrderRequest request) {
+		if (request.getDiscountPercentage() != null) {
+			order.setDiscountPercentage(request.getDiscountPercentage().setScale(2, RoundingMode.HALF_UP));
+		}
+		if (request.getDiscountAmount() != null) {
+			order.setDiscountAmount(request.getDiscountAmount().setScale(2, RoundingMode.HALF_UP));
+		}
 	}
 
 	private void validateOrderRequest(OrderRequest request) {
@@ -547,7 +559,10 @@ public class OrderService {
 	}
 
 	private void recalculateTotals(Order order) {
-		BigDecimal subtotal = applyDiscount(calculateItemsTotal(order), order.getDiscountPercentage()).setScale(2, RoundingMode.HALF_UP);
+		BigDecimal subtotal = applyDiscount(
+				calculateItemsTotal(order),
+				order.getDiscountPercentage(),
+				order.getDiscountAmount()).setScale(2, RoundingMode.HALF_UP);
 		BigDecimal serviceFeeAmount = calculateServiceFee(order, subtotal);
 		BigDecimal coverChargeAmount = calculateCoverCharge(order);
 		order.setSubtotalAmount(subtotal);
@@ -601,6 +616,10 @@ public class OrderService {
 				+ ", paymentMethod=" + requestedPaymentMethod
 				+ ", notes=" + notes
 				+ ", items=" + itemsSummary;
+	}
+
+	private String sanitizeCheckoutNotes(String notes) {
+		return notes != null && !notes.isBlank() ? notes.trim() : "NO_NOTES";
 	}
 
 	@Transactional

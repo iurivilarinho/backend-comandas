@@ -50,6 +50,40 @@ public final class Types {
         INVOICE
     }
 
+    @Schema(description = "Financial entry type")
+    public enum FinanceEntryType {
+        @Schema(description = "Incoming cash flow")
+        INCOME,
+        @Schema(description = "Outgoing cash flow")
+        EXPENSE
+    }
+
+    @Schema(description = "Financial category")
+    public enum FinanceCategory {
+        @Schema(description = "Product sales and costs")
+        PRODUCTS,
+        @Schema(description = "Services")
+        SERVICES,
+        @Schema(description = "Events")
+        EVENTS,
+        @Schema(description = "Supplies and stock")
+        SUPPLIES,
+        @Schema(description = "Taxes and fees")
+        TAXES,
+        @Schema(description = "Operational costs")
+        OPERATIONS,
+        @Schema(description = "Other category")
+        OTHER
+    }
+
+    @Schema(description = "Financial origin")
+    public enum FinanceOrigin {
+        @Schema(description = "Entry generated from an order payment")
+        ORDER,
+        @Schema(description = "Manually registered entry")
+        MANUAL
+    }
+
     @Schema(description = "Order status")
     public enum OrderStatus {
         @Schema(description = "Open order receiving items and service operations")

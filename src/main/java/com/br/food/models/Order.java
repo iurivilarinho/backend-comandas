@@ -61,6 +61,9 @@ public class Order {
 	@Column(name = "discount_percentage", nullable = false, precision = 5, scale = 2)
 	private BigDecimal discountPercentage;
 
+	@Column(name = "discount_amount", nullable = false, precision = 12, scale = 2)
+	private BigDecimal discountAmount;
+
 	@Column(name = "subtotal_amount", nullable = false, precision = 12, scale = 2)
 	private BigDecimal subtotalAmount;
 
@@ -115,6 +118,7 @@ public class Order {
 		this.status = OrderStatus.OPEN;
 		this.channel = request.getChannel();
 		this.discountPercentage = request.getDiscountPercentage() != null ? request.getDiscountPercentage() : BigDecimal.ZERO;
+		this.discountAmount = BigDecimal.ZERO;
 		this.subtotalAmount = BigDecimal.ZERO;
 		this.serviceFeeAmount = BigDecimal.ZERO;
 		this.coverChargeAmount = BigDecimal.ZERO;
@@ -127,6 +131,7 @@ public class Order {
 		this.diningTable = diningTable;
 		this.channel = request.getChannel();
 		this.discountPercentage = request.getDiscountPercentage() != null ? request.getDiscountPercentage() : BigDecimal.ZERO;
+		this.discountAmount = BigDecimal.ZERO;
 	}
 
 	@PrePersist
@@ -139,6 +144,9 @@ public class Order {
 		}
 		if (this.discountPercentage == null) {
 			this.discountPercentage = BigDecimal.ZERO;
+		}
+		if (this.discountAmount == null) {
+			this.discountAmount = BigDecimal.ZERO;
 		}
 		if (this.subtotalAmount == null) {
 			this.subtotalAmount = BigDecimal.ZERO;
@@ -194,6 +202,10 @@ public class Order {
 		return payments;
 	}
 
+	public void setPayments(List<OrderPayment> payments) {
+		this.payments = payments;
+	}
+
 	public String getCode() {
 		return code;
 	}
@@ -216,6 +228,14 @@ public class Order {
 
 	public void setDiscountPercentage(BigDecimal discountPercentage) {
 		this.discountPercentage = discountPercentage;
+	}
+
+	public BigDecimal getDiscountAmount() {
+		return discountAmount;
+	}
+
+	public void setDiscountAmount(BigDecimal discountAmount) {
+		this.discountAmount = discountAmount;
 	}
 
 	public BigDecimal getSubtotalAmount() {
