@@ -64,7 +64,7 @@ public class KitchenService {
 	public void markReady(Long orderItemId, String actorName) {
 		OrderItem item = orderItemService.findById(orderItemId);
 		if (item.getStatus() != OrderItemStatus.IN_PREPARATION) {
-			throw new DataIntegrityViolationException("Only items in preparation can be marked as ready.");
+			throw new DataIntegrityViolationException("Somente itens em preparo podem ser marcados como prontos.");
 		}
 		orderItemService.updateStatus(orderItemId, OrderItemStatus.READY);
 		auditLogService.register("OrderItem", orderItemId, "KITCHEN_MARKED_READY", actorName, "Item ready for service.");
@@ -81,13 +81,13 @@ public class KitchenService {
 
 	private void validateCurrentStatus(OrderItem item) {
 		if (item.getStatus() == OrderItemStatus.SERVED) {
-			throw new DataIntegrityViolationException("This item has already been served.");
+			throw new DataIntegrityViolationException("Este item ja foi entregue.");
 		}
 		if (item.getStatus() == OrderItemStatus.DECLINED) {
-			throw new DataIntegrityViolationException("This item has already been declined.");
+			throw new DataIntegrityViolationException("Este item ja foi recusado.");
 		}
 		if (item.getStatus() == OrderItemStatus.CANCELED) {
-			throw new DataIntegrityViolationException("This item has already been canceled.");
+			throw new DataIntegrityViolationException("Este item ja foi cancelado.");
 		}
 	}
 }

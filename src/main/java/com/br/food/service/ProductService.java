@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.br.food.enums.Types.ProductType;
 import com.br.food.models.Document;
 import com.br.food.models.Product;
 import com.br.food.repository.ProductRepository;
@@ -51,6 +52,9 @@ public class ProductService {
 		validateUniqueCode(request.getCode(), id);
 		Document document = image != null ? documentService.convertToDocument(image) : null;
 		product.update(request, document);
+		if (request.getType() == ProductType.INGREDIENT) {
+			product.getRecipeItems().clear();
+		}
 		return productRepository.save(product);
 	}
 

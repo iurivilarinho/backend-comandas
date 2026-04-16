@@ -32,6 +32,10 @@ public class RecipeService {
 	public List<RecipeItem> replaceRecipe(Long productId, List<RecipeItemRequest> recipeItems) {
 		Product finalProduct = productService.findById(productId);
 		if (finalProduct.getType() != ProductType.FINISHED) {
+			if (recipeItems == null || recipeItems.isEmpty()) {
+				recipeItemRepository.deleteByFinalProductId(productId);
+				return List.of();
+			}
 			throw new DataIntegrityViolationException("Recipes can only be assigned to finished products.");
 		}
 
