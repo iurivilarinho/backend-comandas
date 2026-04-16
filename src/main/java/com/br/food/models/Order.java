@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.br.food.enums.Types.OrderChannel;
 import com.br.food.enums.Types.OrderStatus;
+import com.br.food.enums.Types.PaymentMethod;
 import com.br.food.request.OrderRequest;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -83,6 +84,16 @@ public class Order {
 
 	@Column(name = "closed_at")
 	private LocalDateTime closedAt;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "requested_payment_method")
+	private PaymentMethod requestedPaymentMethod;
+
+	@Column(name = "checkout_requested_at")
+	private LocalDateTime checkoutRequestedAt;
+
+	@Column(name = "checkout_request_notes", length = 255)
+	private String checkoutRequestNotes;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "channel", nullable = false)
@@ -277,5 +288,29 @@ public class Order {
 
 	public void setChannel(OrderChannel channel) {
 		this.channel = channel;
+	}
+
+	public PaymentMethod getRequestedPaymentMethod() {
+		return requestedPaymentMethod;
+	}
+
+	public void setRequestedPaymentMethod(PaymentMethod requestedPaymentMethod) {
+		this.requestedPaymentMethod = requestedPaymentMethod;
+	}
+
+	public LocalDateTime getCheckoutRequestedAt() {
+		return checkoutRequestedAt;
+	}
+
+	public void setCheckoutRequestedAt(LocalDateTime checkoutRequestedAt) {
+		this.checkoutRequestedAt = checkoutRequestedAt;
+	}
+
+	public String getCheckoutRequestNotes() {
+		return checkoutRequestNotes;
+	}
+
+	public void setCheckoutRequestNotes(String checkoutRequestNotes) {
+		this.checkoutRequestNotes = checkoutRequestNotes;
 	}
 }

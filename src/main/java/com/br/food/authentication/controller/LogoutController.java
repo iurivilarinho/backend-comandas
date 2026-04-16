@@ -1,4 +1,4 @@
-﻿package com.br.food.authentication.controller;
+package com.br.food.authentication.controller;
 
 import com.br.food.authentication.token.RefreshTokenService;
 import io.swagger.v3.oas.annotations.Operation;

@@ -1,4 +1,4 @@
-﻿package com.br.food.authentication.models;
+package com.br.food.authentication.models;
 
 import com.br.food.authentication.request.PermissionRequest;
 import com.fasterxml.jackson.annotation.JsonIgnore;

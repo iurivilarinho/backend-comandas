@@ -1,8 +1,4 @@
-﻿package com.br.food.authentication.response;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
+package com.br.food.authentication.response;
 
 import com.br.food.authentication.models.Role;
 
@@ -23,17 +19,11 @@ public class RoleResponse {
 	@Schema(description = "Status do perfil (ativo/inativo).", example = "true")
 	private Boolean active;
 
-	@Schema(description = "Lista de recursos do perfil .")
-	private Set<PermissionResponse> permissions = new HashSet<>();
-
 	public RoleResponse(Role role) {
 		this.id = role.getId();
 		this.name = role.getName();
 		this.description = role.getDescription();
 		this.active = role.getActive();
-		this.permissions = role.getPermissions() != null
-				? role.getPermissions().stream().map(PermissionResponse::new).collect(Collectors.toSet())
-				: null;
 	}
 
 	public Long getId() {
@@ -46,10 +36,6 @@ public class RoleResponse {
 
 	public Boolean getActive() {
 		return active;
-	}
-
-	public Set<PermissionResponse> getPermissions() {
-		return permissions;
 	}
 
 	public String getDescription() {

@@ -32,6 +32,7 @@ import com.br.food.request.CloseOrderRequest;
 import com.br.food.request.OrderItemRequest;
 import com.br.food.request.OrderRequest;
 import com.br.food.request.PaymentLineRequest;
+import com.br.food.request.RequestOrderCheckoutRequest;
 import com.br.food.response.OrderCheckoutResponse;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -161,6 +162,9 @@ public class OrderService {
 		if (fullyPaid) {
 			order.setStatus(OrderStatus.CLOSED);
 			order.setClosedAt(LocalDateTime.now());
+			order.setCheckoutRequestedAt(null);
+			order.setRequestedPaymentMethod(null);
+			order.setCheckoutRequestNotes(null);
 			if (order.getDiningTable() != null && order.getChannel() == OrderChannel.DINE_IN) {
 				diningTableService.releaseTable(order.getDiningTable().getId());
 			}
@@ -171,6 +175,28 @@ public class OrderService {
 		auditLogService.register("Order", order.getId(), "ORDER_CHECKOUT", actorName,
 				"Paid=" + order.getPaidAmount() + ", remaining=" + remainingAmount);
 		return new OrderCheckoutResponse(order, remainingAmount, changeAmount, amountPerPerson, fullyPaid);
+	}
+
+	@Transactional
+	public Order requestCheckout(Long id, RequestOrderCheckoutRequest request, String actorName) {
+		Order order = findById(id);
+		if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.CANCELED) {
+			throw new DataIntegrityViolationException("Closed or canceled orders cannot request checkout.");
+		}
+
+		recalculateTotals(order);
+		order.setStatus(OrderStatus.READY_TO_CLOSE);
+		order.setCheckoutRequestedAt(LocalDateTime.now());
+		order.setRequestedPaymentMethod(request.getPaymentMethod());
+		order.setCheckoutRequestNotes(request.getNotes());
+
+		auditLogService.register(
+				"Order",
+				order.getId(),
+				"ORDER_CHECKOUT_REQUESTED",
+				actorName,
+				buildCheckoutRequestDetails(order, request));
+		return orderRepository.save(order);
 	}
 
 	@Transactional
@@ -462,6 +488,23 @@ public class OrderService {
 
 	private String safeActor(String actorName) {
 		return actorName == null || actorName.isBlank() ? "system" : actorName.trim();
+	}
+
+	private String buildCheckoutRequestDetails(Order order, RequestOrderCheckoutRequest request) {
+		String itemsSummary = order.getItems().stream()
+				.filter(item -> item.getStatus() != OrderItemStatus.CANCELED && item.getStatus() != OrderItemStatus.DECLINED)
+				.map(item -> item.getQuantity() + "x " + item.getProduct().getDescription() + " (" + item.getUnitPrice() + ")")
+				.reduce((left, right) -> left + "; " + right)
+				.orElse("No active items.");
+
+		String requestedPaymentMethod = request.getPaymentMethod() != null ? request.getPaymentMethod().name() : "NOT_INFORMED";
+		String notes = request.getNotes() != null && !request.getNotes().isBlank() ? request.getNotes().trim() : "NO_NOTES";
+
+		return "Table=" + (order.getDiningTable() != null ? order.getDiningTable().getNumber() : "-")
+				+ ", total=" + order.getTotalAmount()
+				+ ", paymentMethod=" + requestedPaymentMethod
+				+ ", notes=" + notes
+				+ ", items=" + itemsSummary;
 	}
 
 	@Transactional

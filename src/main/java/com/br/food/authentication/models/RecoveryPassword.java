@@ -1,4 +1,4 @@
-﻿package com.br.food.authentication.models;
+package com.br.food.authentication.models;
 
 import java.time.LocalDateTime;
 

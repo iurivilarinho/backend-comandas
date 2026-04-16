@@ -54,9 +54,13 @@ public class StockEntry {
 	}
 
 	public StockEntry(StockEntryRequest request, Product product, SupplyInvoice supplyInvoice) {
+		this(request, product, supplyInvoice, request.getBatch());
+	}
+
+	public StockEntry(StockEntryRequest request, Product product, SupplyInvoice supplyInvoice, String normalizedBatch) {
 		this.product = product;
 		this.supplyInvoice = supplyInvoice;
-		this.batch = request.getBatch();
+		this.batch = normalizedBatch;
 		this.availableQuantity = request.getQuantity();
 		this.reservedQuantity = BigDecimal.ZERO;
 		this.soldQuantity = BigDecimal.ZERO;

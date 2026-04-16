@@ -25,6 +25,7 @@ import com.br.food.request.CloseOrderRequest;
 import com.br.food.request.MergeOrdersRequest;
 import com.br.food.request.OrderItemRequest;
 import com.br.food.request.OrderRequest;
+import com.br.food.request.RequestOrderCheckoutRequest;
 import com.br.food.request.SplitOrderRequest;
 import com.br.food.request.TransferOrderRequest;
 import com.br.food.response.OrderCheckoutResponse;
@@ -106,6 +107,15 @@ public class OrderController {
 			@Valid @RequestBody CloseOrderRequest request,
 			@RequestHeader(name = "X-Actor", required = false) String actorName) {
 		return ResponseEntity.ok(orderService.checkout(id, request, actorName));
+	}
+
+	@Operation(summary = "Request order checkout")
+	@PostMapping("/{id}/request-close")
+	public ResponseEntity<OrderResponse> requestClose(
+			@PathVariable Long id,
+			@Valid @RequestBody RequestOrderCheckoutRequest request,
+			@RequestHeader(name = "X-Actor", required = false) String actorName) {
+		return ResponseEntity.ok(new OrderResponse(orderService.requestCheckout(id, request, actorName)));
 	}
 
 	@Operation(summary = "Cancel one order item")

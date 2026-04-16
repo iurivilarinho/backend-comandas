@@ -1,4 +1,4 @@
-﻿package com.br.food.authentication.enums;
+package com.br.food.authentication.enums;
 
 public enum ResourceType {
 	SCREEN("Tela"), HTML_COMPONENTE("Componente HTML"), MENU("Menu");

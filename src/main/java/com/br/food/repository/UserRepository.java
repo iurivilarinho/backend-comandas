@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.stereotype.Repository;
 
 import com.br.food.models.User;
@@ -12,6 +13,9 @@ import com.br.food.models.User;
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
 	Optional<User> findByLogin(String username);
+
+	@EntityGraph(attributePaths = { "roles", "roles.permissions", "image" })
+	Optional<User> findDetailedByLogin(String username);
 
 	Optional<User> findByEmail(String email);
 

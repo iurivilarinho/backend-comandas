@@ -47,6 +47,14 @@ public class CustomerController {
 		return ResponseEntity.ok(new CustomerResponse(customerService.findById(id)));
 	}
 
+	@Operation(summary = "Find customer by CPF")
+	@GetMapping("/by-document")
+	public ResponseEntity<CustomerResponse> findByDocumentNumber(@RequestParam String documentNumber) {
+		return customerService.findByDocumentNumber(documentNumber)
+				.map(customer -> ResponseEntity.ok(new CustomerResponse(customer)))
+				.orElseGet(() -> ResponseEntity.notFound().build());
+	}
+
 	@Operation(summary = "List customers")
 	@GetMapping
 	public ResponseEntity<Page<CustomerResponse>> findAll(Pageable pageable) {

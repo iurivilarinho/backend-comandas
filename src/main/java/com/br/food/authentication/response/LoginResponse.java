@@ -1,4 +1,4 @@
-﻿package com.br.food.authentication.response;
+package com.br.food.authentication.response;
 
 public class LoginResponse {
     private String session;

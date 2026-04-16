@@ -1,4 +1,4 @@
-﻿package com.br.food.authentication.controller;
+package com.br.food.authentication.controller;
 
 import java.util.List;
 import java.util.stream.Collectors;

@@ -1,4 +1,4 @@
-﻿package com.br.food.authentication.response;
+package com.br.food.authentication.response;
 
 import com.br.food.authentication.models.Role;
 

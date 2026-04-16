@@ -1,4 +1,4 @@
-﻿package com.br.food.authentication.token;
+package com.br.food.authentication.token;
 
 
 import java.time.LocalDateTime;

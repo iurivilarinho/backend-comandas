@@ -1,4 +1,4 @@
-﻿package com.br.food.authentication.request;
+package com.br.food.authentication.request;
 
 import com.br.food.authentication.enums.ResourceType;
 

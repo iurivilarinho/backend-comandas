@@ -1,4 +1,4 @@
-﻿package com.br.food.authentication.service;
+package com.br.food.authentication.service;
 
 import java.util.List;
 

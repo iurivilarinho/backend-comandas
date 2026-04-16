@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.br.food.enums.Types.OrderChannel;
 import com.br.food.enums.Types.OrderStatus;
+import com.br.food.enums.Types.PaymentMethod;
 import com.br.food.models.Order;
 
 public class OrderResponse {
@@ -23,6 +24,9 @@ public class OrderResponse {
 	private final Integer splitByPersonCount;
 	private final LocalDateTime openedAt;
 	private final LocalDateTime closedAt;
+	private final LocalDateTime checkoutRequestedAt;
+	private final PaymentMethod requestedPaymentMethod;
+	private final String checkoutRequestNotes;
 	private final OrderStatus status;
 	private final OrderChannel channel;
 	private final List<OrderItemResponse> items;
@@ -42,6 +46,9 @@ public class OrderResponse {
 		this.splitByPersonCount = order.getSplitByPersonCount();
 		this.openedAt = order.getOpenedAt();
 		this.closedAt = order.getClosedAt();
+		this.checkoutRequestedAt = order.getCheckoutRequestedAt();
+		this.requestedPaymentMethod = order.getRequestedPaymentMethod();
+		this.checkoutRequestNotes = order.getCheckoutRequestNotes();
 		this.status = order.getStatus();
 		this.channel = order.getChannel();
 		this.items = order.getItems().stream().map(OrderItemResponse::new).toList();
@@ -98,6 +105,18 @@ public class OrderResponse {
 
 	public LocalDateTime getClosedAt() {
 		return closedAt;
+	}
+
+	public LocalDateTime getCheckoutRequestedAt() {
+		return checkoutRequestedAt;
+	}
+
+	public PaymentMethod getRequestedPaymentMethod() {
+		return requestedPaymentMethod;
+	}
+
+	public String getCheckoutRequestNotes() {
+		return checkoutRequestNotes;
 	}
 
 	public OrderStatus getStatus() {

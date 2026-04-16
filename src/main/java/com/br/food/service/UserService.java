@@ -82,11 +82,12 @@ public class UserService {
 
 		Object principal = authentication.getPrincipal();
 		if (principal instanceof User) {
-			return (User) principal;
+			User user = (User) principal;
+			return userRepository.findDetailedByLogin(user.getLogin()).orElse(user);
 		}
 
 		String username = authentication.getName();
-		return userRepository.findByLogin(username).orElse(null);
+		return userRepository.findDetailedByLogin(username).orElse(null);
 	}
 
 	@Transactional

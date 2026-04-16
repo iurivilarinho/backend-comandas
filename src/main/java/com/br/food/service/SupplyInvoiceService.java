@@ -25,12 +25,14 @@ public class SupplyInvoiceService {
 
 	private final SupplyInvoiceRepository supplyInvoiceRepository;
 	private final ProductService productService;
+	private final StockEntryService stockEntryService;
 	private final DocumentService documentService;
 
 	public SupplyInvoiceService(SupplyInvoiceRepository supplyInvoiceRepository, ProductService productService,
-			DocumentService documentService) {
+			StockEntryService stockEntryService, DocumentService documentService) {
 		this.supplyInvoiceRepository = supplyInvoiceRepository;
 		this.productService = productService;
+		this.stockEntryService = stockEntryService;
 		this.documentService = documentService;
 	}
 
@@ -87,7 +89,10 @@ public class SupplyInvoiceService {
 	private void fillInvoiceItems(SupplyInvoice invoice, SupplyInvoiceRequest request) {
 		for (StockEntryRequest item : request.getItems()) {
 			Product product = productService.findById(item.getProductId());
-			invoice.getItems().add(new StockEntry(item, product, invoice));
+			StockEntry stockEntry = stockEntryService.createOrMerge(product, item, invoice);
+			if (!invoice.getItems().contains(stockEntry)) {
+				invoice.getItems().add(stockEntry);
+			}
 		}
 	}
 }

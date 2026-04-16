@@ -1,4 +1,4 @@
-﻿package com.br.food.authentication.specification;
+package com.br.food.authentication.specification;
 
 import org.springframework.data.jpa.domain.Specification;
 

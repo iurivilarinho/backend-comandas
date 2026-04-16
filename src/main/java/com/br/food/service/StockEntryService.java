@@ -54,7 +54,15 @@ public class StockEntryService {
 	@Transactional
 	public StockEntry create(StockEntryRequest request) {
 		Product product = productService.findById(request.getProductId());
-		return stockEntryRepository.save(new StockEntry(request, product, null));
+		return createOrMerge(product, request, null);
+	}
+
+	@Transactional
+	public StockEntry createOrMerge(Product product, StockEntryRequest request, com.br.food.models.SupplyInvoice supplyInvoice) {
+		String normalizedBatch = normalizeBatch(request.getBatch());
+		return stockEntryRepository.findFirstByProductIdAndBatchIgnoreCase(product.getId(), normalizedBatch)
+				.map(existingStockEntry -> mergeIntoExisting(existingStockEntry, request, normalizedBatch))
+				.orElseGet(() -> stockEntryRepository.save(new StockEntry(request, product, supplyInvoice, normalizedBatch)));
 	}
 
 	@Transactional
@@ -108,5 +116,16 @@ public class StockEntryService {
 		}
 		stockEntry.setAvailableQuantity(stockEntry.getAvailableQuantity().subtract(quantity));
 		stockEntry.setSoldQuantity(stockEntry.getSoldQuantity().add(quantity));
+	}
+
+	private StockEntry mergeIntoExisting(StockEntry existingStockEntry, StockEntryRequest request, String normalizedBatch) {
+		existingStockEntry.setBatch(normalizedBatch);
+		existingStockEntry.setInputQuantity(existingStockEntry.getInputQuantity().add(request.getQuantity()));
+		existingStockEntry.setAvailableQuantity(existingStockEntry.getAvailableQuantity().add(request.getQuantity()));
+		return stockEntryRepository.save(existingStockEntry);
+	}
+
+	private String normalizeBatch(String batch) {
+		return batch == null ? null : batch.trim();
 	}
 }

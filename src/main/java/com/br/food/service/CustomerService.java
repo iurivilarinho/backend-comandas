@@ -1,5 +1,8 @@
 package com.br.food.service;
 
+import java.util.Optional;
+
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,12 +25,14 @@ public class CustomerService {
 
 	@Transactional
 	public Customer create(CustomerRequest request) {
+		validateUniqueDocumentNumber(request.getDocumentNumber(), null);
 		return customerRepository.save(new Customer(request));
 	}
 
 	@Transactional
 	public Customer update(Long id, CustomerRequest request) {
 		Customer customer = findById(id);
+		validateUniqueDocumentNumber(request.getDocumentNumber(), id);
 		customer.update(request);
 		return customerRepository.save(customer);
 	}
@@ -43,6 +48,12 @@ public class CustomerService {
 		return customerRepository.findAll(pageable);
 	}
 
+	@Transactional(readOnly = true)
+	public Optional<Customer> findByDocumentNumber(String documentNumber) {
+		String normalizedDocumentNumber = documentNumber.replaceAll("\\D", "");
+		return customerRepository.findByDocumentNumber(normalizedDocumentNumber);
+	}
+
 	@Transactional
 	public void updateBlockedStatus(Long id, Boolean blocked) {
 		Customer customer = findById(id);
@@ -52,5 +63,13 @@ public class CustomerService {
 	@Transactional
 	public void delete(Long id) {
 		customerRepository.delete(findById(id));
+	}
+
+	private void validateUniqueDocumentNumber(String documentNumber, Long currentCustomerId) {
+		findByDocumentNumber(documentNumber)
+				.filter(customer -> currentCustomerId == null || !customer.getId().equals(currentCustomerId))
+				.ifPresent(customer -> {
+					throw new DataIntegrityViolationException("There is already a customer using this CPF.");
+				});
 	}
 }

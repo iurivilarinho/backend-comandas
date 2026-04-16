@@ -1,4 +1,4 @@
-﻿package com.br.food.authentication;
+package com.br.food.authentication;
 
 import java.time.LocalDateTime;
 import java.util.Optional;

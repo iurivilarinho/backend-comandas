@@ -1,4 +1,4 @@
-﻿package com.br.food.authentication.models;
+package com.br.food.authentication.models;
 
 import java.util.HashSet;
 import java.util.Set;
