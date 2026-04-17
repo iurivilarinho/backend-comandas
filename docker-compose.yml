@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "9091:9091"
+    network_mode: host
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
