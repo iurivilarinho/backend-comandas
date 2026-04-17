@@ -40,7 +40,7 @@ public class DataInitializer {
 				adminUser.setName("Administrator");
 				adminUser.setLogin("admin");
 				adminUser.setEmail("admin@restaurant.local");
-				adminUser.setPassword("admin123");
+				adminUser.setPassword("$2y$10$x7mhJQXxb941hVtAfVbKe.mpwYVe9CtuNJhmiqiRN2dH7R1Mn8Pz.");
 				adminUser.getRoles().add(adminRole);
 				adminUser.setPasswordLastChanged(LocalDateTime.now());
 				adminUser.setForcePasswordChange(true);

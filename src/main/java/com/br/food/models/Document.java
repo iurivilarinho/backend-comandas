@@ -2,6 +2,8 @@ package com.br.food.models;
 
 import java.io.IOException;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.persistence.Column;
@@ -9,16 +11,15 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "tbDocument")
-public class Document {
+@Table(name = "documents")
+public class Document { 
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	private Long id; 
 
 	@Column(nullable = true)
 	private Long size;
@@ -26,8 +27,9 @@ public class Document {
 	private String name;
 
 	private String contentType;
-	@Lob
-	@Column(name = "document")
+
+	@JdbcTypeCode(SqlTypes.BINARY)
+	@Column(name = "document", columnDefinition = "bytea")
 	private byte[] document;
 
 	public Document() {
