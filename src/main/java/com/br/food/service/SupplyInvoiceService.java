@@ -39,9 +39,14 @@ public class SupplyInvoiceService {
 	@Transactional
 	public SupplyInvoice create(SupplyInvoiceRequest request, MultipartFile attachment) throws IOException {
 		validateUniqueAccessKey(request.getAccessKey());
+
 		Document document = documentService.convertToDocument(attachment);
 		SupplyInvoice invoice = new SupplyInvoice(request, document);
+
+		invoice = supplyInvoiceRepository.save(invoice);
+
 		fillInvoiceItems(invoice, request);
+
 		return supplyInvoiceRepository.save(invoice);
 	}
 
