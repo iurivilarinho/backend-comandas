@@ -68,8 +68,9 @@ public class OrderController {
 			@RequestParam(required = false) OrderStatus status,
 			@RequestParam(required = false) String tableNumber,
 			@RequestParam(required = false) String code,
+			@RequestParam(required = false) Long customerId,
 			Pageable pageable) {
-		return ResponseEntity.ok(orderService.search(status, tableNumber, code, pageable).map(OrderResponse::new));
+		return ResponseEntity.ok(orderService.search(status, tableNumber, code, customerId, pageable).map(OrderResponse::new));
 	}
 
 	@Operation(summary = "Update order")

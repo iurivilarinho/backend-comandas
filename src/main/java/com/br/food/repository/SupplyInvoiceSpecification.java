@@ -31,4 +31,19 @@ public final class SupplyInvoiceSpecification {
 			return builder.lessThanOrEqualTo(root.get("issueDate"), endDate);
 		};
 	}
+
+	public static Specification<SupplyInvoice> launchDateBetween(LocalDate startDate, LocalDate endDate) {
+		return (root, query, builder) -> {
+			if (startDate == null && endDate == null) {
+				return builder.conjunction();
+			}
+			if (startDate != null && endDate != null) {
+				return builder.between(root.get("launchDate"), startDate, endDate);
+			}
+			if (startDate != null) {
+				return builder.greaterThanOrEqualTo(root.get("launchDate"), startDate);
+			}
+			return builder.lessThanOrEqualTo(root.get("launchDate"), endDate);
+		};
+	}
 }

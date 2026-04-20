@@ -29,6 +29,14 @@ public final class StockEntrySpecification {
 				builder.like(builder.lower(root.get("product").get("code")), likeTerm));
 	}
 
+	public static Specification<StockEntry> hasBatch(String batch) {
+		if (batch == null || batch.isBlank()) {
+			return Specification.where(null);
+		}
+		String likeTerm = "%" + batch.trim().toLowerCase() + "%";
+		return (root, query, builder) -> builder.like(builder.lower(root.get("batch")), likeTerm);
+	}
+
 	public static Specification<StockEntry> manufacturingDateBetween(LocalDate startDate, LocalDate endDate) {
 		return (root, query, builder) -> {
 			if (startDate == null && endDate == null) {

@@ -50,6 +50,7 @@ public class StockEntryService {
 	public Page<StockEntry> search(
 			String productCode,
 			String term,
+			String batch,
 			LocalDate manufacturingDateStart,
 			LocalDate manufacturingDateEnd,
 			LocalDate expirationDateStart,
@@ -57,6 +58,7 @@ public class StockEntryService {
 			Pageable pageable) {
 		Specification<StockEntry> specification = Specification.where(StockEntrySpecification.hasProductCode(productCode))
 				.and(StockEntrySpecification.search(term))
+				.and(StockEntrySpecification.hasBatch(batch))
 				.and(StockEntrySpecification.manufacturingDateBetween(manufacturingDateStart, manufacturingDateEnd))
 				.and(StockEntrySpecification.expirationDateBetween(expirationDateStart, expirationDateEnd));
 		return stockEntryRepository.findAll(specification, pageable);

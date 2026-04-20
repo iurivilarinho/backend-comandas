@@ -45,6 +45,9 @@ public class SupplyInvoice {
 	@Column(name = "issue_date", nullable = false)
 	private LocalDate issueDate;
 
+	@Column(name = "launch_date", nullable = false)
+	private LocalDate launchDate;
+
 	@OneToMany(mappedBy = "supplyInvoice", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<StockEntry> items = new ArrayList<>();
 
@@ -64,6 +67,7 @@ public class SupplyInvoice {
 		this.seriesNumber = request.getSeriesNumber();
 		this.accessKey = request.getAccessKey();
 		this.issueDate = request.getIssueDate();
+		this.launchDate = request.getLaunchDate();
 		this.attachment = attachment;
 		this.status = SupplyInvoiceStatus.ALLOCATED;
 	}
@@ -73,6 +77,7 @@ public class SupplyInvoice {
 		this.seriesNumber = request.getSeriesNumber();
 		this.accessKey = request.getAccessKey();
 		this.issueDate = request.getIssueDate();
+		this.launchDate = request.getLaunchDate();
 		if (attachment != null) {
 			this.attachment = attachment;
 		}
@@ -112,6 +117,14 @@ public class SupplyInvoice {
 
 	public void setIssueDate(LocalDate issueDate) {
 		this.issueDate = issueDate;
+	}
+
+	public LocalDate getLaunchDate() {
+		return launchDate;
+	}
+
+	public void setLaunchDate(LocalDate launchDate) {
+		this.launchDate = launchDate;
 	}
 
 	public List<StockEntry> getItems() {

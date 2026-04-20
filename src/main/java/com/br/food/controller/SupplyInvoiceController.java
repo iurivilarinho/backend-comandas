@@ -61,9 +61,12 @@ public class SupplyInvoiceController {
 			@RequestParam(required = false) String invoiceNumber,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate issueDateStart,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate issueDateEnd,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate launchDateStart,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate launchDateEnd,
 			Pageable pageable) {
 		return ResponseEntity.ok(
-				supplyInvoiceService.findAll(invoiceNumber, issueDateStart, issueDateEnd, pageable).map(SupplyInvoiceResponse::new));
+				supplyInvoiceService.findAll(invoiceNumber, issueDateStart, issueDateEnd, launchDateStart, launchDateEnd, pageable)
+						.map(SupplyInvoiceResponse::new));
 	}
 
 	@Operation(summary = "Update supply invoice")

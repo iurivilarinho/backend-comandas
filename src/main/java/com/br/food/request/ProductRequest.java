@@ -1,6 +1,8 @@
 package com.br.food.request;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.br.food.enums.Types.ProductType;
 
@@ -37,6 +39,8 @@ public class ProductRequest {
     @NotNull(message = "Complement flag is required.")
     private Boolean complement;
 
+    private List<Long> categoryIds = new ArrayList<>();
+
     public ProductType getType() {
         return type;
     }
@@ -63,5 +67,9 @@ public class ProductRequest {
 
     public Boolean getComplement() {
         return complement;
+    }
+
+    public List<Long> getCategoryIds() {
+        return categoryIds != null ? categoryIds : List.of();
     }
 }

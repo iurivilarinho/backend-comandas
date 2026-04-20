@@ -2,6 +2,7 @@ package com.br.food.controller;
 
 import java.time.LocalDate;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +19,7 @@ import com.br.food.request.FinancialEntryRequest;
 import com.br.food.response.FinancialEntryResponse;
 import com.br.food.response.FinancialOverviewResponse;
 import com.br.food.service.FinancialService;
+import com.br.food.util.excel.HttpHeadersUtil;
 
 import jakarta.validation.Valid;
 
@@ -27,9 +29,11 @@ import jakarta.validation.Valid;
 public class FinancialController {
 
 	private final FinancialService financialService;
+	private final HttpHeadersUtil httpHeadersUtil;
 
-	public FinancialController(FinancialService financialService) {
+	public FinancialController(FinancialService financialService, HttpHeadersUtil httpHeadersUtil) {
 		this.financialService = financialService;
+		this.httpHeadersUtil = httpHeadersUtil;
 	}
 
 	@GetMapping("/overview")
@@ -39,6 +43,18 @@ public class FinancialController {
 			@RequestParam(required = false) FinanceEntryType type,
 			@RequestParam(required = false) FinanceCategory category) {
 		return ResponseEntity.ok(financialService.overview(startDate, endDate, type, category));
+	}
+
+	@GetMapping("/report")
+	public ResponseEntity<byte[]> exportReport(
+			@RequestParam(required = false) LocalDate startDate,
+			@RequestParam(required = false) LocalDate endDate,
+			@RequestParam(required = false) FinanceEntryType type,
+			@RequestParam(required = false) FinanceCategory category) throws Exception {
+		HttpHeaders headers = httpHeadersUtil.excel("relatorio-financeiro-");
+		return ResponseEntity.ok()
+				.headers(headers)
+				.body(financialService.exportReport(startDate, endDate, type, category));
 	}
 
 	@PostMapping("/entries")

@@ -41,6 +41,7 @@ public class StockEntryController {
 	public ResponseEntity<Page<StockEntryResponse>> search(
 			@RequestParam(required = false) String productCode,
 			@RequestParam(required = false) String term,
+			@RequestParam(required = false) String batch,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate manufacturingDateStart,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate manufacturingDateEnd,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate expirationDateStart,
@@ -50,6 +51,7 @@ public class StockEntryController {
 				.search(
 						productCode,
 						term,
+						batch,
 						manufacturingDateStart,
 						manufacturingDateEnd,
 						expirationDateStart,

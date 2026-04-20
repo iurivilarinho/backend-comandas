@@ -1,10 +1,13 @@
 package com.br.food.service;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,7 +15,10 @@ import org.springframework.web.multipart.MultipartFile;
 import com.br.food.enums.Types.ProductType;
 import com.br.food.models.Document;
 import com.br.food.models.Product;
+import com.br.food.models.ProductCategory;
+import com.br.food.repository.ProductCategoryRepository;
 import com.br.food.repository.ProductRepository;
+import com.br.food.repository.ProductSpecification;
 import com.br.food.request.ProductRequest;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -21,10 +27,13 @@ import jakarta.persistence.EntityNotFoundException;
 public class ProductService {
 
 	private final ProductRepository productRepository;
+	private final ProductCategoryRepository productCategoryRepository;
 	private final DocumentService documentService;
 
-	public ProductService(ProductRepository productRepository, DocumentService documentService) {
+	public ProductService(ProductRepository productRepository, ProductCategoryRepository productCategoryRepository,
+			DocumentService documentService) {
 		this.productRepository = productRepository;
+		this.productCategoryRepository = productCategoryRepository;
 		this.documentService = documentService;
 	}
 
@@ -35,15 +44,24 @@ public class ProductService {
 	}
 
 	@Transactional(readOnly = true)
-	public Page<Product> findAll(Pageable pageable) {
-		return productRepository.findAll(pageable);
+	public Page<Product> findAll(Pageable pageable, Long categoryId, Boolean active, Boolean visibleOnMenu,
+			ProductType type, Boolean complement, String term) {
+		Specification<Product> specification = Specification.where(ProductSpecification.hasCategoryId(categoryId))
+				.and(ProductSpecification.hasActive(active))
+				.and(ProductSpecification.hasVisibleOnMenu(visibleOnMenu))
+				.and(ProductSpecification.hasType(type))
+				.and(ProductSpecification.hasComplement(complement))
+				.and(ProductSpecification.search(term));
+		return productRepository.findAll(specification, pageable);
 	}
 
 	@Transactional
 	public Product create(ProductRequest request, MultipartFile image) throws IOException {
 		validateUniqueCode(request.getCode(), null);
 		Document document = documentService.convertToDocument(image);
-		return productRepository.save(new Product(request, document));
+		Product product = new Product(request, document);
+		product.setCategories(resolveCategories(request.getCategoryIds()));
+		return productRepository.save(product);
 	}
 
 	@Transactional
@@ -52,6 +70,7 @@ public class ProductService {
 		validateUniqueCode(request.getCode(), id);
 		Document document = image != null ? documentService.convertToDocument(image) : null;
 		product.update(request, document);
+		product.setCategories(resolveCategories(request.getCategoryIds()));
 		if (request.getType() == ProductType.INGREDIENT) {
 			product.getRecipeItems().clear();
 		}
@@ -104,5 +123,21 @@ public class ProductService {
 				.ifPresent(product -> {
 					throw new DataIntegrityViolationException("There is already a product using code " + code + ".");
 				});
+	}
+
+	private List<ProductCategory> resolveCategories(List<Long> categoryIds) {
+		if (categoryIds == null || categoryIds.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		List<ProductCategory> categories = productCategoryRepository.findAllById(categoryIds).stream()
+				.filter(category -> Boolean.TRUE.equals(category.getActive()))
+				.collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+
+		if (categories.size() != categoryIds.stream().distinct().count()) {
+			throw new DataIntegrityViolationException("One or more product categories are invalid or inactive.");
+		}
+
+		return categories;
 	}
 }

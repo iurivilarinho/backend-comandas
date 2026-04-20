@@ -60,9 +60,11 @@ public class SupplyInvoiceService {
 	}
 
 	@Transactional(readOnly = true)
-	public Page<SupplyInvoice> findAll(String invoiceNumber, LocalDate issueDateStart, LocalDate issueDateEnd, Pageable pageable) {
+	public Page<SupplyInvoice> findAll(String invoiceNumber, LocalDate issueDateStart, LocalDate issueDateEnd,
+			LocalDate launchDateStart, LocalDate launchDateEnd, Pageable pageable) {
 		Specification<SupplyInvoice> specification = Specification.where(SupplyInvoiceSpecification.hasInvoiceNumber(invoiceNumber))
-				.and(SupplyInvoiceSpecification.issueDateBetween(issueDateStart, issueDateEnd));
+				.and(SupplyInvoiceSpecification.issueDateBetween(issueDateStart, issueDateEnd))
+				.and(SupplyInvoiceSpecification.launchDateBetween(launchDateStart, launchDateEnd));
 		return supplyInvoiceRepository.findAll(specification, pageable);
 	}
 

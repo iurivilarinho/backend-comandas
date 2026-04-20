@@ -1,101 +1,141 @@
 package com.br.food.models;
 
-import com.br.food.enums.Types.PromotionType;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.br.food.request.PromotionRequest;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+
 @Entity
-@Table(name = "tbPromotion")
+@Table(name = "promotions")
 public class Promotion {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Enumerated(EnumType.STRING)
-	private PromotionType tipo;
+	@Column(name = "title", nullable = false, length = 120)
+	private String title;
 
-	@Column(length = 500, nullable = false)
-	private String descricao;
+	@Column(name = "description", length = 500)
+	private String description;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "fk_Id_Document", foreignKey = @ForeignKey(name = "FK_FROM_TBDOCUMENTO_FOR_TBPROMOCOES"))
-	private Document imagem;
+	@Column(name = "promotion_price", nullable = false, precision = 12, scale = 2)
+	private BigDecimal promotionPrice;
 
-	@Column(nullable = false)
-	private Boolean status;
+	@Column(name = "old_price", precision = 12, scale = 2)
+	private BigDecimal oldPrice;
+
+	@Column(name = "new_price", precision = 12, scale = 2)
+	private BigDecimal newPrice;
+
+	@Column(name = "expires_at", nullable = false)
+	private LocalDate expiresAt;
+
+	@Column(name = "active", nullable = false)
+	private Boolean active;
+
+	@ManyToMany
+	@JoinTable(name = "promotion_products", joinColumns = @JoinColumn(name = "fk_promotion_id"),
+			inverseJoinColumns = @JoinColumn(name = "fk_product_id"))
+	private List<Product> products = new ArrayList<>();
+
+	@Column(name = "created_at", updatable = false, nullable = false)
+	private LocalDateTime createdAt;
+
+	@Column(name = "updated_at", nullable = false)
+	private LocalDateTime updatedAt;
 
 	public Promotion() {
+	}
+
+	public Promotion(PromotionRequest request) {
+		this.title = request.getTitle();
+		this.description = request.getDescription();
+		this.promotionPrice = request.getPromotionPrice();
+		this.oldPrice = request.getOldPrice();
+		this.newPrice = request.getNewPrice();
+		this.expiresAt = request.getExpiresAt();
+		this.active = request.getActive() != null ? request.getActive() : Boolean.TRUE;
+	}
+
+	public void update(PromotionRequest request) {
+		this.title = request.getTitle();
+		this.description = request.getDescription();
+		this.promotionPrice = request.getPromotionPrice();
+		this.oldPrice = request.getOldPrice();
+		this.newPrice = request.getNewPrice();
+		this.expiresAt = request.getExpiresAt();
+		this.active = request.getActive() != null ? request.getActive() : this.active;
+	}
+
+	@PrePersist
+	private void prePersist() {
+		LocalDateTime now = LocalDateTime.now();
+		this.createdAt = now;
+		this.updatedAt = now;
+	}
+
+	@PreUpdate
+	private void preUpdate() {
+		this.updatedAt = LocalDateTime.now();
 	}
 
 	public Long getId() {
 		return id;
 	}
 
-	public PromotionType getTipo() {
-		return tipo;
-	}
-
-	public PromotionType getType() {
-		return tipo;
-	}
-
-	public void setTipo(PromotionType tipo) {
-		this.tipo = tipo;
-	}
-
-	public void setType(PromotionType type) {
-		this.tipo = type;
-	}
-
-	public String getDescricao() {
-		return descricao;
+	public String getTitle() {
+		return title;
 	}
 
 	public String getDescription() {
-		return descricao;
+		return description;
 	}
 
-	public void setDescricao(String descricao) {
-		this.descricao = descricao;
+	public BigDecimal getPromotionPrice() {
+		return promotionPrice;
 	}
 
-	public void setDescription(String description) {
-		this.descricao = description;
+	public BigDecimal getOldPrice() {
+		return oldPrice;
 	}
 
-	public Document getImagem() {
-		return imagem;
+	public BigDecimal getNewPrice() {
+		return newPrice;
 	}
 
-	public Document getImage() {
-		return imagem;
+	public LocalDate getExpiresAt() {
+		return expiresAt;
 	}
 
-	public void setImagem(Document imagem) {
-		this.imagem = imagem;
+	public Boolean getActive() {
+		return active;
 	}
 
-	public void setImage(Document image) {
-		this.imagem = image;
+	public void setActive(Boolean active) {
+		this.active = active;
 	}
 
-	public Boolean getStatus() {
-		return status;
+	public List<Product> getProducts() {
+		return products;
 	}
 
-	public void setStatus(Boolean status) {
-		this.status = status;
+	public void setProducts(List<Product> products) {
+		this.products = products;
 	}
-
 }

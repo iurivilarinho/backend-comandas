@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.br.food.models.Product;
+import com.br.food.enums.Types.ProductType;
 import com.br.food.request.ProductRequest;
 import com.br.food.request.RecipeItemRequest;
 import com.br.food.response.ProductResponse;
@@ -66,8 +67,15 @@ public class ProductController {
 
 	@Operation(summary = "List products")
 	@GetMapping
-	public ResponseEntity<Page<ProductResponse>> findAll(Pageable pageable) {
-		return ResponseEntity.ok(productService.findAll(pageable).map(ProductResponse::new));
+	public ResponseEntity<Page<ProductResponse>> findAll(Pageable pageable,
+			@RequestParam(required = false) Long categoryId,
+			@RequestParam(required = false) Boolean active,
+			@RequestParam(required = false) Boolean visibleOnMenu,
+			@RequestParam(required = false) ProductType type,
+			@RequestParam(required = false) Boolean complement,
+			@RequestParam(required = false) String term) {
+		return ResponseEntity.ok(productService.findAll(pageable, categoryId, active, visibleOnMenu, type, complement, term)
+				.map(ProductResponse::new));
 	}
 
 	@Operation(summary = "Update product")

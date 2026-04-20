@@ -45,4 +45,10 @@ public final class OrderSpecification {
 				? builder.conjunction()
 				: builder.like(builder.upper(root.get("code")), "%" + code.trim().toUpperCase() + "%");
 	}
+
+	public static Specification<Order> hasCustomerId(Long customerId) {
+		return (root, query, builder) -> customerId == null
+				? builder.conjunction()
+				: builder.equal(root.join("customer").get("id"), customerId);
+	}
 }
