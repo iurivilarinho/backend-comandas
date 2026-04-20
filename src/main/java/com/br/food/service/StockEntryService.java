@@ -47,9 +47,18 @@ public class StockEntryService {
 	}
 
 	@Transactional(readOnly = true)
-	public Page<StockEntry> search(String productCode, String term, Pageable pageable) {
+	public Page<StockEntry> search(
+			String productCode,
+			String term,
+			LocalDate manufacturingDateStart,
+			LocalDate manufacturingDateEnd,
+			LocalDate expirationDateStart,
+			LocalDate expirationDateEnd,
+			Pageable pageable) {
 		Specification<StockEntry> specification = Specification.where(StockEntrySpecification.hasProductCode(productCode))
-				.and(StockEntrySpecification.search(term));
+				.and(StockEntrySpecification.search(term))
+				.and(StockEntrySpecification.manufacturingDateBetween(manufacturingDateStart, manufacturingDateEnd))
+				.and(StockEntrySpecification.expirationDateBetween(expirationDateStart, expirationDateEnd));
 		return stockEntryRepository.findAll(specification, pageable);
 	}
 

@@ -1,5 +1,7 @@
 package com.br.food.repository;
 
+import java.util.List;
+
 import org.springframework.data.jpa.domain.Specification;
 
 import com.br.food.enums.Types.OrderItemStatus;
@@ -24,6 +26,12 @@ public final class OrderSpecification {
 
 	public static Specification<Order> hasStatus(OrderStatus status) {
 		return (root, query, builder) -> status == null ? builder.conjunction() : builder.equal(root.get("status"), status);
+	}
+
+	public static Specification<Order> hasAnyStatus(List<OrderStatus> statuses) {
+		return (root, query, builder) -> statuses == null || statuses.isEmpty()
+				? builder.conjunction()
+				: root.get("status").in(statuses);
 	}
 
 	public static Specification<Order> hasTableNumber(String tableNumber) {

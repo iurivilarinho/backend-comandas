@@ -56,8 +56,20 @@ public class DiningTableController {
 
 	@Operation(summary = "List dining tables")
 	@GetMapping
-	public ResponseEntity<List<DiningTableResponse>> findAll() {
-		return ResponseEntity.ok(diningTableService.findAll().stream().map(DiningTableResponse::new).toList());
+	public ResponseEntity<List<DiningTableResponse>> findAll(@RequestParam(required = false) String status) {
+		return ResponseEntity.ok(diningTableService.findAll(status));
+	}
+
+	@Operation(summary = "Generate secure access token for table QR code")
+	@GetMapping("/access-token")
+	public ResponseEntity<String> generateAccessToken(@RequestParam String tableNumber) {
+		return ResponseEntity.ok(diningTableService.generateAccessToken(tableNumber));
+	}
+
+	@Operation(summary = "Resolve secure access token for table QR code")
+	@GetMapping("/resolve-access-token")
+	public ResponseEntity<String> resolveAccessToken(@RequestParam String token) {
+		return ResponseEntity.ok(diningTableService.resolveAccessToken(token));
 	}
 
 	@Operation(summary = "Update dining table")

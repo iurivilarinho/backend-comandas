@@ -1,9 +1,11 @@
 package com.br.food.controller;
 
 import java.io.IOException;
+import java.time.LocalDate;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -55,8 +57,13 @@ public class SupplyInvoiceController {
 
 	@Operation(summary = "List supply invoices")
 	@GetMapping
-	public ResponseEntity<Page<SupplyInvoiceResponse>> findAll(Pageable pageable) {
-		return ResponseEntity.ok(supplyInvoiceService.findAll(pageable).map(SupplyInvoiceResponse::new));
+	public ResponseEntity<Page<SupplyInvoiceResponse>> findAll(
+			@RequestParam(required = false) String invoiceNumber,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate issueDateStart,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate issueDateEnd,
+			Pageable pageable) {
+		return ResponseEntity.ok(
+				supplyInvoiceService.findAll(invoiceNumber, issueDateStart, issueDateEnd, pageable).map(SupplyInvoiceResponse::new));
 	}
 
 	@Operation(summary = "Update supply invoice")

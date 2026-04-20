@@ -8,12 +8,18 @@ public class DiningTableResponse {
 	private final String number;
 	private final Boolean active;
 	private final Boolean occupied;
+	private final String operationalStatus;
 
 	public DiningTableResponse(DiningTable table) {
+		this(table, null);
+	}
+
+	public DiningTableResponse(DiningTable table, String operationalStatus) {
 		this.id = table.getId();
 		this.number = table.getNumber();
 		this.active = table.getStatus();
 		this.occupied = table.getOccupied();
+		this.operationalStatus = operationalStatus;
 	}
 
 	public Long getId() {
@@ -30,5 +36,9 @@ public class DiningTableResponse {
 
 	public Boolean getOccupied() {
 		return occupied;
+	}
+
+	public String getOperationalStatus() {
+		return operationalStatus;
 	}
 }

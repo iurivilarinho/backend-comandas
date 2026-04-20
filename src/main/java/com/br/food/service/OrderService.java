@@ -85,6 +85,10 @@ public class OrderService {
 		if (Boolean.TRUE.equals(customer.getBlocked())) {
 			throw new DataIntegrityViolationException("Blocked customers cannot create new orders.");
 		}
+		Order existingOpenOrder = findActiveOrderByCustomerDocumentNumber(customer.getDocumentNumber());
+		if (existingOpenOrder != null) {
+			return existingOpenOrder;
+		}
 		DiningTable table = diningTableService.findByNumber(request.getTableNumber());
 		Order order = new Order(request, customer, generateOrderCode(), table);
 		if (request.getChannel() == OrderChannel.DINE_IN) {
@@ -131,6 +135,18 @@ public class OrderService {
 				.and(OrderSpecification.hasTableNumber(tableNumber))
 				.and(OrderSpecification.hasCode(code));
 		return orderRepository.findAll(specification, pageable);
+	}
+
+	@Transactional(readOnly = true)
+	public Order findActiveOrderByCustomerDocumentNumber(String documentNumber) {
+		if (documentNumber == null || documentNumber.isBlank()) {
+			return null;
+		}
+		return customerService.findByDocumentNumber(documentNumber)
+				.map(customer -> orderRepository.findFirstByCustomerIdAndStatusInOrderByOpenedAtDesc(
+						customer.getId(),
+						List.of(OrderStatus.OPEN, OrderStatus.READY_TO_CLOSE)))
+				.orElse(null);
 	}
 
 	@Transactional

@@ -1,10 +1,12 @@
 package com.br.food.service;
 
 import java.io.IOException;
+import java.time.LocalDate;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,6 +17,7 @@ import com.br.food.models.StockEntry;
 import com.br.food.models.SupplyInvoice;
 import com.br.food.models.Product;
 import com.br.food.repository.SupplyInvoiceRepository;
+import com.br.food.repository.SupplyInvoiceSpecification;
 import com.br.food.request.StockEntryRequest;
 import com.br.food.request.SupplyInvoiceRequest;
 
@@ -57,8 +60,10 @@ public class SupplyInvoiceService {
 	}
 
 	@Transactional(readOnly = true)
-	public Page<SupplyInvoice> findAll(Pageable pageable) {
-		return supplyInvoiceRepository.findAll(pageable);
+	public Page<SupplyInvoice> findAll(String invoiceNumber, LocalDate issueDateStart, LocalDate issueDateEnd, Pageable pageable) {
+		Specification<SupplyInvoice> specification = Specification.where(SupplyInvoiceSpecification.hasInvoiceNumber(invoiceNumber))
+				.and(SupplyInvoiceSpecification.issueDateBetween(issueDateStart, issueDateEnd));
+		return supplyInvoiceRepository.findAll(specification, pageable);
 	}
 
 	@Transactional
