@@ -10,28 +10,21 @@ import org.springframework.stereotype.Service;
 @Service
 public class HttpHeadersUtil {
 
-	private DateTimeFormatter formatoDateTime = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+	private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
 
 	public HttpHeaders excel(String fileName) {
-
-		HttpHeaders headers2 = new HttpHeaders();
-		headers2.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-		headers2.setContentDispositionFormData("attachment",
-				fileName + LocalDateTime.now().format(formatoDateTime) + ".xlsx");
-
-		// Configurar o tipo de conteúdo como Excel
-		headers2.set(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-		return headers2;
-	}
-
-	public HttpHeaders pdf(String fileName) {
-
 		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
 		headers.setContentDispositionFormData("attachment",
-				fileName + LocalDateTime.now().format(formatoDateTime) + ".pdf");
-
+				fileName + LocalDateTime.now().format(DATE_TIME_FORMATTER) + ".xlsx");
 		return headers;
 	}
 
+	public HttpHeaders pdf(String fileName) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_PDF);
+		headers.setContentDispositionFormData("attachment",
+				fileName + LocalDateTime.now().format(DATE_TIME_FORMATTER) + ".pdf");
+		return headers;
+	}
 }

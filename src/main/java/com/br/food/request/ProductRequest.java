@@ -39,7 +39,9 @@ public class ProductRequest {
     @NotNull(message = "Complement flag is required.")
     private Boolean complement;
 
-    private List<Long> categoryIds = new ArrayList<>();
+    private Boolean sendToKitchen;
+
+    private Boolean requiresPreparation;
 
     public ProductType getType() {
         return type;
@@ -69,7 +71,25 @@ public class ProductRequest {
         return complement;
     }
 
-    public List<Long> getCategoryIds() {
-        return categoryIds != null ? categoryIds : List.of();
+    public Boolean getSendToKitchen() {
+        return sendToKitchen;
+    }
+
+    public Boolean getRequiresPreparation() {
+        return requiresPreparation;
+    }
+
+    public boolean getResolvedSendToKitchen() {
+        if (type != ProductType.FINISHED) {
+            return false;
+        }
+        return !Boolean.FALSE.equals(sendToKitchen);
+    }
+
+    public boolean getResolvedRequiresPreparation() {
+        if (!getResolvedSendToKitchen()) {
+            return false;
+        }
+        return !Boolean.FALSE.equals(requiresPreparation);
     }
 }

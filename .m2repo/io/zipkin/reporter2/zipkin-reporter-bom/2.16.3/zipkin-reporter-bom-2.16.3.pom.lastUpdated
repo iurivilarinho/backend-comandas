@@ -1,7 +1,0 @@
-#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Apr 14 15:36:08 BRT 2026
-@default-spring-release-https\://repo.spring.io/release/.lastUpdated=1776191768044
-https\://repo.maven.apache.org/maven2/.lastUpdated=1776191768256
-https\://repo.spring.io/snapshot/.error=
-https\://repo.spring.io/snapshot/.lastUpdated=1776191768198
-https\://repo.spring.io/release/.error=Could not transfer artifact io.zipkin.reporter2\:zipkin-reporter-bom\:pom\:2.16.3 from/to spring-release (https\://repo.spring.io/release)\: status code\: 401, reason phrase\:  (401)

@@ -59,6 +59,12 @@ public class Product {
 	@Column(name = "visible_on_menu", nullable = false)
 	private Boolean visibleOnMenu;
 
+	@Column(name = "send_to_kitchen", nullable = false)
+	private Boolean sendToKitchen;
+
+	@Column(name = "requires_preparation", nullable = false)
+	private Boolean requiresPreparation;
+
 	@Column(name = "price", nullable = false)
 	private BigDecimal price;
 
@@ -95,6 +101,8 @@ public class Product {
 		this.active = true;
 		this.complement = request.getComplement();
 		this.visibleOnMenu = request.getVisibleOnMenu();
+		this.sendToKitchen = request.getResolvedSendToKitchen();
+		this.requiresPreparation = request.getResolvedRequiresPreparation();
 		this.price = request.getPrice();
 		this.minimumStock = request.getMinimumStock();
 	}
@@ -107,6 +115,8 @@ public class Product {
 		this.minimumStock = request.getMinimumStock();
 		this.complement = request.getComplement();
 		this.visibleOnMenu = request.getVisibleOnMenu();
+		this.sendToKitchen = request.getResolvedSendToKitchen();
+		this.requiresPreparation = request.getResolvedRequiresPreparation();
 		if (image != null) {
 			this.image = image;
 		}
@@ -186,6 +196,22 @@ public class Product {
 
 	public BigDecimal getPrice() {
 		return price;
+	}
+
+	public Boolean getSendToKitchen() {
+		return sendToKitchen;
+	}
+
+	public void setSendToKitchen(Boolean sendToKitchen) {
+		this.sendToKitchen = sendToKitchen;
+	}
+
+	public Boolean getRequiresPreparation() {
+		return requiresPreparation;
+	}
+
+	public void setRequiresPreparation(Boolean requiresPreparation) {
+		this.requiresPreparation = requiresPreparation;
 	}
 
 	public void setPrice(BigDecimal price) {

@@ -99,8 +99,12 @@ public class OrderItem {
 		this.quantity = request.getQuantity();
 		this.notes = request.getNotes();
 		this.unitPrice = unitPrice;
-		this.status = OrderItemStatus.RECEIVED;
+		this.status = shouldGoToKitchen(product) ? OrderItemStatus.RECEIVED : OrderItemStatus.READY;
 		this.requestedAt = LocalDateTime.now();
+	}
+
+	private boolean shouldGoToKitchen(Product product) {
+		return product != null && Boolean.TRUE.equals(product.getSendToKitchen());
 	}
 
 	@PrePersist

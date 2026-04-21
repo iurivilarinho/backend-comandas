@@ -58,6 +58,7 @@ public class ProductService {
 	@Transactional
 	public Product create(ProductRequest request, MultipartFile image) throws IOException {
 		validateUniqueCode(request.getCode(), null);
+		validatePreparationFlags(request);
 		Document document = documentService.convertToDocument(image);
 		Product product = new Product(request, document);
 		product.setCategories(resolveCategories(request.getCategoryIds()));
@@ -68,10 +69,10 @@ public class ProductService {
 	public Product update(Long id, ProductRequest request, MultipartFile image) throws IOException {
 		Product product = findById(id);
 		validateUniqueCode(request.getCode(), id);
+		validatePreparationFlags(request);
 		Document document = image != null ? documentService.convertToDocument(image) : null;
 		product.update(request, document);
-		product.setCategories(resolveCategories(request.getCategoryIds()));
-		if (request.getType() == ProductType.INGREDIENT) {
+		if (request.getType() == ProductType.INGREDIENT || !request.getResolvedRequiresPreparation()) {
 			product.getRecipeItems().clear();
 		}
 		return productRepository.save(product);
@@ -125,19 +126,12 @@ public class ProductService {
 				});
 	}
 
-	private List<ProductCategory> resolveCategories(List<Long> categoryIds) {
-		if (categoryIds == null || categoryIds.isEmpty()) {
-			return new ArrayList<>();
+	private void validatePreparationFlags(ProductRequest request) {
+		if (request.getType() != ProductType.FINISHED) {
+			return;
 		}
-
-		List<ProductCategory> categories = productCategoryRepository.findAllById(categoryIds).stream()
-				.filter(category -> Boolean.TRUE.equals(category.getActive()))
-				.collect(java.util.stream.Collectors.toCollection(ArrayList::new));
-
-		if (categories.size() != categoryIds.stream().distinct().count()) {
-			throw new DataIntegrityViolationException("One or more product categories are invalid or inactive.");
+		if (request.getResolvedRequiresPreparation() && !request.getResolvedSendToKitchen()) {
+			throw new DataIntegrityViolationException("Products that require preparation must be sent to the kitchen.");
 		}
-
-		return categories;
 	}
 }

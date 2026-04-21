@@ -12,6 +12,8 @@ public class ProductBasicResponse {
 	private final String description;
 	private final ProductType type;
 	private final BigDecimal price;
+	private final Boolean sendToKitchen;
+	private final Boolean requiresPreparation;
 
 	public ProductBasicResponse(Product product) {
 		this.id = product.getId();
@@ -19,6 +21,8 @@ public class ProductBasicResponse {
 		this.description = product.getDescription();
 		this.type = product.getType();
 		this.price = product.getPrice();
+		this.sendToKitchen = product.getSendToKitchen();
+		this.requiresPreparation = product.getRequiresPreparation();
 	}
 
 	public Long getId() {
@@ -39,5 +43,13 @@ public class ProductBasicResponse {
 
 	public BigDecimal getPrice() {
 		return price;
+	}
+
+	public Boolean getSendToKitchen() {
+		return sendToKitchen;
+	}
+
+	public Boolean getRequiresPreparation() {
+		return requiresPreparation;
 	}
 }
