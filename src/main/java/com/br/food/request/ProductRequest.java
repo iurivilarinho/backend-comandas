@@ -37,6 +37,10 @@ public class ProductRequest {
     @NotNull(message = "Complement flag is required.")
     private Boolean complement;
 
+    private Boolean sendToKitchen;
+
+    private Boolean requiresPreparation;
+
     public ProductType getType() {
         return type;
     }
@@ -63,5 +67,27 @@ public class ProductRequest {
 
     public Boolean getComplement() {
         return complement;
+    }
+
+    public Boolean getSendToKitchen() {
+        return sendToKitchen;
+    }
+
+    public Boolean getRequiresPreparation() {
+        return requiresPreparation;
+    }
+
+    public boolean getResolvedSendToKitchen() {
+        if (type != ProductType.FINISHED) {
+            return false;
+        }
+        return !Boolean.FALSE.equals(sendToKitchen);
+    }
+
+    public boolean getResolvedRequiresPreparation() {
+        if (!getResolvedSendToKitchen()) {
+            return false;
+        }
+        return !Boolean.FALSE.equals(requiresPreparation);
     }
 }

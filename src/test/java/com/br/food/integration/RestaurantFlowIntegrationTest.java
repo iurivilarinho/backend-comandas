@@ -1,10 +1,13 @@
 package com.br.food.integration;
 
 import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -292,6 +295,77 @@ class RestaurantFlowIntegrationTest {
 		org.junit.jupiter.api.Assertions.assertEquals(true, updatedStockEntry.isRetained());
 	}
 
+	@Test
+	void itemOutsideKitchenShouldStartReadyAndStayOutOfKitchenQueue() throws Exception {
+		Customer customer = customerRepository.save(buildCustomer("Customer Four", "12345678904"));
+		DiningTable table = diningTableRepository.save(new DiningTable("13"));
+
+		Product finishedProduct = buildProduct("FIN-4", "Bottled Juice", ProductType.FINISHED, new BigDecimal("9.50"));
+		finishedProduct.setSendToKitchen(false);
+		finishedProduct.setRequiresPreparation(false);
+		finishedProduct = productRepository.save(finishedProduct);
+
+		MvcResult createResult = mockMvc.perform(post("/orders")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("X-Actor", "waiter")
+				.content("""
+						{
+						  "customerId": %d,
+						  "tableNumber": "%s",
+						  "channel": "DINE_IN",
+						  "discountPercentage": 0,
+						  "items": [
+						    {
+						      "productId": %d,
+						      "quantity": 1,
+						      "notes": "Serve cold"
+						    }
+						  ]
+						}
+						""".formatted(customer.getId(), table.getNumber(), finishedProduct.getId())))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.items[0].status").value("READY"))
+				.andReturn();
+
+		Long orderId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("id").asLong();
+		Long itemId = objectMapper.readTree(createResult.getResponse().getContentAsString()).get("items").get(0).get("id").asLong();
+
+		mockMvc.perform(get("/kitchen/pending"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$[?(@.id == %s)]".formatted(orderId)).doesNotExist());
+
+		mockMvc.perform(post("/orders/{orderId}/items/{itemId}/serve", orderId, itemId)
+				.header("X-Actor", "waiter"))
+				.andExpect(status().isNoContent());
+
+		Order updatedOrder = orderRepository.findById(orderId).orElseThrow();
+		org.junit.jupiter.api.Assertions.assertEquals(OrderStatus.READY_TO_CLOSE, updatedOrder.getStatus());
+		org.junit.jupiter.api.Assertions.assertEquals("SERVED", updatedOrder.getItems().get(0).getStatus().name());
+	}
+
+	@Test
+	void financialReportEndpointShouldReturnExcelFile() throws Exception {
+		mockMvc.perform(post("/financial/entries")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("X-Actor", "cashier")
+				.content("""
+						{
+						  "type": "EXPENSE",
+						  "category": "OPERATIONS",
+						  "description": "Internet bill",
+						  "amount": 150.00,
+						  "paymentMethod": "PIX"
+						}
+						"""))
+				.andExpect(status().isCreated());
+
+		mockMvc.perform(get("/financial/report"))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Content-Type", containsString("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")))
+				.andExpect(header().string("Content-Disposition", containsString(".xlsx")));
+	}
+
 	private Customer buildCustomer(String name, String documentNumber) {
 		Customer customer = new Customer();
 		customer.setName(name);
@@ -310,6 +384,8 @@ class RestaurantFlowIntegrationTest {
 		product.setActive(true);
 		product.setComplement(false);
 		product.setVisibleOnMenu(true);
+		product.setSendToKitchen(type == ProductType.FINISHED);
+		product.setRequiresPreparation(type == ProductType.FINISHED);
 		return product;
 	}
 

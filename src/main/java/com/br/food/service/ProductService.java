@@ -42,6 +42,7 @@ public class ProductService {
 	@Transactional
 	public Product create(ProductRequest request, MultipartFile image) throws IOException {
 		validateUniqueCode(request.getCode(), null);
+		validatePreparationFlags(request);
 		Document document = documentService.convertToDocument(image);
 		return productRepository.save(new Product(request, document));
 	}
@@ -50,9 +51,10 @@ public class ProductService {
 	public Product update(Long id, ProductRequest request, MultipartFile image) throws IOException {
 		Product product = findById(id);
 		validateUniqueCode(request.getCode(), id);
+		validatePreparationFlags(request);
 		Document document = image != null ? documentService.convertToDocument(image) : null;
 		product.update(request, document);
-		if (request.getType() == ProductType.INGREDIENT) {
+		if (request.getType() == ProductType.INGREDIENT || !request.getResolvedRequiresPreparation()) {
 			product.getRecipeItems().clear();
 		}
 		return productRepository.save(product);
@@ -104,5 +106,14 @@ public class ProductService {
 				.ifPresent(product -> {
 					throw new DataIntegrityViolationException("There is already a product using code " + code + ".");
 				});
+	}
+
+	private void validatePreparationFlags(ProductRequest request) {
+		if (request.getType() != ProductType.FINISHED) {
+			return;
+		}
+		if (request.getResolvedRequiresPreparation() && !request.getResolvedSendToKitchen()) {
+			throw new DataIntegrityViolationException("Products that require preparation must be sent to the kitchen.");
+		}
 	}
 }

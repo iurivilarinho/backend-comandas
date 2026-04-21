@@ -34,4 +34,12 @@ public class SystemSettingService {
 		setting.setValue(value);
 		systemSettingRepository.save(setting);
 	}
+
+	@Transactional
+	public void createIfAbsent(String key, String value) {
+		if (systemSettingRepository.findByKey(key).isPresent()) {
+			return;
+		}
+		systemSettingRepository.save(new SystemSetting(key, value));
+	}
 }

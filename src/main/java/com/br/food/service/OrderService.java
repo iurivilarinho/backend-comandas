@@ -491,9 +491,10 @@ public class OrderService {
 		if (order.getItems().isEmpty()) {
 			throw new DataIntegrityViolationException("Orders cannot be checked out without items.");
 		}
-		boolean hasOpenKitchenItem = order.getItems().stream().anyMatch(item -> item.getStatus() == OrderItemStatus.RECEIVED
-				|| item.getStatus() == OrderItemStatus.QUEUED
-				|| item.getStatus() == OrderItemStatus.IN_PREPARATION);
+		boolean hasOpenKitchenItem = order.getItems().stream()
+				.filter(item -> item.getStatus() != OrderItemStatus.CANCELED && item.getStatus() != OrderItemStatus.DECLINED)
+				.filter(item -> item.getProduct() != null && Boolean.TRUE.equals(item.getProduct().getSendToKitchen()))
+				.anyMatch(item -> item.getStatus() != OrderItemStatus.READY && item.getStatus() != OrderItemStatus.SERVED);
 		if (hasOpenKitchenItem) {
 			throw new DataIntegrityViolationException("There are still items pending in the kitchen workflow.");
 		}
@@ -581,10 +582,7 @@ public class OrderService {
 	}
 
 	private BigDecimal calculateCoverCharge(Order order) {
-		if (order.getChannel() != OrderChannel.DINE_IN) {
-			return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
-		}
-		return systemSettingService.getDecimal(SystemSettingService.COVER_CHARGE_AMOUNT, BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+		return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 	}
 
 	private void refreshOrderStatus(Order order) {
@@ -625,6 +623,9 @@ public class OrderService {
 	@Transactional
 	public void consumeRecipeForItem(OrderItem orderItem) {
 		if (orderItem.getProduct() == null || orderItem.getProduct().getType() != ProductType.FINISHED) {
+			return;
+		}
+		if (!Boolean.TRUE.equals(orderItem.getProduct().getRequiresPreparation())) {
 			return;
 		}
 		if (!orderItem.getStockConsumptions().isEmpty()) {

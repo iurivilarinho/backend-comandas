@@ -22,8 +22,8 @@ public class DataInitializer {
 			RoleRepository roleRepository, UserRepository userRepository) {
 		return args -> {
 			paymentService.ensureDefaultMethods();
-			systemSettingService.upsert(SystemSettingService.SERVICE_FEE_PERCENT, "10.00");
-			systemSettingService.upsert(SystemSettingService.COVER_CHARGE_AMOUNT, "5.00");
+			systemSettingService.createIfAbsent(SystemSettingService.SERVICE_FEE_PERCENT, "10.00");
+			systemSettingService.createIfAbsent(SystemSettingService.COVER_CHARGE_AMOUNT, "0.00");
 
 			Role adminRole = roleRepository.findByDescription("ROLE_ADMIN");
 			if (adminRole == null) {
