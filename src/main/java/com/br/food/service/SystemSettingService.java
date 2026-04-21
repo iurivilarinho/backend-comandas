@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.br.food.models.SystemSetting;
 import com.br.food.repository.SystemSettingRepository;
+import com.br.food.response.FinancialSettingsResponse;
 
 @Service
 public class SystemSettingService {
@@ -41,5 +42,10 @@ public class SystemSettingService {
 			return;
 		}
 		systemSettingRepository.save(new SystemSetting(key, value));
+	}
+
+	@Transactional(readOnly = true)
+	public FinancialSettingsResponse getFinancialSettings() {
+		return new FinancialSettingsResponse(getDecimal(SERVICE_FEE_PERCENT, BigDecimal.ZERO));
 	}
 }

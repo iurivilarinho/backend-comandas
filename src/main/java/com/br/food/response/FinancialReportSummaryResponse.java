@@ -2,19 +2,39 @@ package com.br.food.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 import com.br.food.enums.Types.FinanceCategory;
 import com.br.food.enums.Types.FinanceEntryType;
+import com.br.food.util.FinancialLabelUtils;
+import com.br.food.util.excel.ExcelColumn;
 
 public class FinancialReportSummaryResponse {
 
-	private final LocalDate startDate;
-	private final LocalDate endDate;
-	private final FinanceEntryType type;
-	private final FinanceCategory category;
+	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+	@ExcelColumn("Data inicial")
+	private final String startDate;
+
+	@ExcelColumn("Data final")
+	private final String endDate;
+
+	@ExcelColumn("Tipo")
+	private final String type;
+
+	@ExcelColumn("Categoria")
+	private final String category;
+
+	@ExcelColumn("Total de entradas")
 	private final BigDecimal totalIncome;
+
+	@ExcelColumn("Total de saídas")
 	private final BigDecimal totalExpense;
+
+	@ExcelColumn("Saldo")
 	private final BigDecimal balance;
+
+	@ExcelColumn("Total de lançamentos")
 	private final Integer totalEntries;
 
 	public FinancialReportSummaryResponse(
@@ -26,29 +46,29 @@ public class FinancialReportSummaryResponse {
 			BigDecimal totalExpense,
 			BigDecimal balance,
 			Integer totalEntries) {
-		this.startDate = startDate;
-		this.endDate = endDate;
-		this.type = type;
-		this.category = category;
+		this.startDate = startDate != null ? startDate.format(DATE_FORMATTER) : "Todos";
+		this.endDate = endDate != null ? endDate.format(DATE_FORMATTER) : "Todos";
+		this.type = type != null ? FinancialLabelUtils.type(type) : "Todos";
+		this.category = category != null ? FinancialLabelUtils.category(category) : "Todas";
 		this.totalIncome = totalIncome;
 		this.totalExpense = totalExpense;
 		this.balance = balance;
 		this.totalEntries = totalEntries;
 	}
 
-	public LocalDate getStartDate() {
+	public String getStartDate() {
 		return startDate;
 	}
 
-	public LocalDate getEndDate() {
+	public String getEndDate() {
 		return endDate;
 	}
 
-	public FinanceEntryType getType() {
+	public String getType() {
 		return type;
 	}
 
-	public FinanceCategory getCategory() {
+	public String getCategory() {
 		return category;
 	}
 

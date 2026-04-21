@@ -39,6 +39,8 @@ public class ProductRequest {
     @NotNull(message = "Complement flag is required.")
     private Boolean complement;
 
+    private List<Long> categoryIds = new ArrayList<>();
+
     private Boolean sendToKitchen;
 
     private Boolean requiresPreparation;
@@ -69,6 +71,10 @@ public class ProductRequest {
 
     public Boolean getComplement() {
         return complement;
+    }
+
+    public List<Long> getCategoryIds() {
+        return categoryIds != null ? categoryIds : List.of();
     }
 
     public Boolean getSendToKitchen() {

@@ -16,10 +16,10 @@ public class FinancialReportExcelRow {
 	@ExcelColumn("Categoria")
 	private final String category;
 
-	@ExcelColumn("Descricao")
+	@ExcelColumn("Descrição")
 	private final String description;
 
-	@ExcelColumn("Referencia")
+	@ExcelColumn("Referência")
 	private final String referenceCode;
 
 	@ExcelColumn("Forma de pagamento")
@@ -31,7 +31,7 @@ public class FinancialReportExcelRow {
 	@ExcelColumn("Detalhamento")
 	private final String breakdown;
 
-	@ExcelColumn("Observacoes")
+	@ExcelColumn("Observações")
 	private final String notes;
 
 	public FinancialReportExcelRow(

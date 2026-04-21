@@ -20,6 +20,7 @@ public class OrderResponse {
 	private final BigDecimal subtotalAmount;
 	private final BigDecimal serviceFeeAmount;
 	private final BigDecimal coverChargeAmount;
+	private final Boolean applyServiceFee;
 	private final BigDecimal paidAmount;
 	private final BigDecimal totalAmount;
 	private final Integer splitByPersonCount;
@@ -43,6 +44,7 @@ public class OrderResponse {
 		this.subtotalAmount = order.getSubtotalAmount();
 		this.serviceFeeAmount = order.getServiceFeeAmount();
 		this.coverChargeAmount = order.getCoverChargeAmount();
+		this.applyServiceFee = order.getApplyServiceFee();
 		this.paidAmount = order.getPaidAmount();
 		this.totalAmount = order.getTotalAmount();
 		this.splitByPersonCount = order.getSplitByPersonCount();
@@ -91,6 +93,10 @@ public class OrderResponse {
 
 	public BigDecimal getCoverChargeAmount() {
 		return coverChargeAmount;
+	}
+
+	public Boolean getApplyServiceFee() {
+		return applyServiceFee;
 	}
 
 	public BigDecimal getPaidAmount() {

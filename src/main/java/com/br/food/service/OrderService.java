@@ -207,6 +207,23 @@ public class OrderService {
 	}
 
 	@Transactional
+	public Order updateServiceFee(Long id, boolean applyServiceFee, String actorName) {
+		Order order = findById(id);
+		if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.CANCELED) {
+			throw new DataIntegrityViolationException("Closed or canceled orders cannot update service fee.");
+		}
+		order.setApplyServiceFee(applyServiceFee);
+		recalculateTotals(order);
+		auditLogService.register(
+				"Order",
+				order.getId(),
+				"ORDER_SERVICE_FEE_UPDATED",
+				actorName,
+				"applyServiceFee=" + applyServiceFee);
+		return orderRepository.save(order);
+	}
+
+	@Transactional
 	public Order requestCheckout(Long id, RequestOrderCheckoutRequest request, String actorName) {
 		Order order = findById(id);
 		if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.CANCELED) {
@@ -429,6 +446,9 @@ public class OrderService {
 	}
 
 	private void applyCheckoutAdjustments(Order order, CloseOrderRequest request) {
+		if (request.getApplyServiceFee() != null) {
+			order.setApplyServiceFee(request.getApplyServiceFee());
+		}
 		if (request.getDiscountPercentage() != null) {
 			order.setDiscountPercentage(request.getDiscountPercentage().setScale(2, RoundingMode.HALF_UP));
 		}
@@ -678,7 +698,7 @@ public class OrderService {
 	}
 
 	private BigDecimal calculateServiceFee(Order order, BigDecimal subtotal) {
-		if (order.getChannel() != OrderChannel.DINE_IN) {
+		if (order.getChannel() != OrderChannel.DINE_IN || !Boolean.TRUE.equals(order.getApplyServiceFee())) {
 			return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 		}
 		BigDecimal serviceFeePercent = systemSettingService.getDecimal(SystemSettingService.SERVICE_FEE_PERCENT, BigDecimal.ZERO);

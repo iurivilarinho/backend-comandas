@@ -21,10 +21,10 @@ public class FinancialReportRowResponse {
 	@ExcelColumn("Categoria")
 	private final String category;
 
-	@ExcelColumn("Descricao")
+	@ExcelColumn("Descrição")
 	private final String description;
 
-	@ExcelColumn("Referencia")
+	@ExcelColumn("Referência")
 	private final String referenceCode;
 
 	@ExcelColumn("Pagamento")
@@ -33,7 +33,7 @@ public class FinancialReportRowResponse {
 	@ExcelColumn("Valor")
 	private final BigDecimal amount;
 
-	@ExcelColumn("Observacoes")
+	@ExcelColumn("Observações")
 	private final String notes;
 
 	@ExcelColumn("Detalhamento")

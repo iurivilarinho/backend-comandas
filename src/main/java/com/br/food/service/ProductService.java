@@ -72,6 +72,7 @@ public class ProductService {
 		validatePreparationFlags(request);
 		Document document = image != null ? documentService.convertToDocument(image) : null;
 		product.update(request, document);
+		product.setCategories(resolveCategories(request.getCategoryIds()));
 		if (request.getType() == ProductType.INGREDIENT || !request.getResolvedRequiresPreparation()) {
 			product.getRecipeItems().clear();
 		}
@@ -133,5 +134,21 @@ public class ProductService {
 		if (request.getResolvedRequiresPreparation() && !request.getResolvedSendToKitchen()) {
 			throw new DataIntegrityViolationException("Products that require preparation must be sent to the kitchen.");
 		}
+	}
+
+	private List<ProductCategory> resolveCategories(List<Long> categoryIds) {
+		if (categoryIds == null || categoryIds.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		List<ProductCategory> categories = productCategoryRepository.findAllById(categoryIds).stream()
+				.filter(category -> Boolean.TRUE.equals(category.getActive()))
+				.collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+
+		if (categories.size() != categoryIds.stream().distinct().count()) {
+			throw new DataIntegrityViolationException("One or more product categories are invalid or inactive.");
+		}
+
+		return categories;
 	}
 }

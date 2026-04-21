@@ -30,6 +30,8 @@ public class OrderRequest {
 	@DecimalMax(value = "100.0", message = "Discount percentage must be at most 100.")
 	private BigDecimal discountPercentage;
 
+	private Boolean applyServiceFee;
+
 	private PaymentMethod paymentMethod;
 
 	@NotEmpty(message = "At least one order item is required.")
@@ -50,6 +52,10 @@ public class OrderRequest {
 
 	public BigDecimal getDiscountPercentage() {
 		return discountPercentage;
+	}
+
+	public Boolean getApplyServiceFee() {
+		return applyServiceFee;
 	}
 
 	public PaymentMethod getPaymentMethod() {

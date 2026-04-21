@@ -25,6 +25,8 @@ public class CloseOrderRequest {
 	@DecimalMin(value = "0.0", message = "Discount amount cannot be negative.")
 	private BigDecimal discountAmount;
 
+	private Boolean applyServiceFee;
+
 	@Size(max = 255, message = "Notes must have at most 255 characters.")
 	private String notes;
 
@@ -42,6 +44,10 @@ public class CloseOrderRequest {
 
 	public BigDecimal getDiscountAmount() {
 		return discountAmount;
+	}
+
+	public Boolean getApplyServiceFee() {
+		return applyServiceFee;
 	}
 
 	public String getNotes() {

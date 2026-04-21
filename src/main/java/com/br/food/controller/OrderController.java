@@ -25,6 +25,7 @@ import com.br.food.request.CloseOrderRequest;
 import com.br.food.request.MergeOrdersRequest;
 import com.br.food.request.OrderItemRequest;
 import com.br.food.request.OrderRequest;
+import com.br.food.request.OrderServiceFeeRequest;
 import com.br.food.request.RequestOrderCheckoutRequest;
 import com.br.food.request.SplitOrderRequest;
 import com.br.food.request.TransferOrderRequest;
@@ -108,6 +109,15 @@ public class OrderController {
 			@Valid @RequestBody CloseOrderRequest request,
 			@RequestHeader(name = "X-Actor", required = false) String actorName) {
 		return ResponseEntity.ok(orderService.checkout(id, request, actorName));
+	}
+
+	@Operation(summary = "Update order service fee flag")
+	@PostMapping("/{id}/service-fee")
+	public ResponseEntity<OrderResponse> updateServiceFee(
+			@PathVariable Long id,
+			@Valid @RequestBody OrderServiceFeeRequest request,
+			@RequestHeader(name = "X-Actor", required = false) String actorName) {
+		return ResponseEntity.ok(new OrderResponse(orderService.updateServiceFee(id, request.getApplyServiceFee(), actorName)));
 	}
 
 	@Operation(summary = "Request order checkout")

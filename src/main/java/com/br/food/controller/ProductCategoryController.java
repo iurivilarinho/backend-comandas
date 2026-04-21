@@ -1,7 +1,7 @@
 package com.br.food.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,8 +32,11 @@ public class ProductCategoryController {
 	}
 
 	@GetMapping
-	public ResponseEntity<List<ProductCategoryResponse>> findAll(@RequestParam(required = false) Boolean active) {
-		return ResponseEntity.ok(productCategoryService.findAll(active).stream().map(ProductCategoryResponse::new).toList());
+	public ResponseEntity<Page<ProductCategoryResponse>> findAll(
+			Pageable pageable,
+			@RequestParam(required = false) Boolean active,
+			@RequestParam(required = false) String term) {
+		return ResponseEntity.ok(productCategoryService.findAll(pageable, active, term).map(ProductCategoryResponse::new));
 	}
 
 	@PostMapping

@@ -73,6 +73,9 @@ public class Order {
 	@Column(name = "cover_charge_amount", nullable = false, precision = 12, scale = 2)
 	private BigDecimal coverChargeAmount;
 
+	@Column(name = "apply_service_fee", nullable = false)
+	private Boolean applyServiceFee;
+
 	@Column(name = "paid_amount", nullable = false, precision = 12, scale = 2)
 	private BigDecimal paidAmount;
 
@@ -122,6 +125,7 @@ public class Order {
 		this.subtotalAmount = BigDecimal.ZERO;
 		this.serviceFeeAmount = BigDecimal.ZERO;
 		this.coverChargeAmount = BigDecimal.ZERO;
+		this.applyServiceFee = Boolean.TRUE.equals(request.getApplyServiceFee());
 		this.paidAmount = BigDecimal.ZERO;
 		this.totalAmount = BigDecimal.ZERO;
 		this.openedAt = LocalDateTime.now();
@@ -132,6 +136,7 @@ public class Order {
 		this.channel = request.getChannel();
 		this.discountPercentage = request.getDiscountPercentage() != null ? request.getDiscountPercentage() : BigDecimal.ZERO;
 		this.discountAmount = BigDecimal.ZERO;
+		this.applyServiceFee = Boolean.TRUE.equals(request.getApplyServiceFee());
 	}
 
 	@PrePersist
@@ -156,6 +161,9 @@ public class Order {
 		}
 		if (this.coverChargeAmount == null) {
 			this.coverChargeAmount = BigDecimal.ZERO;
+		}
+		if (this.applyServiceFee == null) {
+			this.applyServiceFee = Boolean.FALSE;
 		}
 		if (this.paidAmount == null) {
 			this.paidAmount = BigDecimal.ZERO;
@@ -260,6 +268,14 @@ public class Order {
 
 	public void setCoverChargeAmount(BigDecimal coverChargeAmount) {
 		this.coverChargeAmount = coverChargeAmount;
+	}
+
+	public Boolean getApplyServiceFee() {
+		return applyServiceFee;
+	}
+
+	public void setApplyServiceFee(Boolean applyServiceFee) {
+		this.applyServiceFee = applyServiceFee;
 	}
 
 	public BigDecimal getPaidAmount() {

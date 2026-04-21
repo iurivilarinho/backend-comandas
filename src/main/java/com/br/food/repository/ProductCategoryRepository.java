@@ -1,8 +1,9 @@
 package com.br.food.repository;
 
-import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.br.food.models.ProductCategory;
@@ -11,7 +12,7 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
 
 	Optional<ProductCategory> findByNameIgnoreCase(String name);
 
-	List<ProductCategory> findAllByActiveOrderByNameAsc(Boolean active);
+	Page<ProductCategory> findAllByActiveAndNameContainingIgnoreCaseOrderByNameAsc(Boolean active, String name, Pageable pageable);
 
-	List<ProductCategory> findAllByOrderByNameAsc();
+	Page<ProductCategory> findAllByNameContainingIgnoreCaseOrderByNameAsc(String name, Pageable pageable);
 }

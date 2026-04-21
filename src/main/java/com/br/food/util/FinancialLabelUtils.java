@@ -26,7 +26,7 @@ public final class FinancialLabelUtils {
 		}
 		return switch (type) {
 		case INCOME -> "Entrada";
-		case EXPENSE -> "Saida";
+		case EXPENSE -> "Saída";
 		};
 	}
 
@@ -36,11 +36,11 @@ public final class FinancialLabelUtils {
 		}
 		return switch (category) {
 		case PRODUCTS -> "Produtos";
-		case SERVICES -> "Servicos";
+		case SERVICES -> "Serviços";
 		case EVENTS -> "Eventos";
 		case SUPPLIES -> "Insumos";
 		case TAXES -> "Taxas";
-		case OPERATIONS -> "Operacao";
+		case OPERATIONS -> "Operação";
 		case OTHER -> "Outros";
 		};
 	}
@@ -52,7 +52,7 @@ public final class FinancialLabelUtils {
 		return switch (paymentMethod) {
 		case PIX -> "PIX";
 		case CASH -> "Dinheiro";
-		case CARD -> "Cartao";
+		case CARD -> "Cartão";
 		case INVOICE -> "Faturado";
 		};
 	}

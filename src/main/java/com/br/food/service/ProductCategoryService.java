@@ -1,8 +1,8 @@
 package com.br.food.service;
 
-import java.util.List;
-
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,11 +28,13 @@ public class ProductCategoryService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<ProductCategory> findAll(Boolean active) {
+	public Page<ProductCategory> findAll(Pageable pageable, Boolean active, String term) {
+		String normalizedTerm = term == null ? "" : term.trim();
+
 		if (active == null) {
-			return productCategoryRepository.findAllByOrderByNameAsc();
+			return productCategoryRepository.findAllByNameContainingIgnoreCaseOrderByNameAsc(normalizedTerm, pageable);
 		}
-		return productCategoryRepository.findAllByActiveOrderByNameAsc(active);
+		return productCategoryRepository.findAllByActiveAndNameContainingIgnoreCaseOrderByNameAsc(active, normalizedTerm, pageable);
 	}
 
 	@Transactional
