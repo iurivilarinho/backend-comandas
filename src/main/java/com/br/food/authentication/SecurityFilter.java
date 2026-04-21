@@ -107,6 +107,10 @@ public class SecurityFilter extends OncePerRequestFilter {
 
 		if (method == HttpMethod.GET && (requestUri.equals("/products")
 				|| requestUri.startsWith("/products/")
+				|| requestUri.equals("/product-categories")
+				|| requestUri.equals("/promotions")
+				|| requestUri.startsWith("/promotions/")
+				|| requestUri.equals("/company-profile")
 				|| requestUri.equals("/tables")
 				|| requestUri.startsWith("/tables/")
 				|| requestUri.equals("/customers/by-document")

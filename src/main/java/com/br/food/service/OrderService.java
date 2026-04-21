@@ -4,9 +4,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -28,6 +31,7 @@ import com.br.food.models.OrderItemIngredient;
 import com.br.food.models.OrderPayment;
 import com.br.food.models.Product;
 import com.br.food.models.RecipeItem;
+import com.br.food.models.Promotion;
 import com.br.food.repository.OrderPaymentRepository;
 import com.br.food.repository.OrderRepository;
 import com.br.food.repository.OrderSpecification;
@@ -54,6 +58,7 @@ public class OrderService {
 	private final StockEntryService stockEntryService;
 	private final AuditLogService auditLogService;
 	private final SystemSettingService systemSettingService;
+	private final PromotionService promotionService;
 
 	public OrderService(
 			OrderRepository orderRepository,
@@ -65,7 +70,8 @@ public class OrderService {
 			RecipeService recipeService,
 			StockEntryService stockEntryService,
 			AuditLogService auditLogService,
-			SystemSettingService systemSettingService) {
+			SystemSettingService systemSettingService,
+			PromotionService promotionService) {
 		this.orderRepository = orderRepository;
 		this.orderPaymentRepository = orderPaymentRepository;
 		this.customerService = customerService;
@@ -76,6 +82,7 @@ public class OrderService {
 		this.stockEntryService = stockEntryService;
 		this.auditLogService = auditLogService;
 		this.systemSettingService = systemSettingService;
+		this.promotionService = promotionService;
 	}
 
 	@Transactional
@@ -84,6 +91,10 @@ public class OrderService {
 		Customer customer = customerService.findById(request.getCustomerId());
 		if (Boolean.TRUE.equals(customer.getBlocked())) {
 			throw new DataIntegrityViolationException("Blocked customers cannot create new orders.");
+		}
+		Order existingOpenOrder = findActiveOrderByCustomerDocumentNumber(customer.getDocumentNumber());
+		if (existingOpenOrder != null) {
+			return existingOpenOrder;
 		}
 		DiningTable table = diningTableService.findByNumber(request.getTableNumber());
 		Order order = new Order(request, customer, generateOrderCode(), table);
@@ -126,11 +137,24 @@ public class OrderService {
 	}
 
 	@Transactional(readOnly = true)
-	public Page<Order> search(OrderStatus status, String tableNumber, String code, Pageable pageable) {
+	public Page<Order> search(OrderStatus status, String tableNumber, String code, Long customerId, Pageable pageable) {
 		Specification<Order> specification = Specification.where(OrderSpecification.hasStatus(status))
 				.and(OrderSpecification.hasTableNumber(tableNumber))
-				.and(OrderSpecification.hasCode(code));
+				.and(OrderSpecification.hasCode(code))
+				.and(OrderSpecification.hasCustomerId(customerId));
 		return orderRepository.findAll(specification, pageable);
+	}
+
+	@Transactional(readOnly = true)
+	public Order findActiveOrderByCustomerDocumentNumber(String documentNumber) {
+		if (documentNumber == null || documentNumber.isBlank()) {
+			return null;
+		}
+		return customerService.findByDocumentNumber(documentNumber)
+				.map(customer -> orderRepository.findFirstByCustomerIdAndStatusInOrderByOpenedAtDesc(
+						customer.getId(),
+						List.of(OrderStatus.OPEN, OrderStatus.READY_TO_CLOSE)))
+				.orElse(null);
 	}
 
 	@Transactional
@@ -423,15 +447,95 @@ public class OrderService {
 	}
 
 	private void addItems(Order order, List<OrderItemRequest> items) {
+		Map<Long, List<OrderItemRequest>> promotionItems = new LinkedHashMap<>();
+
+		for (OrderItemRequest itemRequest : items) {
+			if (itemRequest.getPromotionId() != null) {
+				promotionItems.computeIfAbsent(itemRequest.getPromotionId(), key -> new ArrayList<>()).add(itemRequest);
+				continue;
+			}
+
+			order.getItems().add(createOrderItem(order, itemRequest, null));
+		}
+
+		for (Map.Entry<Long, List<OrderItemRequest>> promotionEntry : promotionItems.entrySet()) {
+			addPromotionItems(order, promotionEntry.getKey(), promotionEntry.getValue());
+		}
+
+		refreshOrderStatus(order);
+	}
+
+	private OrderItem createOrderItem(Order order, OrderItemRequest itemRequest, BigDecimal unitPriceOverride) {
+		Product product = productService.findById(itemRequest.getProductId());
+		validateProductForOrder(product);
+		BigDecimal unitPrice = unitPriceOverride != null
+				? unitPriceOverride.setScale(2, RoundingMode.HALF_UP)
+				: calculateCustomizedUnitPrice(product, itemRequest);
+		OrderItem orderItem = new OrderItem(order, product, itemRequest, unitPrice);
+		applyCustomizedIngredients(orderItem, product, itemRequest);
+		return orderItem;
+	}
+
+	private void addPromotionItems(Order order, Long promotionId, List<OrderItemRequest> items) {
+		Promotion promotion = promotionService.findById(promotionId);
+		validatePromotionForOrder(promotion, items);
+
+		List<OrderItem> promotionOrderItems = items.stream()
+				.map(itemRequest -> createOrderItem(order, itemRequest, null))
+				.toList();
+
+		BigDecimal rawPromotionTotal = promotionOrderItems.stream()
+				.map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+
+		BigDecimal promotionTotal = promotion.getPromotionPrice().setScale(2, RoundingMode.HALF_UP);
+		if (rawPromotionTotal.compareTo(BigDecimal.ZERO) <= 0) {
+			throw new DataIntegrityViolationException("Promotion items must produce a valid total.");
+		}
+
+		BigDecimal allocatedTotal = BigDecimal.ZERO;
+		for (int index = 0; index < promotionOrderItems.size(); index++) {
+			OrderItem orderItem = promotionOrderItems.get(index);
+			BigDecimal lineRawTotal = orderItem.getUnitPrice().multiply(BigDecimal.valueOf(orderItem.getQuantity()));
+			BigDecimal adjustedLineTotal;
+
+			if (index == promotionOrderItems.size() - 1) {
+				adjustedLineTotal = promotionTotal.subtract(allocatedTotal);
+			} else {
+				adjustedLineTotal = promotionTotal
+						.multiply(lineRawTotal)
+						.divide(rawPromotionTotal, 2, RoundingMode.HALF_UP);
+				allocatedTotal = allocatedTotal.add(adjustedLineTotal);
+			}
+
+			BigDecimal adjustedUnitPrice = adjustedLineTotal
+					.divide(BigDecimal.valueOf(orderItem.getQuantity()), 2, RoundingMode.HALF_UP);
+			orderItem.setUnitPrice(adjustedUnitPrice);
+			order.getItems().add(orderItem);
+		}
+	}
+
+	private void validatePromotionForOrder(Promotion promotion, List<OrderItemRequest> items) {
+		if (!Boolean.TRUE.equals(promotion.getActive())
+				|| (promotion.getExpiresAt() != null && promotion.getExpiresAt().isBefore(java.time.LocalDate.now()))) {
+			throw new DataIntegrityViolationException("This promotion is no longer available.");
+		}
+
+		Set<Long> requestedProductIds = items.stream()
+				.map(OrderItemRequest::getProductId)
+				.collect(Collectors.toSet());
+		Set<Long> promotionProductIds = promotion.getProducts().stream()
+				.map(Product::getId)
+				.collect(Collectors.toSet());
+
+		if (!requestedProductIds.equals(promotionProductIds)) {
+			throw new DataIntegrityViolationException("Promotion items must match the products configured for the promotion.");
+		}
+
 		for (OrderItemRequest itemRequest : items) {
 			Product product = productService.findById(itemRequest.getProductId());
 			validateProductForOrder(product);
-			BigDecimal unitPrice = calculateCustomizedUnitPrice(product, itemRequest);
-			OrderItem orderItem = new OrderItem(order, product, itemRequest, unitPrice);
-			applyCustomizedIngredients(orderItem, product, itemRequest);
-			order.getItems().add(orderItem);
 		}
-		refreshOrderStatus(order);
 	}
 
 	private void validateProductForOrder(Product product) {

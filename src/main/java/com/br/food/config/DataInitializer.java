@@ -43,8 +43,8 @@ public class DataInitializer {
 				adminUser.setPassword("$2y$10$x7mhJQXxb941hVtAfVbKe.mpwYVe9CtuNJhmiqiRN2dH7R1Mn8Pz.");
 				adminUser.getRoles().add(adminRole);
 				adminUser.setPasswordLastChanged(LocalDateTime.now());
-				adminUser.setForcePasswordChange(true);
-				adminUser.setActive(null);
+				adminUser.setForcePasswordChange(false);
+				adminUser.setActive(true);
 				userRepository.save(adminUser);
 			}
 		};

@@ -1,5 +1,7 @@
 package com.br.food.controller;
 
+import java.time.LocalDate;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import com.br.food.request.StockEntryRequest;
 import com.br.food.response.StockEntryResponse;
@@ -38,8 +41,23 @@ public class StockEntryController {
 	public ResponseEntity<Page<StockEntryResponse>> search(
 			@RequestParam(required = false) String productCode,
 			@RequestParam(required = false) String term,
+			@RequestParam(required = false) String batch,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate manufacturingDateStart,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate manufacturingDateEnd,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate expirationDateStart,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate expirationDateEnd,
 			Pageable pageable) {
-		return ResponseEntity.ok(stockEntryService.search(productCode, term, pageable).map(StockEntryResponse::new));
+		return ResponseEntity.ok(stockEntryService
+				.search(
+						productCode,
+						term,
+						batch,
+						manufacturingDateStart,
+						manufacturingDateEnd,
+						expirationDateStart,
+						expirationDateEnd,
+						pageable)
+				.map(StockEntryResponse::new));
 	}
 
 	@Operation(summary = "Create manual stock entry")

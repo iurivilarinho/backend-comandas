@@ -1,5 +1,7 @@
 package com.br.food.repository;
 
+import java.util.List;
+
 import org.springframework.data.jpa.domain.Specification;
 
 import com.br.food.enums.Types.OrderItemStatus;
@@ -26,6 +28,12 @@ public final class OrderSpecification {
 		return (root, query, builder) -> status == null ? builder.conjunction() : builder.equal(root.get("status"), status);
 	}
 
+	public static Specification<Order> hasAnyStatus(List<OrderStatus> statuses) {
+		return (root, query, builder) -> statuses == null || statuses.isEmpty()
+				? builder.conjunction()
+				: root.get("status").in(statuses);
+	}
+
 	public static Specification<Order> hasTableNumber(String tableNumber) {
 		return (root, query, builder) -> tableNumber == null || tableNumber.isBlank()
 				? builder.conjunction()
@@ -36,5 +44,11 @@ public final class OrderSpecification {
 		return (root, query, builder) -> code == null || code.isBlank()
 				? builder.conjunction()
 				: builder.like(builder.upper(root.get("code")), "%" + code.trim().toUpperCase() + "%");
+	}
+
+	public static Specification<Order> hasCustomerId(Long customerId) {
+		return (root, query, builder) -> customerId == null
+				? builder.conjunction()
+				: builder.equal(root.join("customer").get("id"), customerId);
 	}
 }

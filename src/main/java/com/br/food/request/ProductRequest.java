@@ -1,6 +1,8 @@
 package com.br.food.request;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.br.food.enums.Types.ProductType;
 

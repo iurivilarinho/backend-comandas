@@ -19,6 +19,8 @@ public class OrderItemRequest {
 	@Positive(message = "Quantity must be greater than zero.")
 	private Integer quantity;
 
+	private Long promotionId;
+
 	@Size(max = 255, message = "Notes must have at most 255 characters.")
 	private String notes;
 
@@ -31,6 +33,10 @@ public class OrderItemRequest {
 
 	public Integer getQuantity() {
 		return quantity;
+	}
+
+	public Long getPromotionId() {
+		return promotionId;
 	}
 
 	public String getNotes() {

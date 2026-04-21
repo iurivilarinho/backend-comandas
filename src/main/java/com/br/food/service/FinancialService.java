@@ -42,6 +42,8 @@ import com.br.food.util.excel.GeneratorExcel;
 @Service
 public class FinancialService {
 
+	private static final DateTimeFormatter EXCEL_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
 	private final FinancialEntryRepository financialEntryRepository;
 	private final FinancialStatementRepository financialStatementRepository;
 	private final OrderPaymentRepository orderPaymentRepository;
@@ -137,6 +139,46 @@ public class FinancialService {
 	}
 
 	private List<FinancialEntryResponse> listEntries(
+			LocalDate startDate,
+			LocalDate endDate,
+			FinanceEntryType type,
+			FinanceCategory category) {
+		List<FinancialEntryResponse> entries = buildEntries(startDate, endDate, type, category);
+		return buildOverview(startDate, endDate, type, category, entries);
+	}
+
+	@Transactional(readOnly = true)
+	public byte[] exportReport(
+			LocalDate startDate,
+			LocalDate endDate,
+			FinanceEntryType type,
+			FinanceCategory category) throws Exception {
+		List<FinancialEntryResponse> entries = buildEntries(startDate, endDate, type, category);
+		FinancialOverviewResponse overview = buildOverview(startDate, endDate, type, category, entries);
+
+		List<FinancialReportSummaryResponse> summaryRows = List.of(new FinancialReportSummaryResponse(
+				startDate,
+				endDate,
+				type,
+				category,
+				overview.getTotalIncome(),
+				overview.getTotalExpense(),
+				overview.getBalance(),
+				entries.size()));
+		List<FinancialReportExcelRow> movementRows = entries.stream()
+				.map(this::toExcelRow)
+				.toList();
+
+		Map<String, List<?>> sheets = new LinkedHashMap<>();
+		sheets.put("Resumo", summaryRows);
+		if (!movementRows.isEmpty()) {
+			sheets.put("Movimentacoes", movementRows);
+		}
+
+		return generatorExcel.gerarAbas(sheets).toByteArray();
+	}
+
+	private List<FinancialEntryResponse> buildEntries(
 			LocalDate startDate,
 			LocalDate endDate,
 			FinanceEntryType type,

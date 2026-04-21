@@ -13,6 +13,7 @@ public class SupplyInvoiceResponse {
 	private final String seriesNumber;
 	private final String accessKey;
 	private final LocalDate issueDate;
+	private final LocalDate launchDate;
 	private final SupplyInvoiceStatus status;
 	private final DocumentResponse attachment;
 	private final List<StockEntryResponse> items;
@@ -23,6 +24,7 @@ public class SupplyInvoiceResponse {
 		this.seriesNumber = invoice.getSeriesNumber();
 		this.accessKey = invoice.getAccessKey();
 		this.issueDate = invoice.getIssueDate();
+		this.launchDate = invoice.getLaunchDate();
 		this.status = invoice.getStatus();
 		this.attachment = invoice.getAttachment() != null ? new DocumentResponse(invoice.getAttachment()) : null;
 		this.items = invoice.getItems().stream().map(StockEntryResponse::new).toList();
@@ -46,6 +48,10 @@ public class SupplyInvoiceResponse {
 
 	public LocalDate getIssueDate() {
 		return issueDate;
+	}
+
+	public LocalDate getLaunchDate() {
+		return launchDate;
 	}
 
 	public SupplyInvoiceStatus getStatus() {

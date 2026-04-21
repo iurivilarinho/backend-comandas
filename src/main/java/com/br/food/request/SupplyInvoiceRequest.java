@@ -33,6 +33,10 @@ public class SupplyInvoiceRequest {
 	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
 	private LocalDate issueDate;
 
+	@NotNull(message = "Launch date is required.")
+	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+	private LocalDate launchDate;
+
 	@NotEmpty(message = "At least one stock entry is required.")
 	@Valid
 	private List<StockEntryRequest> items = new ArrayList<>();
@@ -51,6 +55,10 @@ public class SupplyInvoiceRequest {
 
 	public LocalDate getIssueDate() {
 		return issueDate;
+	}
+
+	public LocalDate getLaunchDate() {
+		return launchDate;
 	}
 
 	public List<StockEntryRequest> getItems() {

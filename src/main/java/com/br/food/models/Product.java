@@ -76,6 +76,11 @@ public class Product {
 			inverseJoinColumns = @JoinColumn(name = "fk_Id_Complement"))
 	private List<Product> complements = new ArrayList<>();
 
+	@ManyToMany
+	@JoinTable(name = "product_category_link", joinColumns = @JoinColumn(name = "fk_product_id"),
+			inverseJoinColumns = @JoinColumn(name = "fk_category_id"))
+	private List<ProductCategory> categories = new ArrayList<>();
+
 	@OneToMany(mappedBy = "finalProduct", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<RecipeItem> recipeItems = new ArrayList<>();
 
@@ -231,5 +236,16 @@ public class Product {
 
 	public List<RecipeItem> getRecipeItems() {
 		return recipeItems;
+	}
+
+	public List<ProductCategory> getCategories() {
+		return categories;
+	}
+
+	public void setCategories(List<ProductCategory> categories) {
+		this.categories.clear();
+		if (categories != null) {
+			this.categories.addAll(categories);
+		}
 	}
 }

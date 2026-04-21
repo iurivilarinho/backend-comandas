@@ -3,13 +3,21 @@ package com.br.food.service;
 import java.nio.file.AccessDeniedException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.br.food.enums.Types.OrderItemStatus;
+import com.br.food.enums.Types.OrderStatus;
 import com.br.food.models.DiningTable;
+import com.br.food.models.Order;
 import com.br.food.repository.DiningTableRepository;
+import com.br.food.repository.OrderRepository;
+import com.br.food.repository.OrderSpecification;
 import com.br.food.request.DiningTableRequest;
+import com.br.food.response.DiningTableResponse;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -17,9 +25,16 @@ import jakarta.persistence.EntityNotFoundException;
 public class DiningTableService {
 
 	private final DiningTableRepository diningTableRepository;
+	private final OrderRepository orderRepository;
+	private final TableAccessTokenService tableAccessTokenService;
 
-	public DiningTableService(DiningTableRepository diningTableRepository) {
+	public DiningTableService(
+			DiningTableRepository diningTableRepository,
+			OrderRepository orderRepository,
+			TableAccessTokenService tableAccessTokenService) {
 		this.diningTableRepository = diningTableRepository;
+		this.orderRepository = orderRepository;
+		this.tableAccessTokenService = tableAccessTokenService;
 	}
 
 	@Transactional
@@ -63,8 +78,21 @@ public class DiningTableService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<DiningTable> findAll() {
-		return diningTableRepository.findAll();
+	public List<DiningTableResponse> findAll(String status) {
+		List<DiningTable> tables = diningTableRepository.findAll();
+		Map<String, Order> activeOrdersByTable = orderRepository
+				.findAll(OrderSpecification.hasAnyStatus(List.of(OrderStatus.OPEN, OrderStatus.READY_TO_CLOSE)))
+				.stream()
+				.filter(order -> order.getDiningTable() != null && order.getDiningTable().getNumber() != null)
+				.collect(java.util.stream.Collectors.toMap(
+						order -> order.getDiningTable().getNumber(),
+						order -> order,
+						this::pickOrderWithHigherPriority));
+
+		return tables.stream()
+				.map(table -> new DiningTableResponse(table, resolveOperationalStatus(table, activeOrdersByTable.get(table.getNumber()))))
+				.filter(response -> status == null || status.isBlank() || Objects.equals(response.getOperationalStatus(), status))
+				.toList();
 	}
 
 	@Transactional
@@ -94,5 +122,53 @@ public class DiningTableService {
 	@Transactional
 	public void delete(Long id) {
 		diningTableRepository.delete(findById(id));
+	}
+
+	@Transactional(readOnly = true)
+	public String generateAccessToken(String tableNumber) {
+		DiningTable table = findByNumber(tableNumber);
+		if (!Boolean.TRUE.equals(table.getActive())) {
+			throw new EntityNotFoundException("Table not available for number " + tableNumber + ".");
+		}
+		return tableAccessTokenService.generate(table.getNumber());
+	}
+
+	@Transactional(readOnly = true)
+	public String resolveAccessToken(String token) {
+		String tableNumber = tableAccessTokenService.resolve(token);
+		findByNumber(tableNumber);
+		return tableNumber;
+	}
+
+	private Order pickOrderWithHigherPriority(Order currentOrder, Order candidateOrder) {
+		return getOrderPriority(candidateOrder) >= getOrderPriority(currentOrder) ? candidateOrder : currentOrder;
+	}
+
+	private int getOrderPriority(Order order) {
+		if (order.getCheckoutRequestedAt() != null) {
+			return 3;
+		}
+		boolean hasReadyItem = order.getItems().stream().anyMatch(item -> item.getStatus() == OrderItemStatus.READY);
+		if (hasReadyItem) {
+			return 2;
+		}
+		return 1;
+	}
+
+	private String resolveOperationalStatus(DiningTable table, Order order) {
+		if (!Boolean.TRUE.equals(table.getActive())) {
+			return "INACTIVE";
+		}
+		if (order != null && order.getCheckoutRequestedAt() != null) {
+			return "READY_TO_CLOSE";
+		}
+		if (order != null && order.getItems().stream().anyMatch(item -> item.getStatus() == OrderItemStatus.READY)) {
+			return "READY_FOR_SERVICE";
+		}
+		if ((order != null && (order.getStatus() == OrderStatus.OPEN || order.getStatus() == OrderStatus.READY_TO_CLOSE))
+				|| Boolean.TRUE.equals(table.getOccupied())) {
+			return "OCCUPIED";
+		}
+		return "FREE";
 	}
 }
