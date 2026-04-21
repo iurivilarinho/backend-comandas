@@ -2,10 +2,13 @@ package com.br.food.service;
 
 import java.nio.file.AccessDeniedException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,29 +42,49 @@ public class DiningTableService {
 
 	@Transactional
 	public List<DiningTable> createMany(Integer tableCount) {
-		List<DiningTable> tables = new ArrayList<>();
-		for (int index = 0; index < tableCount; index++) {
-			tables.add(new DiningTable(generateTableNumber()));
+		if (tableCount == null || tableCount <= 0) {
+			throw new DataIntegrityViolationException("Table batch count must be greater than zero.");
 		}
+
+		int nextNumber = resolveNextTableNumber();
+		Set<String> existingNumbers = new HashSet<>(diningTableRepository.findAll().stream()
+				.map(DiningTable::getNumber)
+				.filter(Objects::nonNull)
+				.toList());
+		List<DiningTable> tables = new ArrayList<>();
+
+		for (int index = 0; index < tableCount; index++) {
+			String tableNumber = generateNextAvailableTableNumber(nextNumber, existingNumbers);
+			tables.add(new DiningTable(tableNumber));
+			existingNumbers.add(tableNumber);
+			nextNumber = Integer.parseInt(tableNumber) + 1;
+		}
+
 		return diningTableRepository.saveAll(tables);
 	}
 
 	@Transactional
 	public DiningTable create(DiningTableRequest request) {
-		return diningTableRepository.save(new DiningTable(request));
+		String normalizedNumber = normalizeTableNumber(request.getNumber());
+		validateTableNumberUniqueness(normalizedNumber, null);
+
+		DiningTable table = new DiningTable(request);
+		table.setNumber(normalizedNumber);
+		return diningTableRepository.save(table);
 	}
 
 	@Transactional(readOnly = true)
 	public String generateTableNumber() {
-		DiningTable highestTable = diningTableRepository.findTopByOrderByNumberDesc();
-		int nextNumber = highestTable != null ? Integer.parseInt(highestTable.getNumber()) + 1 : 1;
-		return String.valueOf(nextNumber);
+		return String.valueOf(resolveNextTableNumber());
 	}
 
 	@Transactional
 	public DiningTable update(Long id, DiningTableRequest request) {
 		DiningTable table = findById(id);
+		String normalizedNumber = normalizeTableNumber(request.getNumber());
+		validateTableNumberUniqueness(normalizedNumber, id);
 		table.update(request);
+		table.setNumber(normalizedNumber);
 		return diningTableRepository.save(table);
 	}
 
@@ -170,5 +193,54 @@ public class DiningTableService {
 			return "OCCUPIED";
 		}
 		return "FREE";
+	}
+
+	@Transactional(readOnly = true)
+	private int resolveNextTableNumber() {
+		return diningTableRepository.findAll().stream()
+				.map(DiningTable::getNumber)
+				.map(this::parseTableNumber)
+				.filter(Objects::nonNull)
+				.mapToInt(Integer::intValue)
+				.max()
+				.orElse(0) + 1;
+	}
+
+	private String generateNextAvailableTableNumber(int startingNumber, Set<String> existingNumbers) {
+		int currentNumber = Math.max(1, startingNumber);
+
+		while (existingNumbers.contains(String.valueOf(currentNumber))) {
+			currentNumber++;
+		}
+
+		return String.valueOf(currentNumber);
+	}
+
+	private void validateTableNumberUniqueness(String number, Long currentTableId) {
+		diningTableRepository.findByNumber(number).ifPresent(existingTable -> {
+			if (currentTableId == null || !existingTable.getId().equals(currentTableId)) {
+				throw new DataIntegrityViolationException("There is already a table using number " + number + ".");
+			}
+		});
+	}
+
+	private String normalizeTableNumber(String number) {
+		if (number == null || number.isBlank()) {
+			throw new DataIntegrityViolationException("Table number must be informed.");
+		}
+
+		return number.trim();
+	}
+
+	private Integer parseTableNumber(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+
+		try {
+			return Integer.valueOf(value.trim());
+		} catch (NumberFormatException exception) {
+			return null;
+		}
 	}
 }

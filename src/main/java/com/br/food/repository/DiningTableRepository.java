@@ -10,6 +10,6 @@ public interface DiningTableRepository extends JpaRepository<DiningTable, Long> 
 
 	Optional<DiningTable> findByNumber(String number);
 
-	DiningTable findTopByOrderByNumberDesc();
+	boolean existsByNumber(String number);
 
 }

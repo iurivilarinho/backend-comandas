@@ -67,11 +67,12 @@ public class OrderController {
 	@GetMapping
 	public ResponseEntity<Page<OrderResponse>> findAll(
 			@RequestParam(required = false) OrderStatus status,
+			@RequestParam(required = false) List<OrderStatus> statuses,
 			@RequestParam(required = false) String tableNumber,
 			@RequestParam(required = false) String code,
 			@RequestParam(required = false) Long customerId,
 			Pageable pageable) {
-		return ResponseEntity.ok(orderService.search(status, tableNumber, code, customerId, pageable).map(OrderResponse::new));
+		return ResponseEntity.ok(orderService.search(status, statuses, tableNumber, code, customerId, pageable).map(OrderResponse::new));
 	}
 
 	@Operation(summary = "Update order")

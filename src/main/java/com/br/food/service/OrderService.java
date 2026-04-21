@@ -137,8 +137,9 @@ public class OrderService {
 	}
 
 	@Transactional(readOnly = true)
-	public Page<Order> search(OrderStatus status, String tableNumber, String code, Long customerId, Pageable pageable) {
+	public Page<Order> search(OrderStatus status, List<OrderStatus> statuses, String tableNumber, String code, Long customerId, Pageable pageable) {
 		Specification<Order> specification = Specification.where(OrderSpecification.hasStatus(status))
+				.and(OrderSpecification.hasAnyStatus(statuses))
 				.and(OrderSpecification.hasTableNumber(tableNumber))
 				.and(OrderSpecification.hasCode(code))
 				.and(OrderSpecification.hasCustomerId(customerId));
