@@ -31,10 +31,11 @@ public class CompanyProfileController {
 
 	@GetMapping
 	public ResponseEntity<CompanyProfileResponse> findCurrent() {
-		if (companyProfileService.findCurrent() == null) {
+		CompanyProfileResponse companyProfile = companyProfileService.findCurrentResponse();
+		if (companyProfile == null) {
 			return ResponseEntity.noContent().build();
 		}
-		return ResponseEntity.ok(new CompanyProfileResponse(companyProfileService.findCurrent()));
+		return ResponseEntity.ok(companyProfile);
 	}
 
 	@PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

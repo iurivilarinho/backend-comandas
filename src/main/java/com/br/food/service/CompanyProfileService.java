@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,9 +21,12 @@ import com.br.food.repository.CompanyProfileRepository;
 import com.br.food.request.AddressRequest;
 import com.br.food.request.CompanyProfileRequest;
 import com.br.food.request.OpeningHourRequest;
+import com.br.food.response.CompanyProfileResponse;
 
 @Service
 public class CompanyProfileService {
+
+	public static final String COMPANY_PROFILE_CACHE = "companyProfileMenu";
 
 	private final CompanyProfileRepository companyProfileRepository;
 	private final DocumentService documentService;
@@ -36,7 +41,15 @@ public class CompanyProfileService {
 		return companyProfileRepository.findFirstByOrderByIdAsc().orElse(null);
 	}
 
+	@Transactional(readOnly = true)
+	@Cacheable(cacheNames = COMPANY_PROFILE_CACHE, key = "'current'")
+	public CompanyProfileResponse findCurrentResponse() {
+		CompanyProfile companyProfile = findCurrent();
+		return companyProfile != null ? new CompanyProfileResponse(companyProfile) : null;
+	}
+
 	@Transactional
+	@CacheEvict(cacheNames = COMPANY_PROFILE_CACHE, allEntries = true)
 	public CompanyProfile upsert(CompanyProfileRequest request, MultipartFile logo, MultipartFile banner) throws IOException {
 		validateOpeningHours(request.getOpeningHours());
 

@@ -12,8 +12,8 @@ public class CompanyProfileResponse {
 	private final Boolean dineInEnabled;
 	private final Boolean deliveryEnabled;
 	private final Boolean takeawayEnabled;
-	private final DocumentResponse logo;
-	private final DocumentResponse banner;
+	private final DocumentBasicResponse logo;
+	private final DocumentBasicResponse banner;
 	private final AddressResponse address;
 	private final List<OpeningHourResponse> openingHours;
 
@@ -24,8 +24,8 @@ public class CompanyProfileResponse {
 		this.dineInEnabled = companyProfile.getDineInEnabled();
 		this.deliveryEnabled = companyProfile.getDeliveryEnabled();
 		this.takeawayEnabled = companyProfile.getTakeawayEnabled();
-		this.logo = companyProfile.getLogo() != null ? new DocumentResponse(companyProfile.getLogo()) : null;
-		this.banner = companyProfile.getBanner() != null ? new DocumentResponse(companyProfile.getBanner()) : null;
+		this.logo = companyProfile.getLogo() != null ? new DocumentBasicResponse(companyProfile.getLogo()) : null;
+		this.banner = companyProfile.getBanner() != null ? new DocumentBasicResponse(companyProfile.getBanner()) : null;
 		this.address = companyProfile.getAddress() != null ? new AddressResponse(companyProfile.getAddress()) : null;
 		this.openingHours = companyProfile.getOpeningHours().stream().map(OpeningHourResponse::new).toList();
 	}
@@ -54,11 +54,11 @@ public class CompanyProfileResponse {
 		return takeawayEnabled;
 	}
 
-	public DocumentResponse getLogo() {
+	public DocumentBasicResponse getLogo() {
 		return logo;
 	}
 
-	public DocumentResponse getBanner() {
+	public DocumentBasicResponse getBanner() {
 		return banner;
 	}
 
