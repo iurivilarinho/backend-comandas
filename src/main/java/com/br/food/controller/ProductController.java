@@ -74,6 +74,9 @@ public class ProductController {
 			@RequestParam(required = false) ProductType type,
 			@RequestParam(required = false) Boolean complement,
 			@RequestParam(required = false) String term) {
+		if (isMenuRequest(active, visibleOnMenu, type, complement)) {
+			return ResponseEntity.ok(productService.findMenuProducts(pageable, categoryId, term));
+		}
 		return ResponseEntity.ok(productService.findAll(pageable, categoryId, active, visibleOnMenu, type, complement, term)
 				.map(ProductResponse::new));
 	}
@@ -121,6 +124,13 @@ public class ProductController {
 	public ResponseEntity<Void> delete(@PathVariable Long id) {
 		productService.delete(id);
 		return ResponseEntity.noContent().build();
+	}
+
+	private boolean isMenuRequest(Boolean active, Boolean visibleOnMenu, ProductType type, Boolean complement) {
+		return Boolean.TRUE.equals(active)
+				&& Boolean.TRUE.equals(visibleOnMenu)
+				&& type == ProductType.FINISHED
+				&& Boolean.FALSE.equals(complement);
 	}
 }
 

@@ -5,7 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -20,11 +23,14 @@ import com.br.food.repository.ProductCategoryRepository;
 import com.br.food.repository.ProductRepository;
 import com.br.food.repository.ProductSpecification;
 import com.br.food.request.ProductRequest;
+import com.br.food.response.ProductResponse;
 
 import jakarta.persistence.EntityNotFoundException;
 
 @Service
 public class ProductService {
+
+	public static final String MENU_PRODUCTS_CACHE = "menuProducts";
 
 	private final ProductRepository productRepository;
 	private final ProductCategoryRepository productCategoryRepository;
@@ -55,7 +61,18 @@ public class ProductService {
 		return productRepository.findAll(specification, pageable);
 	}
 
+	@Transactional(readOnly = true)
+	@Cacheable(cacheNames = MENU_PRODUCTS_CACHE, key = "T(com.br.food.service.ProductService).buildMenuCacheKey(#pageable, #categoryId, #term)")
+	public Page<ProductResponse> findMenuProducts(Pageable pageable, Long categoryId, String term) {
+		Page<Product> page = findAll(pageable, categoryId, true, true, ProductType.FINISHED, false, term);
+		List<ProductResponse> content = page.getContent().stream()
+				.map(ProductResponse::new)
+				.toList();
+		return new PageImpl<>(content, pageable, page.getTotalElements());
+	}
+
 	@Transactional
+	@CacheEvict(cacheNames = MENU_PRODUCTS_CACHE, allEntries = true)
 	public Product create(ProductRequest request, MultipartFile image) throws IOException {
 		validateUniqueCode(request.getCode(), null);
 		validatePreparationFlags(request);
@@ -66,6 +83,7 @@ public class ProductService {
 	}
 
 	@Transactional
+	@CacheEvict(cacheNames = MENU_PRODUCTS_CACHE, allEntries = true)
 	public Product update(Long id, ProductRequest request, MultipartFile image) throws IOException {
 		Product product = findById(id);
 		validateUniqueCode(request.getCode(), id);
@@ -80,18 +98,21 @@ public class ProductService {
 	}
 
 	@Transactional
+	@CacheEvict(cacheNames = MENU_PRODUCTS_CACHE, allEntries = true)
 	public void updateStatus(Long id, boolean active) {
 		Product product = findById(id);
 		product.setActive(active);
 	}
 
 	@Transactional
+	@CacheEvict(cacheNames = MENU_PRODUCTS_CACHE, allEntries = true)
 	public void delete(Long id) {
 		Product product = findById(id);
 		productRepository.delete(product);
 	}
 
 	@Transactional
+	@CacheEvict(cacheNames = MENU_PRODUCTS_CACHE, allEntries = true)
 	public void addComplement(Long productId, Long complementId) {
 		Product product = findById(productId);
 		Product complement = findById(complementId);
@@ -114,9 +135,18 @@ public class ProductService {
 	}
 
 	@Transactional
+	@CacheEvict(cacheNames = MENU_PRODUCTS_CACHE, allEntries = true)
 	public void removeComplement(Long productId, Long complementId) {
 		Product product = findById(productId);
 		product.getComplements().removeIf(complement -> complement.getId().equals(complementId));
+	}
+
+	public static String buildMenuCacheKey(Pageable pageable, Long categoryId, String term) {
+		int pageNumber = pageable != null ? pageable.getPageNumber() : 0;
+		int pageSize = pageable != null ? pageable.getPageSize() : 20;
+		String sort = pageable != null ? pageable.getSort().toString() : "UNSORTED";
+		String normalizedTerm = term == null ? "" : term.trim().toLowerCase();
+		return pageNumber + "|" + pageSize + "|" + sort + "|" + categoryId + "|" + normalizedTerm;
 	}
 
 	private void validateUniqueCode(String code, Long currentId) {

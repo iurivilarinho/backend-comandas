@@ -3,6 +3,7 @@ package com.br.food.service;
 import java.util.List;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ public class RecipeService {
 	}
 
 	@Transactional
+	@CacheEvict(cacheNames = ProductService.MENU_PRODUCTS_CACHE, allEntries = true)
 	public List<RecipeItem> replaceRecipe(Long productId, List<RecipeItemRequest> recipeItems) {
 		Product finalProduct = productService.findById(productId);
 		if (finalProduct.getType() != ProductType.FINISHED) {
