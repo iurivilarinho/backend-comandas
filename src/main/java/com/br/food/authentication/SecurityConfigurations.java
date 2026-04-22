@@ -28,6 +28,7 @@ public class SecurityConfigurations {
 				.requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
 				.requestMatchers(HttpMethod.GET, "/products", "/products/*", "/product-categories",
 						"/promotions", "/promotions/*", "/company-profile", "/tables", "/tables/*",
+						"/menu/products", "/documents/*", "/documents/*/content",
 						"/customers/by-document", "/customers/*", "/orders", "/orders/*").permitAll()
 				.requestMatchers(HttpMethod.POST, "/customers", "/orders", "/orders/*/items", "/orders/*/request-close")
 				.permitAll()

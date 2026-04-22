@@ -19,7 +19,7 @@ public class ProductResponse {
 	private final Boolean visibleOnMenu;
 	private final Boolean sendToKitchen;
 	private final Boolean requiresPreparation;
-	private final DocumentResponse image;
+	private final DocumentBasicResponse image;
 	private final List<ProductBasicResponse> complements;
 	private final List<ProductCategoryResponse> categories;
 	private final List<RecipeItemResponse> recipeItems;
@@ -36,7 +36,7 @@ public class ProductResponse {
 		this.visibleOnMenu = product.getVisibleOnMenu();
 		this.sendToKitchen = product.getSendToKitchen();
 		this.requiresPreparation = product.getRequiresPreparation();
-		this.image = product.getImage() != null ? new DocumentResponse(product.getImage()) : null;
+		this.image = product.getImage() != null ? new DocumentBasicResponse(product.getImage()) : null;
 		this.complements = product.getComplements().stream().map(ProductBasicResponse::new).toList();
 		this.categories = product.getCategories().stream().map(ProductCategoryResponse::new).toList();
 		this.recipeItems = product.getRecipeItems().stream().map(RecipeItemResponse::new).toList();
@@ -86,7 +86,7 @@ public class ProductResponse {
 		return requiresPreparation;
 	}
 
-	public DocumentResponse getImage() {
+	public DocumentBasicResponse getImage() {
 		return image;
 	}
 

@@ -44,6 +44,13 @@ public class Document {
 		this.size = file.getSize();
 	}
 
+	public Document(String name, String contentType, byte[] document) {
+		this.name = name;
+		this.contentType = contentType;
+		this.document = document;
+		this.size = document != null ? (long) document.length : null;
+	}
+
 	public Long getId() {
 		return id;
 	}
