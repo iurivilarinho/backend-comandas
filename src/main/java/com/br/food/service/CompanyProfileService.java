@@ -100,9 +100,9 @@ public class CompanyProfileService {
 	private void validateOpeningHours(List<OpeningHourRequest> openingHours) {
 		Set<java.time.DayOfWeek> dayOfWeeks = new HashSet<>();
 		for (OpeningHourRequest openingHour : openingHours) {
-			if (!openingHour.getCloseTime().isAfter(openingHour.getOpenTime())) {
-				throw new DataIntegrityViolationException("Close time must be after open time.");
-			}
+//			if (!openingHour.getCloseTime().isAfter(openingHour.getOpenTime())) {
+//				throw new DataIntegrityViolationException("Close time must be after open time.");
+//			}
 			if (!dayOfWeeks.add(openingHour.getDayOfWeek())) {
 				throw new DataIntegrityViolationException("Only one opening hour per day of week is allowed.");
 			}
