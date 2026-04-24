@@ -66,6 +66,12 @@ class OrderServiceTest {
 	@Mock
 	private SystemSettingService systemSettingService;
 
+	@Mock
+	private PromotionService promotionService;
+
+	@Mock
+	private CompanyProfileService companyProfileService;
+
 	@InjectMocks
 	private OrderService orderService;
 

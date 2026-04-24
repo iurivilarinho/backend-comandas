@@ -37,6 +37,9 @@ public class CompanyProfile {
 	@Column(name = "primary_color", length = 7)
 	private String primaryColor;
 
+	@Column(name = "digital_ordering_enabled")
+	private Boolean digitalOrderingEnabled;
+
 	@Column(name = "dine_in_enabled", nullable = false)
 	private Boolean dineInEnabled;
 
@@ -109,6 +112,14 @@ public class CompanyProfile {
 
 	public void setPrimaryColor(String primaryColor) {
 		this.primaryColor = primaryColor;
+	}
+
+	public Boolean getDigitalOrderingEnabled() {
+		return digitalOrderingEnabled;
+	}
+
+	public void setDigitalOrderingEnabled(Boolean digitalOrderingEnabled) {
+		this.digitalOrderingEnabled = digitalOrderingEnabled;
 	}
 
 	public Boolean getDineInEnabled() {

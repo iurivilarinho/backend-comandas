@@ -124,8 +124,8 @@ public class SecurityFilter extends OncePerRequestFilter {
 		}
 
 		if (method == HttpMethod.POST && (requestUri.equals("/customers")
-				|| requestUri.equals("/orders")
-				|| requestUri.matches("^/orders/\\d+/items$")
+				|| requestUri.equals("/digital-orders")
+				|| requestUri.matches("^/digital-orders/\\d+/items$")
 				|| requestUri.matches("^/orders/\\d+/request-close$"))) {
 			return true;
 		}

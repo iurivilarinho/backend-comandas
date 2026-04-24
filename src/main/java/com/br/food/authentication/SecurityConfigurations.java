@@ -30,8 +30,8 @@ public class SecurityConfigurations {
 						"/promotions", "/promotions/*", "/company-profile", "/tables", "/tables/*",
 						"/menu/products", "/documents/*", "/documents/*/content",
 						"/customers/by-document", "/customers/*", "/orders", "/orders/*").permitAll()
-				.requestMatchers(HttpMethod.POST, "/customers", "/orders", "/orders/*/items", "/orders/*/request-close")
-				.permitAll()
+				.requestMatchers(HttpMethod.POST, "/customers", "/digital-orders", "/digital-orders/*/items",
+						"/orders/*/request-close").permitAll()
 				.requestMatchers(HttpMethod.PUT, "/customers/*").permitAll()
 				.requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll().anyRequest()
 				.authenticated().and().addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

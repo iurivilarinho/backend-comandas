@@ -14,6 +14,7 @@ import jakarta.validation.constraints.Size;
 public class CompanyProfileRequest {
 
 	public static final String DEFAULT_PRIMARY_COLOR = "#EA1D2C";
+	public static final Boolean DEFAULT_DIGITAL_ORDERING_ENABLED = Boolean.TRUE;
 
 	@NotBlank(message = "Company name is required.")
 	@Size(min = 2, max = 120, message = "Company name must have between 2 and 120 characters.")
@@ -25,6 +26,9 @@ public class CompanyProfileRequest {
 	@Schema(description = "Primary brand color in hexadecimal format.", example = "#EA1D2C")
 	@Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "Primary color must be a valid hexadecimal color.")
 	private String primaryColor = DEFAULT_PRIMARY_COLOR;
+
+	@Schema(description = "Indicates whether customers can create orders from the digital menu.", example = "true")
+	private Boolean digitalOrderingEnabled = DEFAULT_DIGITAL_ORDERING_ENABLED;
 
 	@NotNull(message = "Dine-in setting is required.")
 	private Boolean dineInEnabled;
@@ -54,6 +58,12 @@ public class CompanyProfileRequest {
 		return primaryColor != null && !primaryColor.isBlank()
 				? primaryColor.trim().toUpperCase()
 				: DEFAULT_PRIMARY_COLOR;
+	}
+
+	public Boolean getDigitalOrderingEnabled() {
+		return digitalOrderingEnabled != null
+				? digitalOrderingEnabled
+				: DEFAULT_DIGITAL_ORDERING_ENABLED;
 	}
 
 	public Boolean getDineInEnabled() {

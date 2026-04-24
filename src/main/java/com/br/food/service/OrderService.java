@@ -23,6 +23,7 @@ import com.br.food.enums.Types.OrderItemStatus;
 import com.br.food.enums.Types.OrderStatus;
 import com.br.food.enums.Types.PaymentMethod;
 import com.br.food.enums.Types.ProductType;
+import com.br.food.models.CompanyProfile;
 import com.br.food.models.Customer;
 import com.br.food.models.DiningTable;
 import com.br.food.models.Order;
@@ -59,6 +60,7 @@ public class OrderService {
 	private final AuditLogService auditLogService;
 	private final SystemSettingService systemSettingService;
 	private final PromotionService promotionService;
+	private final CompanyProfileService companyProfileService;
 
 	public OrderService(
 			OrderRepository orderRepository,
@@ -71,7 +73,8 @@ public class OrderService {
 			StockEntryService stockEntryService,
 			AuditLogService auditLogService,
 			SystemSettingService systemSettingService,
-			PromotionService promotionService) {
+			PromotionService promotionService,
+			CompanyProfileService companyProfileService) {
 		this.orderRepository = orderRepository;
 		this.orderPaymentRepository = orderPaymentRepository;
 		this.customerService = customerService;
@@ -83,6 +86,13 @@ public class OrderService {
 		this.auditLogService = auditLogService;
 		this.systemSettingService = systemSettingService;
 		this.promotionService = promotionService;
+		this.companyProfileService = companyProfileService;
+	}
+
+	@Transactional
+	public Order createFromDigitalMenu(OrderRequest request) throws AccessDeniedException {
+		validateDigitalOrderingEnabled();
+		return create(request, null);
 	}
 
 	@Transactional
@@ -159,6 +169,12 @@ public class OrderService {
 	}
 
 	@Transactional
+	public Order addItemsFromDigitalMenu(Long id, List<OrderItemRequest> items) {
+		validateDigitalOrderingEnabled();
+		return addItems(id, items, null);
+	}
+
+	@Transactional
 	public Order addItems(Long id, List<OrderItemRequest> items, String actorName) {
 		if (items == null || items.isEmpty()) {
 			throw new DataIntegrityViolationException("At least one order item is required.");
@@ -171,6 +187,13 @@ public class OrderService {
 		recalculateTotals(order);
 		auditLogService.register("Order", order.getId(), "ORDER_ITEMS_ADDED", actorName, "Added " + items.size() + " items.");
 		return orderRepository.save(order);
+	}
+
+	private void validateDigitalOrderingEnabled() {
+		CompanyProfile companyProfile = companyProfileService.findCurrent();
+		if (companyProfile != null && Boolean.FALSE.equals(companyProfile.getDigitalOrderingEnabled())) {
+			throw new DataIntegrityViolationException("Digital menu ordering is disabled.");
+		}
 	}
 
 	@Transactional

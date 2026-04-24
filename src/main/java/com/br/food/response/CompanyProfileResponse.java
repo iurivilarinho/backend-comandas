@@ -11,6 +11,7 @@ public class CompanyProfileResponse {
 	private final String companyName;
 	private final String slogan;
 	private final String primaryColor;
+	private final Boolean digitalOrderingEnabled;
 	private final Boolean dineInEnabled;
 	private final Boolean deliveryEnabled;
 	private final Boolean takeawayEnabled;
@@ -26,6 +27,9 @@ public class CompanyProfileResponse {
 		this.primaryColor = companyProfile.getPrimaryColor() != null
 				? companyProfile.getPrimaryColor()
 				: CompanyProfileRequest.DEFAULT_PRIMARY_COLOR;
+		this.digitalOrderingEnabled = companyProfile.getDigitalOrderingEnabled() != null
+				? companyProfile.getDigitalOrderingEnabled()
+				: CompanyProfileRequest.DEFAULT_DIGITAL_ORDERING_ENABLED;
 		this.dineInEnabled = companyProfile.getDineInEnabled();
 		this.deliveryEnabled = companyProfile.getDeliveryEnabled();
 		this.takeawayEnabled = companyProfile.getTakeawayEnabled();
@@ -49,6 +53,10 @@ public class CompanyProfileResponse {
 
 	public String getPrimaryColor() {
 		return primaryColor;
+	}
+
+	public Boolean getDigitalOrderingEnabled() {
+		return digitalOrderingEnabled;
 	}
 
 	public Boolean getDineInEnabled() {

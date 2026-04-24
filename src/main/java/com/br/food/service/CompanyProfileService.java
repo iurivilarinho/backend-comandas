@@ -57,6 +57,7 @@ public class CompanyProfileService {
 		profile.setCompanyName(request.getCompanyName());
 		profile.setSlogan(request.getSlogan());
 		profile.setPrimaryColor(request.getPrimaryColor());
+		profile.setDigitalOrderingEnabled(request.getDigitalOrderingEnabled());
 		profile.setDineInEnabled(request.getDineInEnabled());
 		profile.setDeliveryEnabled(request.getDeliveryEnabled());
 		profile.setTakeawayEnabled(request.getTakeawayEnabled());
