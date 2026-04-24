@@ -3,12 +3,14 @@ package com.br.food.response;
 import java.util.List;
 
 import com.br.food.models.CompanyProfile;
+import com.br.food.request.CompanyProfileRequest;
 
 public class CompanyProfileResponse {
 
 	private final Long id;
 	private final String companyName;
 	private final String slogan;
+	private final String primaryColor;
 	private final Boolean dineInEnabled;
 	private final Boolean deliveryEnabled;
 	private final Boolean takeawayEnabled;
@@ -21,6 +23,9 @@ public class CompanyProfileResponse {
 		this.id = companyProfile.getId();
 		this.companyName = companyProfile.getCompanyName();
 		this.slogan = companyProfile.getSlogan();
+		this.primaryColor = companyProfile.getPrimaryColor() != null
+				? companyProfile.getPrimaryColor()
+				: CompanyProfileRequest.DEFAULT_PRIMARY_COLOR;
 		this.dineInEnabled = companyProfile.getDineInEnabled();
 		this.deliveryEnabled = companyProfile.getDeliveryEnabled();
 		this.takeawayEnabled = companyProfile.getTakeawayEnabled();
@@ -40,6 +45,10 @@ public class CompanyProfileResponse {
 
 	public String getSlogan() {
 		return slogan;
+	}
+
+	public String getPrimaryColor() {
+		return primaryColor;
 	}
 
 	public Boolean getDineInEnabled() {

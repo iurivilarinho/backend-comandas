@@ -34,6 +34,9 @@ public class CompanyProfile {
 	@Column(name = "slogan", length = 255)
 	private String slogan;
 
+	@Column(name = "primary_color", length = 7)
+	private String primaryColor;
+
 	@Column(name = "dine_in_enabled", nullable = false)
 	private Boolean dineInEnabled;
 
@@ -98,6 +101,14 @@ public class CompanyProfile {
 
 	public void setSlogan(String slogan) {
 		this.slogan = slogan;
+	}
+
+	public String getPrimaryColor() {
+		return primaryColor;
+	}
+
+	public void setPrimaryColor(String primaryColor) {
+		this.primaryColor = primaryColor;
 	}
 
 	public Boolean getDineInEnabled() {

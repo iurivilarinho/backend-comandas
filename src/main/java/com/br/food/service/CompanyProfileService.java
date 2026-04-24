@@ -56,6 +56,7 @@ public class CompanyProfileService {
 		CompanyProfile profile = companyProfileRepository.findFirstByOrderByIdAsc().orElseGet(CompanyProfile::new);
 		profile.setCompanyName(request.getCompanyName());
 		profile.setSlogan(request.getSlogan());
+		profile.setPrimaryColor(request.getPrimaryColor());
 		profile.setDineInEnabled(request.getDineInEnabled());
 		profile.setDeliveryEnabled(request.getDeliveryEnabled());
 		profile.setTakeawayEnabled(request.getTakeawayEnabled());
