@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.br.food.enums.Types.OrderItemStatus;
 import com.br.food.enums.Types.OrderChannel;
 import com.br.food.enums.Types.OrderStatus;
 import com.br.food.enums.Types.PaymentMethod;
@@ -55,7 +56,10 @@ public class OrderResponse {
 		this.checkoutRequestNotes = order.getCheckoutRequestNotes();
 		this.status = order.getStatus();
 		this.channel = order.getChannel();
-		this.items = order.getItems().stream().map(OrderItemResponse::new).toList();
+		this.items = order.getItems().stream()
+				.filter(item -> item.getStatus() != OrderItemStatus.CANCELED && item.getStatus() != OrderItemStatus.DECLINED)
+				.map(OrderItemResponse::new)
+				.toList();
 		this.payments = order.getPayments().stream().map(OrderPaymentResponse::new).toList();
 	}
 

@@ -25,6 +25,7 @@ import com.br.food.models.Order;
 import com.br.food.models.OrderItem;
 import com.br.food.models.OrderPayment;
 import com.br.food.models.Product;
+import com.br.food.models.ProductVariation;
 import com.br.food.models.RecipeItem;
 import com.br.food.repository.OrderPaymentRepository;
 import com.br.food.repository.OrderRepository;
@@ -150,6 +151,68 @@ class OrderServiceTest {
 		assertEquals(1, updatedOrder.getItems().size());
 		assertEquals(new BigDecimal("25.00"), updatedOrder.getItems().get(0).getUnitPrice());
 		assertEquals(1, updatedOrder.getItems().get(0).getIngredients().size());
+	}
+
+	@Test
+	void addItemsShouldRequireVariationWhenProductHasActiveVariation() {
+		Order order = new Order();
+		order.setStatus(OrderStatus.OPEN);
+
+		Product product = new Product();
+		ReflectionTestUtils.setField(product, "id", 10L);
+		product.setPrice(new BigDecimal("20.00"));
+		product.setActive(true);
+		product.setComplement(false);
+
+		ProductVariation variation = new ProductVariation();
+		ReflectionTestUtils.setField(variation, "id", 100L);
+		ReflectionTestUtils.setField(variation, "name", "Carne");
+		ReflectionTestUtils.setField(variation, "priceDelta", new BigDecimal("3.00"));
+		ReflectionTestUtils.setField(variation, "active", true);
+		product.getVariations().add(variation);
+
+		OrderItemRequest itemRequest = new OrderItemRequest();
+		ReflectionTestUtils.setField(itemRequest, "productId", 10L);
+		ReflectionTestUtils.setField(itemRequest, "quantity", 1);
+
+		when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+		when(productService.findById(10L)).thenReturn(product);
+
+		assertThrows(org.springframework.dao.DataIntegrityViolationException.class,
+				() -> orderService.addItems(1L, List.of(itemRequest), "tester"));
+	}
+
+	@Test
+	void addItemsShouldIncludeVariationPriceDeltaInUnitPrice() {
+		Order order = new Order();
+		order.setStatus(OrderStatus.OPEN);
+
+		Product product = new Product();
+		ReflectionTestUtils.setField(product, "id", 10L);
+		product.setPrice(new BigDecimal("20.00"));
+		product.setActive(true);
+		product.setComplement(false);
+
+		ProductVariation variation = new ProductVariation();
+		ReflectionTestUtils.setField(variation, "id", 100L);
+		ReflectionTestUtils.setField(variation, "name", "Carne");
+		ReflectionTestUtils.setField(variation, "priceDelta", new BigDecimal("3.00"));
+		ReflectionTestUtils.setField(variation, "active", true);
+		product.getVariations().add(variation);
+
+		OrderItemRequest itemRequest = new OrderItemRequest();
+		ReflectionTestUtils.setField(itemRequest, "productId", 10L);
+		ReflectionTestUtils.setField(itemRequest, "productVariationId", 100L);
+		ReflectionTestUtils.setField(itemRequest, "quantity", 2);
+
+		when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+		when(productService.findById(10L)).thenReturn(product);
+		when(orderRepository.save(order)).thenReturn(order);
+
+		Order updatedOrder = orderService.addItems(1L, List.of(itemRequest), "tester");
+
+		assertEquals(new BigDecimal("23.00"), updatedOrder.getItems().get(0).getUnitPrice());
+		assertEquals("Carne", updatedOrder.getItems().get(0).getProductVariationName());
 	}
 
 	@Test

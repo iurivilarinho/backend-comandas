@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ import com.br.food.models.OrderItem;
 import com.br.food.models.OrderItemIngredient;
 import com.br.food.models.OrderPayment;
 import com.br.food.models.Product;
+import com.br.food.models.ProductVariation;
 import com.br.food.models.RecipeItem;
 import com.br.food.models.Promotion;
 import com.br.food.repository.OrderPaymentRepository;
@@ -153,7 +156,15 @@ public class OrderService {
 				.and(OrderSpecification.hasTableNumber(tableNumber))
 				.and(OrderSpecification.hasCode(code))
 				.and(OrderSpecification.hasCustomerId(customerId));
-		return orderRepository.findAll(specification, pageable);
+		List<Order> orders = orderRepository.findAll(specification).stream()
+				.sorted(buildOrderComparator())
+				.toList();
+		int start = (int) pageable.getOffset();
+		if (start >= orders.size()) {
+			return new PageImpl<>(List.of(), pageable, orders.size());
+		}
+		int end = Math.min(start + pageable.getPageSize(), orders.size());
+		return new PageImpl<>(orders.subList(start, end), pageable, orders.size());
 	}
 
 	@Transactional(readOnly = true)
@@ -289,6 +300,7 @@ public class OrderService {
 		item.setStatus(OrderItemStatus.CANCELED);
 		recalculateTotals(order);
 		refundRegisteredPaymentsIfNeeded(order);
+		handleOrderWithoutActiveItems(order);
 		auditLogService.register("OrderItem", item.getId(), "ORDER_ITEM_CANCELED", actorName, reason);
 	}
 
@@ -448,6 +460,22 @@ public class OrderService {
 		auditLogService.register("OrderItem", itemId, "ORDER_ITEM_SERVED", actorName, "Item served.");
 	}
 
+	@Transactional
+	public void restoreConsumedStock(OrderItem orderItem) {
+		if (orderItem == null || orderItem.getStockConsumptions().isEmpty()) {
+			return;
+		}
+		stockEntryService.restoreConsumptions(orderItem);
+	}
+
+	@Transactional
+	public void recalculateOrderAfterKitchenRejection(Long orderId) {
+		Order order = findById(orderId);
+		recalculateTotals(order);
+		refundRegisteredPaymentsIfNeeded(order);
+		handleOrderWithoutActiveItems(order);
+	}
+
 	@Transactional(readOnly = true)
 	public String generateOrderCode() {
 		Order highestOrder = orderRepository.findTopByOrderByCodeDesc();
@@ -512,10 +540,16 @@ public class OrderService {
 	private OrderItem createOrderItem(Order order, OrderItemRequest itemRequest, BigDecimal unitPriceOverride) {
 		Product product = productService.findById(itemRequest.getProductId());
 		validateProductForOrder(product);
+		ProductVariation productVariation = resolveProductVariation(product, itemRequest.getProductVariationId());
 		BigDecimal unitPrice = unitPriceOverride != null
 				? unitPriceOverride.setScale(2, RoundingMode.HALF_UP)
-				: calculateCustomizedUnitPrice(product, itemRequest);
+				: calculateCustomizedUnitPrice(product, itemRequest, productVariation);
 		OrderItem orderItem = new OrderItem(order, product, itemRequest, unitPrice);
+		if (productVariation != null) {
+			orderItem.setProductVariationId(productVariation.getId());
+			orderItem.setProductVariationName(productVariation.getName());
+			orderItem.setProductVariationPriceDelta(productVariation.getPriceDelta().setScale(2, RoundingMode.HALF_UP));
+		}
 		applyCustomizedIngredients(orderItem, product, itemRequest);
 		return orderItem;
 	}
@@ -592,7 +626,14 @@ public class OrderService {
 	}
 
 	private BigDecimal calculateCustomizedUnitPrice(Product product, OrderItemRequest itemRequest) {
+		return calculateCustomizedUnitPrice(product, itemRequest, null);
+	}
+
+	private BigDecimal calculateCustomizedUnitPrice(Product product, OrderItemRequest itemRequest, ProductVariation productVariation) {
 		BigDecimal unitPrice = product.getPrice().setScale(2, RoundingMode.HALF_UP);
+		if (productVariation != null) {
+			unitPrice = unitPrice.add(productVariation.getPriceDelta().setScale(2, RoundingMode.HALF_UP));
+		}
 		Map<Long, RecipeItem> recipeItemsByIngredientId = buildRecipeItemsMap(product);
 
 		for (OrderItemIngredientRequest ingredientRequest : itemRequest.getIngredients()) {
@@ -737,10 +778,82 @@ public class OrderService {
 		if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.CANCELED) {
 			return;
 		}
-		boolean allCompleted = order.getItems().stream()
-				.filter(item -> item.getStatus() != OrderItemStatus.CANCELED && item.getStatus() != OrderItemStatus.DECLINED)
+		List<OrderItem> activeItems = getActiveOrderItems(order);
+		if (activeItems.isEmpty()) {
+			order.setStatus(OrderStatus.CANCELED);
+			order.setCheckoutRequestedAt(null);
+			order.setRequestedPaymentMethod(null);
+			order.setCheckoutRequestNotes(null);
+			if (order.getDiningTable() != null && order.getChannel() == OrderChannel.DINE_IN) {
+				diningTableService.releaseTable(order.getDiningTable().getId());
+			}
+			return;
+		}
+		boolean allCompleted = activeItems.stream()
 				.allMatch(item -> item.getStatus() == OrderItemStatus.READY || item.getStatus() == OrderItemStatus.SERVED);
 		order.setStatus(allCompleted ? OrderStatus.READY_TO_CLOSE : OrderStatus.OPEN);
+	}
+
+	private void handleOrderWithoutActiveItems(Order order) {
+		if (!getActiveOrderItems(order).isEmpty()) {
+			return;
+		}
+		order.setPaidAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+	}
+
+	private List<OrderItem> getActiveOrderItems(Order order) {
+		return order.getItems().stream()
+				.filter(item -> item.getStatus() != OrderItemStatus.CANCELED && item.getStatus() != OrderItemStatus.DECLINED)
+				.toList();
+	}
+
+	private ProductVariation resolveProductVariation(Product product, Long productVariationId) {
+		boolean hasActiveVariations = product.getVariations().stream()
+				.anyMatch(variation -> Boolean.TRUE.equals(variation.getActive()));
+
+		if (productVariationId == null) {
+			if (hasActiveVariations) {
+				throw new DataIntegrityViolationException("This product requires a variation selection.");
+			}
+			return null;
+		}
+
+		return product.getVariations().stream()
+				.filter(variation -> variation.getId().equals(productVariationId))
+				.filter(variation -> Boolean.TRUE.equals(variation.getActive()))
+				.findFirst()
+				.orElseThrow(() -> new DataIntegrityViolationException("Selected product variation is invalid."));
+	}
+
+	private Comparator<Order> buildOrderComparator() {
+		return Comparator
+				.comparingInt(this::getOrderSortingPriority)
+				.thenComparing(Order::getOpenedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+				.thenComparing(Order::getCode, Comparator.nullsLast(Comparator.reverseOrder()));
+	}
+
+	private int getOrderSortingPriority(Order order) {
+		if (order.getStatus() == OrderStatus.READY_TO_CLOSE) {
+			return 0;
+		}
+		if (order.getStatus() == OrderStatus.OPEN) {
+			boolean hasReadyItems = getActiveOrderItems(order).stream().anyMatch(item -> item.getStatus() == OrderItemStatus.READY);
+			if (hasReadyItems) {
+				return 1;
+			}
+			boolean hasKitchenPendingItems = getActiveOrderItems(order).stream()
+					.anyMatch(item -> item.getStatus() == OrderItemStatus.RECEIVED
+							|| item.getStatus() == OrderItemStatus.QUEUED
+							|| item.getStatus() == OrderItemStatus.IN_PREPARATION);
+			if (hasKitchenPendingItems) {
+				return 2;
+			}
+			return 3;
+		}
+		if (order.getStatus() == OrderStatus.CLOSED) {
+			return 4;
+		}
+		return 5;
 	}
 
 	private String safeActor(String actorName) {

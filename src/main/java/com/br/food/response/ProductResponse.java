@@ -23,6 +23,7 @@ public class ProductResponse {
 	private final List<ProductBasicResponse> complements;
 	private final List<ProductCategoryResponse> categories;
 	private final List<RecipeItemResponse> recipeItems;
+	private final List<ProductVariationResponse> variations;
 
 	public ProductResponse(Product product) {
 		this.id = product.getId();
@@ -40,6 +41,7 @@ public class ProductResponse {
 		this.complements = product.getComplements().stream().map(ProductBasicResponse::new).toList();
 		this.categories = product.getCategories().stream().map(ProductCategoryResponse::new).toList();
 		this.recipeItems = product.getRecipeItems().stream().map(RecipeItemResponse::new).toList();
+		this.variations = product.getVariations().stream().map(ProductVariationResponse::new).toList();
 	}
 
 	public Long getId() {
@@ -100,5 +102,9 @@ public class ProductResponse {
 
 	public List<RecipeItemResponse> getRecipeItems() {
 		return recipeItems;
+	}
+
+	public List<ProductVariationResponse> getVariations() {
+		return variations;
 	}
 }

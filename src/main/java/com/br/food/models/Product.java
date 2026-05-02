@@ -3,10 +3,12 @@ package com.br.food.models;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import com.br.food.enums.Types.ProductType;
 import com.br.food.request.ProductRequest;
+import com.br.food.request.ProductVariationRequest;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.CascadeType;
@@ -84,6 +86,9 @@ public class Product {
 	@OneToMany(mappedBy = "finalProduct", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<RecipeItem> recipeItems = new ArrayList<>();
 
+	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<ProductVariation> variations = new ArrayList<>();
+
 	@Column(name = "created_at", updatable = false, nullable = false)
 	private LocalDateTime createdAt;
 
@@ -120,6 +125,19 @@ public class Product {
 		if (image != null) {
 			this.image = image;
 		}
+	}
+
+	public void replaceVariations(List<ProductVariationRequest> variationRequests) {
+		this.variations.clear();
+		if (variationRequests == null) {
+			return;
+		}
+
+		for (int index = 0; index < variationRequests.size(); index++) {
+			ProductVariation variation = new ProductVariation(this, variationRequests.get(index), index);
+			this.variations.add(variation);
+		}
+		this.variations.sort(Comparator.comparing(ProductVariation::getDisplayOrder));
 	}
 
 	@PrePersist
@@ -236,6 +254,10 @@ public class Product {
 
 	public List<RecipeItem> getRecipeItems() {
 		return recipeItems;
+	}
+
+	public List<ProductVariation> getVariations() {
+		return variations;
 	}
 
 	public List<ProductCategory> getCategories() {

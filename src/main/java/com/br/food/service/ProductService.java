@@ -76,9 +76,11 @@ public class ProductService {
 	public Product create(ProductRequest request, MultipartFile image) throws IOException {
 		validateUniqueCode(request.getCode(), null);
 		validatePreparationFlags(request);
+		validateVariations(request);
 		Document document = documentService.convertToDocument(image);
 		Product product = new Product(request, document);
 		product.setCategories(resolveCategories(request.getCategoryIds()));
+		product.replaceVariations(request.getVariations());
 		return productRepository.save(product);
 	}
 
@@ -88,9 +90,11 @@ public class ProductService {
 		Product product = findById(id);
 		validateUniqueCode(request.getCode(), id);
 		validatePreparationFlags(request);
+		validateVariations(request);
 		Document document = image != null ? documentService.convertToDocument(image) : null;
 		product.update(request, document);
 		product.setCategories(resolveCategories(request.getCategoryIds()));
+		product.replaceVariations(request.getVariations());
 		if (request.getType() == ProductType.INGREDIENT || !request.getResolvedRequiresPreparation()) {
 			product.getRecipeItems().clear();
 		}
@@ -163,6 +167,24 @@ public class ProductService {
 		}
 		if (request.getResolvedRequiresPreparation() && !request.getResolvedSendToKitchen()) {
 			throw new DataIntegrityViolationException("Products that require preparation must be sent to the kitchen.");
+		}
+	}
+
+	private void validateVariations(ProductRequest request) {
+		if (request.getType() != ProductType.FINISHED) {
+			if (!request.getVariations().isEmpty()) {
+				throw new DataIntegrityViolationException("Only final products can have variations.");
+			}
+			return;
+		}
+
+		List<String> normalizedNames = new ArrayList<>();
+		for (com.br.food.request.ProductVariationRequest variation : request.getVariations()) {
+			String normalizedName = variation.getName().trim().toLowerCase();
+			if (normalizedNames.contains(normalizedName)) {
+				throw new DataIntegrityViolationException("Variation names must be unique per product.");
+			}
+			normalizedNames.add(normalizedName);
 		}
 	}
 

@@ -74,8 +74,12 @@ public class KitchenService {
 	public void rejectOrderItem(Long orderItemId, String declineReason, String actorName) {
 		OrderItem item = orderItemService.findById(orderItemId);
 		validateCurrentStatus(item);
+		if (!item.getStockConsumptions().isEmpty()) {
+			orderService.restoreConsumedStock(item);
+		}
 		orderItemService.addDeclineReason(orderItemId, declineReason);
 		orderItemService.updateStatus(orderItemId, OrderItemStatus.DECLINED);
+		orderService.recalculateOrderAfterKitchenRejection(item.getOrder().getId());
 		auditLogService.register("OrderItem", orderItemId, "KITCHEN_DECLINED_ITEM", actorName, declineReason);
 	}
 

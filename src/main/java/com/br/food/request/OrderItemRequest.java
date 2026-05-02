@@ -21,6 +21,8 @@ public class OrderItemRequest {
 
 	private Long promotionId;
 
+	private Long productVariationId;
+
 	@Size(max = 255, message = "Notes must have at most 255 characters.")
 	private String notes;
 
@@ -37,6 +39,10 @@ public class OrderItemRequest {
 
 	public Long getPromotionId() {
 		return promotionId;
+	}
+
+	public Long getProductVariationId() {
+		return productVariationId;
 	}
 
 	public String getNotes() {

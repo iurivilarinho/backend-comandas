@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Comparator;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -114,7 +115,16 @@ public class DiningTableService {
 
 		return tables.stream()
 				.map(table -> new DiningTableResponse(table, resolveOperationalStatus(table, activeOrdersByTable.get(table.getNumber()))))
-				.filter(response -> status == null || status.isBlank() || Objects.equals(response.getOperationalStatus(), status))
+				.filter(response -> {
+					if (status != null && !status.isBlank()) {
+						return Objects.equals(response.getOperationalStatus(), status);
+					}
+					return !"INACTIVE".equals(response.getOperationalStatus());
+				})
+				.sorted(Comparator
+						.comparingInt((DiningTableResponse response) -> getOperationalStatusPriority(response.getOperationalStatus()))
+						.thenComparing(this::parseResponseTableNumber, Comparator.nullsLast(Integer::compareTo))
+						.thenComparing(DiningTableResponse::getNumber, Comparator.nullsLast(String::compareTo)))
 				.toList();
 	}
 
@@ -193,6 +203,26 @@ public class DiningTableService {
 			return "OCCUPIED";
 		}
 		return "FREE";
+	}
+
+	private int getOperationalStatusPriority(String operationalStatus) {
+		if ("READY_TO_CLOSE".equals(operationalStatus)) {
+			return 0;
+		}
+		if ("READY_FOR_SERVICE".equals(operationalStatus)) {
+			return 1;
+		}
+		if ("OCCUPIED".equals(operationalStatus)) {
+			return 2;
+		}
+		if ("FREE".equals(operationalStatus)) {
+			return 3;
+		}
+		return 4;
+	}
+
+	private Integer parseResponseTableNumber(DiningTableResponse response) {
+		return parseTableNumber(response.getNumber());
 	}
 
 	@Transactional(readOnly = true)

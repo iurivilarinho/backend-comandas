@@ -45,6 +45,8 @@ public class ProductRequest {
 
     private Boolean requiresPreparation;
 
+    private List<ProductVariationRequest> variations = new ArrayList<>();
+
     public ProductType getType() {
         return type;
     }
@@ -83,6 +85,10 @@ public class ProductRequest {
 
     public Boolean getRequiresPreparation() {
         return requiresPreparation;
+    }
+
+    public List<ProductVariationRequest> getVariations() {
+        return variations != null ? variations : List.of();
     }
 
     public boolean getResolvedSendToKitchen() {
