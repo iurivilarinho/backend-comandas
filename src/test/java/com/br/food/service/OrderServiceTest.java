@@ -164,12 +164,20 @@ class OrderServiceTest {
 		product.setActive(true);
 		product.setComplement(false);
 
+		com.br.food.models.ProductVariationGroup group = new com.br.food.models.ProductVariationGroup();
+		ReflectionTestUtils.setField(group, "id", 50L);
+		ReflectionTestUtils.setField(group, "title", "Sabor");
+		ReflectionTestUtils.setField(group, "active", true);
+		ReflectionTestUtils.setField(group, "displayOrder", 0);
+
 		ProductVariation variation = new ProductVariation();
 		ReflectionTestUtils.setField(variation, "id", 100L);
+		ReflectionTestUtils.setField(variation, "group", group);
 		ReflectionTestUtils.setField(variation, "name", "Carne");
 		ReflectionTestUtils.setField(variation, "priceDelta", new BigDecimal("3.00"));
 		ReflectionTestUtils.setField(variation, "active", true);
-		product.getVariations().add(variation);
+		group.getVariations().add(variation);
+		product.getVariationGroups().add(group);
 
 		OrderItemRequest itemRequest = new OrderItemRequest();
 		ReflectionTestUtils.setField(itemRequest, "productId", 10L);
@@ -193,16 +201,24 @@ class OrderServiceTest {
 		product.setActive(true);
 		product.setComplement(false);
 
+		com.br.food.models.ProductVariationGroup group = new com.br.food.models.ProductVariationGroup();
+		ReflectionTestUtils.setField(group, "id", 50L);
+		ReflectionTestUtils.setField(group, "title", "Sabor");
+		ReflectionTestUtils.setField(group, "active", true);
+		ReflectionTestUtils.setField(group, "displayOrder", 0);
+
 		ProductVariation variation = new ProductVariation();
 		ReflectionTestUtils.setField(variation, "id", 100L);
+		ReflectionTestUtils.setField(variation, "group", group);
 		ReflectionTestUtils.setField(variation, "name", "Carne");
 		ReflectionTestUtils.setField(variation, "priceDelta", new BigDecimal("3.00"));
 		ReflectionTestUtils.setField(variation, "active", true);
-		product.getVariations().add(variation);
+		group.getVariations().add(variation);
+		product.getVariationGroups().add(group);
 
 		OrderItemRequest itemRequest = new OrderItemRequest();
 		ReflectionTestUtils.setField(itemRequest, "productId", 10L);
-		ReflectionTestUtils.setField(itemRequest, "productVariationId", 100L);
+		ReflectionTestUtils.setField(itemRequest, "productVariationIds", List.of(100L));
 		ReflectionTestUtils.setField(itemRequest, "quantity", 2);
 
 		when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
@@ -212,7 +228,7 @@ class OrderServiceTest {
 		Order updatedOrder = orderService.addItems(1L, List.of(itemRequest), "tester");
 
 		assertEquals(new BigDecimal("23.00"), updatedOrder.getItems().get(0).getUnitPrice());
-		assertEquals("Carne", updatedOrder.getItems().get(0).getProductVariationName());
+		assertEquals("Carne", updatedOrder.getItems().get(0).getVariations().get(0).getVariationName());
 	}
 
 	@Test

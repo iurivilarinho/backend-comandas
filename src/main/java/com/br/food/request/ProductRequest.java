@@ -45,7 +45,7 @@ public class ProductRequest {
 
     private Boolean requiresPreparation;
 
-    private List<ProductVariationRequest> variations = new ArrayList<>();
+    private List<ProductVariationGroupRequest> variationGroups = new ArrayList<>();
 
     public ProductType getType() {
         return type;
@@ -87,8 +87,8 @@ public class ProductRequest {
         return requiresPreparation;
     }
 
-    public List<ProductVariationRequest> getVariations() {
-        return variations != null ? variations : List.of();
+    public List<ProductVariationGroupRequest> getVariationGroups() {
+        return variationGroups != null ? variationGroups : List.of();
     }
 
     public boolean getResolvedSendToKitchen() {

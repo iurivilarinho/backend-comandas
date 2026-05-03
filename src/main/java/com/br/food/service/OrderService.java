@@ -32,8 +32,10 @@ import com.br.food.models.Order;
 import com.br.food.models.OrderItem;
 import com.br.food.models.OrderItemIngredient;
 import com.br.food.models.OrderPayment;
+import com.br.food.models.OrderItemVariation;
 import com.br.food.models.Product;
 import com.br.food.models.ProductVariation;
+import com.br.food.models.ProductVariationGroup;
 import com.br.food.models.RecipeItem;
 import com.br.food.models.Promotion;
 import com.br.food.repository.OrderPaymentRepository;
@@ -540,15 +542,13 @@ public class OrderService {
 	private OrderItem createOrderItem(Order order, OrderItemRequest itemRequest, BigDecimal unitPriceOverride) {
 		Product product = productService.findById(itemRequest.getProductId());
 		validateProductForOrder(product);
-		ProductVariation productVariation = resolveProductVariation(product, itemRequest.getProductVariationId());
+		List<ProductVariation> selectedVariations = resolveSelectedVariations(product, itemRequest.getProductVariationIds());
 		BigDecimal unitPrice = unitPriceOverride != null
 				? unitPriceOverride.setScale(2, RoundingMode.HALF_UP)
-				: calculateCustomizedUnitPrice(product, itemRequest, productVariation);
+				: calculateCustomizedUnitPrice(product, itemRequest, selectedVariations);
 		OrderItem orderItem = new OrderItem(order, product, itemRequest, unitPrice);
-		if (productVariation != null) {
-			orderItem.setProductVariationId(productVariation.getId());
-			orderItem.setProductVariationName(productVariation.getName());
-			orderItem.setProductVariationPriceDelta(productVariation.getPriceDelta().setScale(2, RoundingMode.HALF_UP));
+		for (int index = 0; index < selectedVariations.size(); index++) {
+			orderItem.getVariations().add(new OrderItemVariation(orderItem, selectedVariations.get(index), index));
 		}
 		applyCustomizedIngredients(orderItem, product, itemRequest);
 		return orderItem;
@@ -626,13 +626,13 @@ public class OrderService {
 	}
 
 	private BigDecimal calculateCustomizedUnitPrice(Product product, OrderItemRequest itemRequest) {
-		return calculateCustomizedUnitPrice(product, itemRequest, null);
+		return calculateCustomizedUnitPrice(product, itemRequest, List.of());
 	}
 
-	private BigDecimal calculateCustomizedUnitPrice(Product product, OrderItemRequest itemRequest, ProductVariation productVariation) {
+	private BigDecimal calculateCustomizedUnitPrice(Product product, OrderItemRequest itemRequest, List<ProductVariation> selectedVariations) {
 		BigDecimal unitPrice = product.getPrice().setScale(2, RoundingMode.HALF_UP);
-		if (productVariation != null) {
-			unitPrice = unitPrice.add(productVariation.getPriceDelta().setScale(2, RoundingMode.HALF_UP));
+		for (ProductVariation variation : selectedVariations) {
+			unitPrice = unitPrice.add(variation.getPriceDelta().setScale(2, RoundingMode.HALF_UP));
 		}
 		Map<Long, RecipeItem> recipeItemsByIngredientId = buildRecipeItemsMap(product);
 
@@ -807,22 +807,49 @@ public class OrderService {
 				.toList();
 	}
 
-	private ProductVariation resolveProductVariation(Product product, Long productVariationId) {
-		boolean hasActiveVariations = product.getVariations().stream()
-				.anyMatch(variation -> Boolean.TRUE.equals(variation.getActive()));
+	private List<ProductVariation> resolveSelectedVariations(Product product, List<Long> selectedIds) {
+		List<ProductVariationGroup> activeGroups = product.getVariationGroups().stream()
+				.filter(group -> Boolean.TRUE.equals(group.getActive()))
+				.filter(group -> group.getVariations().stream().anyMatch(variation -> Boolean.TRUE.equals(variation.getActive())))
+				.toList();
 
-		if (productVariationId == null) {
-			if (hasActiveVariations) {
-				throw new DataIntegrityViolationException("This product requires a variation selection.");
+		List<Long> requestedIds = selectedIds != null ? selectedIds : List.of();
+
+		if (activeGroups.isEmpty()) {
+			if (!requestedIds.isEmpty()) {
+				throw new DataIntegrityViolationException("This product does not accept variation selections.");
 			}
-			return null;
+			return List.of();
 		}
 
-		return product.getVariations().stream()
-				.filter(variation -> variation.getId().equals(productVariationId))
-				.filter(variation -> Boolean.TRUE.equals(variation.getActive()))
-				.findFirst()
-				.orElseThrow(() -> new DataIntegrityViolationException("Selected product variation is invalid."));
+		if (requestedIds.size() != activeGroups.size()) {
+			throw new DataIntegrityViolationException("Select one option for each variation group of this product.");
+		}
+
+		List<ProductVariation> resolved = new ArrayList<>();
+		Set<Long> coveredGroupIds = new java.util.HashSet<>();
+
+		for (Long variationId : requestedIds) {
+			if (variationId == null) {
+				throw new DataIntegrityViolationException("Selected variation id cannot be null.");
+			}
+
+			ProductVariation match = activeGroups.stream()
+					.flatMap(group -> group.getVariations().stream())
+					.filter(variation -> variation.getId().equals(variationId))
+					.filter(variation -> Boolean.TRUE.equals(variation.getActive()))
+					.findFirst()
+					.orElseThrow(() -> new DataIntegrityViolationException("Selected product variation is invalid."));
+
+			Long groupId = match.getGroup() != null ? match.getGroup().getId() : null;
+			if (groupId == null || !coveredGroupIds.add(groupId)) {
+				throw new DataIntegrityViolationException("Select only one option per variation group.");
+			}
+
+			resolved.add(match);
+		}
+
+		return resolved;
 	}
 
 	private Comparator<Order> buildOrderComparator() {

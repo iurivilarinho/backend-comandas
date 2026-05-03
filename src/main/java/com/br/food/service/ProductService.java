@@ -9,7 +9,9 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,7 +60,15 @@ public class ProductService {
 				.and(ProductSpecification.hasType(type))
 				.and(ProductSpecification.hasComplement(complement))
 				.and(ProductSpecification.search(term));
-		return productRepository.findAll(specification, pageable);
+		return productRepository.findAll(specification, applyDefaultSort(pageable));
+	}
+
+	private Pageable applyDefaultSort(Pageable pageable) {
+		if (pageable.getSort().isSorted()) {
+			return pageable;
+		}
+		Sort defaultSort = Sort.by(Sort.Order.asc("description").ignoreCase());
+		return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), defaultSort);
 	}
 
 	@Transactional(readOnly = true)
@@ -76,11 +86,11 @@ public class ProductService {
 	public Product create(ProductRequest request, MultipartFile image) throws IOException {
 		validateUniqueCode(request.getCode(), null);
 		validatePreparationFlags(request);
-		validateVariations(request);
+		validateVariationGroups(request);
 		Document document = documentService.convertToDocument(image);
 		Product product = new Product(request, document);
 		product.setCategories(resolveCategories(request.getCategoryIds()));
-		product.replaceVariations(request.getVariations());
+		product.replaceVariationGroups(request.getVariationGroups());
 		return productRepository.save(product);
 	}
 
@@ -90,11 +100,11 @@ public class ProductService {
 		Product product = findById(id);
 		validateUniqueCode(request.getCode(), id);
 		validatePreparationFlags(request);
-		validateVariations(request);
+		validateVariationGroups(request);
 		Document document = image != null ? documentService.convertToDocument(image) : null;
 		product.update(request, document);
 		product.setCategories(resolveCategories(request.getCategoryIds()));
-		product.replaceVariations(request.getVariations());
+		product.replaceVariationGroups(request.getVariationGroups());
 		if (request.getType() == ProductType.INGREDIENT || !request.getResolvedRequiresPreparation()) {
 			product.getRecipeItems().clear();
 		}
@@ -170,21 +180,34 @@ public class ProductService {
 		}
 	}
 
-	private void validateVariations(ProductRequest request) {
+	private void validateVariationGroups(ProductRequest request) {
 		if (request.getType() != ProductType.FINISHED) {
-			if (!request.getVariations().isEmpty()) {
-				throw new DataIntegrityViolationException("Only final products can have variations.");
+			if (!request.getVariationGroups().isEmpty()) {
+				throw new DataIntegrityViolationException("Only final products can have variation groups.");
 			}
 			return;
 		}
 
-		List<String> normalizedNames = new ArrayList<>();
-		for (com.br.food.request.ProductVariationRequest variation : request.getVariations()) {
-			String normalizedName = variation.getName().trim().toLowerCase();
-			if (normalizedNames.contains(normalizedName)) {
-				throw new DataIntegrityViolationException("Variation names must be unique per product.");
+		List<String> normalizedTitles = new ArrayList<>();
+		for (com.br.food.request.ProductVariationGroupRequest group : request.getVariationGroups()) {
+			String normalizedTitle = group.getTitle().trim().toLowerCase();
+			if (normalizedTitles.contains(normalizedTitle)) {
+				throw new DataIntegrityViolationException("Variation group titles must be unique per product.");
 			}
-			normalizedNames.add(normalizedName);
+			normalizedTitles.add(normalizedTitle);
+
+			if (group.getVariations().isEmpty()) {
+				throw new DataIntegrityViolationException("Variation group \"" + group.getTitle() + "\" must have at least one option.");
+			}
+
+			List<String> normalizedNames = new ArrayList<>();
+			for (com.br.food.request.ProductVariationRequest variation : group.getVariations()) {
+				String normalizedName = variation.getName().trim().toLowerCase();
+				if (normalizedNames.contains(normalizedName)) {
+					throw new DataIntegrityViolationException("Variation names must be unique inside group \"" + group.getTitle() + "\".");
+				}
+				normalizedNames.add(normalizedName);
+			}
 		}
 	}
 

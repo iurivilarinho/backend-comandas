@@ -2,6 +2,7 @@ package com.br.food.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 import com.br.food.enums.Types.OrderItemStatus;
@@ -15,9 +16,7 @@ public class OrderItemResponse {
 	private final BigDecimal unitPrice;
 	private final String notes;
 	private final LocalDateTime requestedAt;
-	private final Long productVariationId;
-	private final String productVariationName;
-	private final BigDecimal productVariationPriceDelta;
+	private final List<OrderItemVariationResponse> variations;
 	private final OrderItemStatus status;
 	private final String declineReason;
 	private final String cancellationReason;
@@ -30,9 +29,10 @@ public class OrderItemResponse {
 		this.unitPrice = item.getUnitPrice();
 		this.notes = item.getNotes();
 		this.requestedAt = item.getRequestedAt();
-		this.productVariationId = item.getProductVariationId();
-		this.productVariationName = item.getProductVariationName();
-		this.productVariationPriceDelta = item.getProductVariationPriceDelta();
+		this.variations = item.getVariations().stream()
+				.sorted(Comparator.comparing(variation -> variation.getDisplayOrder() != null ? variation.getDisplayOrder() : 0))
+				.map(OrderItemVariationResponse::new)
+				.toList();
 		this.status = item.getStatus();
 		this.declineReason = item.getDeclineReason();
 		this.cancellationReason = item.getCancellationReason();
@@ -51,7 +51,7 @@ public class OrderItemResponse {
 		return quantity;
 	}
 
-	public java.math.BigDecimal getUnitPrice() {
+	public BigDecimal getUnitPrice() {
 		return unitPrice;
 	}
 
@@ -63,16 +63,8 @@ public class OrderItemResponse {
 		return requestedAt;
 	}
 
-	public Long getProductVariationId() {
-		return productVariationId;
-	}
-
-	public String getProductVariationName() {
-		return productVariationName;
-	}
-
-	public BigDecimal getProductVariationPriceDelta() {
-		return productVariationPriceDelta;
+	public List<OrderItemVariationResponse> getVariations() {
+		return variations;
 	}
 
 	public OrderItemStatus getStatus() {
@@ -87,7 +79,7 @@ public class OrderItemResponse {
 		return cancellationReason;
 	}
 
-	public java.util.List<OrderItemIngredientResponse> getIngredients() {
+	public List<OrderItemIngredientResponse> getIngredients() {
 		return ingredients;
 	}
 }

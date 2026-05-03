@@ -8,7 +8,7 @@ import java.util.List;
 
 import com.br.food.enums.Types.ProductType;
 import com.br.food.request.ProductRequest;
-import com.br.food.request.ProductVariationRequest;
+import com.br.food.request.ProductVariationGroupRequest;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.CascadeType;
@@ -87,7 +87,7 @@ public class Product {
 	private List<RecipeItem> recipeItems = new ArrayList<>();
 
 	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-	private List<ProductVariation> variations = new ArrayList<>();
+	private List<ProductVariationGroup> variationGroups = new ArrayList<>();
 
 	@Column(name = "created_at", updatable = false, nullable = false)
 	private LocalDateTime createdAt;
@@ -127,17 +127,17 @@ public class Product {
 		}
 	}
 
-	public void replaceVariations(List<ProductVariationRequest> variationRequests) {
-		this.variations.clear();
-		if (variationRequests == null) {
+	public void replaceVariationGroups(List<ProductVariationGroupRequest> groupRequests) {
+		this.variationGroups.clear();
+		if (groupRequests == null) {
 			return;
 		}
 
-		for (int index = 0; index < variationRequests.size(); index++) {
-			ProductVariation variation = new ProductVariation(this, variationRequests.get(index), index);
-			this.variations.add(variation);
+		for (int index = 0; index < groupRequests.size(); index++) {
+			ProductVariationGroup group = new ProductVariationGroup(this, groupRequests.get(index), index);
+			this.variationGroups.add(group);
 		}
-		this.variations.sort(Comparator.comparing(ProductVariation::getDisplayOrder));
+		this.variationGroups.sort(Comparator.comparing(ProductVariationGroup::getDisplayOrder));
 	}
 
 	@PrePersist
@@ -256,8 +256,8 @@ public class Product {
 		return recipeItems;
 	}
 
-	public List<ProductVariation> getVariations() {
-		return variations;
+	public List<ProductVariationGroup> getVariationGroups() {
+		return variationGroups;
 	}
 
 	public List<ProductCategory> getCategories() {

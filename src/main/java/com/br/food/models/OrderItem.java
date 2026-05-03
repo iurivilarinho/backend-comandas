@@ -53,6 +53,9 @@ public class OrderItem {
 	@OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<OrderItemIngredient> ingredients = new ArrayList<>();
 
+	@OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<OrderItemVariation> variations = new ArrayList<>();
+
 	@Column(name = "quantity", nullable = false)
 	private Integer quantity;
 
@@ -61,15 +64,6 @@ public class OrderItem {
 
 	@Column(name = "notes", length = 255)
 	private String notes;
-
-	@Column(name = "product_variation_id")
-	private Long productVariationId;
-
-	@Column(name = "product_variation_name", length = 100)
-	private String productVariationName;
-
-	@Column(name = "product_variation_price_delta", precision = 12, scale = 2)
-	private BigDecimal productVariationPriceDelta;
 
 	@Column(name = "requested_at", nullable = false)
 	private LocalDateTime requestedAt;
@@ -167,6 +161,10 @@ public class OrderItem {
 		return ingredients;
 	}
 
+	public List<OrderItemVariation> getVariations() {
+		return variations;
+	}
+
 	public Integer getQuantity() {
 		return quantity;
 	}
@@ -193,30 +191,6 @@ public class OrderItem {
 
 	public LocalDateTime getRequestedAt() {
 		return requestedAt;
-	}
-
-	public Long getProductVariationId() {
-		return productVariationId;
-	}
-
-	public void setProductVariationId(Long productVariationId) {
-		this.productVariationId = productVariationId;
-	}
-
-	public String getProductVariationName() {
-		return productVariationName;
-	}
-
-	public void setProductVariationName(String productVariationName) {
-		this.productVariationName = productVariationName;
-	}
-
-	public BigDecimal getProductVariationPriceDelta() {
-		return productVariationPriceDelta;
-	}
-
-	public void setProductVariationPriceDelta(BigDecimal productVariationPriceDelta) {
-		this.productVariationPriceDelta = productVariationPriceDelta;
 	}
 
 	public OrderItemStatus getStatus() {

@@ -23,7 +23,7 @@ public class ProductResponse {
 	private final List<ProductBasicResponse> complements;
 	private final List<ProductCategoryResponse> categories;
 	private final List<RecipeItemResponse> recipeItems;
-	private final List<ProductVariationResponse> variations;
+	private final List<ProductVariationGroupResponse> variationGroups;
 
 	public ProductResponse(Product product) {
 		this.id = product.getId();
@@ -41,7 +41,10 @@ public class ProductResponse {
 		this.complements = product.getComplements().stream().map(ProductBasicResponse::new).toList();
 		this.categories = product.getCategories().stream().map(ProductCategoryResponse::new).toList();
 		this.recipeItems = product.getRecipeItems().stream().map(RecipeItemResponse::new).toList();
-		this.variations = product.getVariations().stream().map(ProductVariationResponse::new).toList();
+		this.variationGroups = product.getVariationGroups().stream()
+				.sorted(java.util.Comparator.comparing(group -> group.getDisplayOrder() != null ? group.getDisplayOrder() : 0))
+				.map(ProductVariationGroupResponse::new)
+				.toList();
 	}
 
 	public Long getId() {
@@ -104,7 +107,7 @@ public class ProductResponse {
 		return recipeItems;
 	}
 
-	public List<ProductVariationResponse> getVariations() {
-		return variations;
+	public List<ProductVariationGroupResponse> getVariationGroups() {
+		return variationGroups;
 	}
 }
