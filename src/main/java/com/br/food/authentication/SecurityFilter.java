@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.br.food.authentication.token.TokenService;
+import com.br.food.models.User;
 import com.br.food.service.UserService;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -49,10 +50,10 @@ public class SecurityFilter extends OncePerRequestFilter {
 
 		if (jwtToken != null && tokenService.isTokenValid(jwtToken)) {
 			String subject = tokenService.getSubject(jwtToken);
-			var user = userService.findById(Long.parseLong(subject));
+			User user = userService.findById(Long.parseLong(subject));
 
 			if (user != null) {
-				var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+				UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
 				SecurityContextHolder.getContext().setAuthentication(authentication);
 				filterChain.doFilter(request, response);
 				return;
@@ -119,18 +120,24 @@ public class SecurityFilter extends OncePerRequestFilter {
 				|| requestUri.equals("/customers/by-document")
 				|| requestUri.matches("^/customers/\\d+$")
 				|| requestUri.equals("/orders")
-				|| requestUri.matches("^/orders/\\d+$"))) {
+				|| requestUri.matches("^/orders/\\d+$")
+				|| requestUri.equals("/push/public-key"))) {
 			return true;
 		}
 
 		if (method == HttpMethod.POST && (requestUri.equals("/customers")
 				|| requestUri.equals("/digital-orders")
 				|| requestUri.matches("^/digital-orders/\\d+/items$")
-				|| requestUri.matches("^/orders/\\d+/request-close$"))) {
+				|| requestUri.matches("^/orders/\\d+/request-close$")
+				|| requestUri.equals("/push/subscriptions"))) {
 			return true;
 		}
 
 		if (method == HttpMethod.PUT && requestUri.matches("^/customers/\\d+$")) {
+			return true;
+		}
+
+		if (method == HttpMethod.DELETE && requestUri.equals("/push/subscriptions")) {
 			return true;
 		}
 

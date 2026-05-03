@@ -31,13 +31,13 @@ import com.br.food.models.DiningTable;
 import com.br.food.models.Order;
 import com.br.food.models.OrderItem;
 import com.br.food.models.OrderItemIngredient;
-import com.br.food.models.OrderPayment;
 import com.br.food.models.OrderItemVariation;
+import com.br.food.models.OrderPayment;
 import com.br.food.models.Product;
 import com.br.food.models.ProductVariation;
 import com.br.food.models.ProductVariationGroup;
-import com.br.food.models.RecipeItem;
 import com.br.food.models.Promotion;
+import com.br.food.models.RecipeItem;
 import com.br.food.repository.OrderPaymentRepository;
 import com.br.food.repository.OrderRepository;
 import com.br.food.repository.OrderSpecification;
@@ -66,6 +66,7 @@ public class OrderService {
 	private final SystemSettingService systemSettingService;
 	private final PromotionService promotionService;
 	private final CompanyProfileService companyProfileService;
+	private final PushNotificationService pushNotificationService;
 
 	public OrderService(
 			OrderRepository orderRepository,
@@ -79,7 +80,8 @@ public class OrderService {
 			AuditLogService auditLogService,
 			SystemSettingService systemSettingService,
 			PromotionService promotionService,
-			CompanyProfileService companyProfileService) {
+			CompanyProfileService companyProfileService,
+			PushNotificationService pushNotificationService) {
 		this.orderRepository = orderRepository;
 		this.orderPaymentRepository = orderPaymentRepository;
 		this.customerService = customerService;
@@ -92,6 +94,27 @@ public class OrderService {
 		this.systemSettingService = systemSettingService;
 		this.promotionService = promotionService;
 		this.companyProfileService = companyProfileService;
+		this.pushNotificationService = pushNotificationService;
+	}
+
+	private void notifyKitchenOfNewItems(Order order) {
+		long pendingForKitchen = order.getItems().stream()
+				.filter(item -> item.getStatus() == OrderItemStatus.RECEIVED)
+				.filter(item -> item.getProduct() != null && Boolean.TRUE.equals(item.getProduct().getSendToKitchen()))
+				.count();
+		if (pendingForKitchen <= 0) {
+			return;
+		}
+		String code = order.getCode() != null ? order.getCode() : ("#" + order.getId());
+		String tableNumber = order.getDiningTable() != null && order.getDiningTable().getNumber() != null
+				? "Mesa " + order.getDiningTable().getNumber()
+				: "Pedido digital";
+		pushNotificationService.notifyTopic(
+				com.br.food.models.PushSubscription.TOPIC_KITCHEN,
+				"Novo pedido para a cozinha",
+				code + " — " + tableNumber + " enviou " + pendingForKitchen
+						+ (pendingForKitchen == 1 ? " item." : " itens."),
+				"/admin/cozinha");
 	}
 
 	@Transactional
@@ -120,6 +143,7 @@ public class OrderService {
 		recalculateTotals(order);
 		Order savedOrder = orderRepository.save(order);
 		auditLogService.register("Order", savedOrder.getId(), "ORDER_CREATED", actorName, "Order code " + savedOrder.getCode());
+		notifyKitchenOfNewItems(savedOrder);
 		return savedOrder;
 	}
 
@@ -199,7 +223,9 @@ public class OrderService {
 		addItems(order, items);
 		recalculateTotals(order);
 		auditLogService.register("Order", order.getId(), "ORDER_ITEMS_ADDED", actorName, "Added " + items.size() + " items.");
-		return orderRepository.save(order);
+		Order saved = orderRepository.save(order);
+		notifyKitchenOfNewItems(saved);
+		return saved;
 	}
 
 	private void validateDigitalOrderingEnabled() {
@@ -215,14 +241,12 @@ public class OrderService {
 		validateOrderReadyForCheckout(order);
 		applyCheckoutAdjustments(order, request);
 		recalculateTotals(order);
-		order.setSplitByPersonCount(request.getSplitByPersonCount());
 
 		BigDecimal newPaidAmount = registerPayments(order, request.getPayments(), actorName);
 		order.setPaidAmount(order.getPaidAmount().add(newPaidAmount));
 
 		BigDecimal remainingAmount = order.getTotalAmount().subtract(order.getPaidAmount()).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
 		BigDecimal changeAmount = calculateChange(request.getPayments(), order.getTotalAmount(), order.getPaidAmount());
-		BigDecimal amountPerPerson = calculateAmountPerPerson(order);
 
 		boolean fullyPaid = remainingAmount.compareTo(BigDecimal.ZERO) == 0;
 		if (fullyPaid) {
@@ -240,7 +264,7 @@ public class OrderService {
 
 		auditLogService.register("Order", order.getId(), "ORDER_CHECKOUT", actorName,
 				"Paid=" + order.getPaidAmount() + ", remaining=" + remainingAmount + ", notes=" + sanitizeCheckoutNotes(request.getNotes()));
-		return new OrderCheckoutResponse(order, remainingAmount, changeAmount, amountPerPerson, fullyPaid);
+		return new OrderCheckoutResponse(order, remainingAmount, changeAmount, fullyPaid);
 	}
 
 	@Transactional
@@ -279,7 +303,24 @@ public class OrderService {
 				"ORDER_CHECKOUT_REQUESTED",
 				actorName,
 				buildCheckoutRequestDetails(order, request));
-		return orderRepository.save(order);
+		Order saved = orderRepository.save(order);
+		notifyTablesOfCheckoutRequest(saved);
+		return saved;
+	}
+
+	private void notifyTablesOfCheckoutRequest(Order order) {
+		String code = order.getCode() != null ? order.getCode() : ("#" + order.getId());
+		String tableNumber = order.getDiningTable() != null && order.getDiningTable().getNumber() != null
+				? "Mesa " + order.getDiningTable().getNumber()
+				: "Pedido digital";
+		String customerName = order.getCustomer() != null && order.getCustomer().getName() != null
+				? order.getCustomer().getName()
+				: "Cliente";
+		pushNotificationService.notifyTopic(
+				com.br.food.models.PushSubscription.TOPIC_TABLES,
+				"Conta solicitada — " + tableNumber,
+				customerName + " pediu a conta no pedido " + code + ".",
+				"/admin/mesas");
 	}
 
 	@Transactional
@@ -625,11 +666,8 @@ public class OrderService {
 		}
 	}
 
-	private BigDecimal calculateCustomizedUnitPrice(Product product, OrderItemRequest itemRequest) {
-		return calculateCustomizedUnitPrice(product, itemRequest, List.of());
-	}
-
-	private BigDecimal calculateCustomizedUnitPrice(Product product, OrderItemRequest itemRequest, List<ProductVariation> selectedVariations) {
+	private BigDecimal calculateCustomizedUnitPrice(Product product, OrderItemRequest itemRequest,
+			List<ProductVariation> selectedVariations) {
 		BigDecimal unitPrice = product.getPrice().setScale(2, RoundingMode.HALF_UP);
 		for (ProductVariation variation : selectedVariations) {
 			unitPrice = unitPrice.add(variation.getPriceDelta().setScale(2, RoundingMode.HALF_UP));
@@ -729,13 +767,6 @@ public class OrderService {
 		}
 		BigDecimal cashExcess = cashReceived.subtract(cashPaid);
 		return cashExcess.max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
-	}
-
-	private BigDecimal calculateAmountPerPerson(Order order) {
-		if (order.getSplitByPersonCount() == null || order.getSplitByPersonCount() <= 0) {
-			return null;
-		}
-		return order.getTotalAmount().divide(BigDecimal.valueOf(order.getSplitByPersonCount()), 2, RoundingMode.HALF_UP);
 	}
 
 	private void refundRegisteredPaymentsIfNeeded(Order order) {

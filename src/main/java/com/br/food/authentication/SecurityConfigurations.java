@@ -1,6 +1,5 @@
 package com.br.food.authentication;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -16,8 +15,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfigurations {
 
-	@Autowired
-	private SecurityFilter securityFilter;
+	private final SecurityFilter securityFilter;
+
+	public SecurityConfigurations(SecurityFilter securityFilter) {
+		this.securityFilter = securityFilter;
+	}
 
 	@SuppressWarnings("removal")
 	@Bean
@@ -29,9 +31,11 @@ public class SecurityConfigurations {
 				.requestMatchers(HttpMethod.GET, "/products", "/products/*", "/product-categories",
 						"/promotions", "/promotions/*", "/company-profile", "/tables", "/tables/*",
 						"/menu/products", "/documents/*", "/documents/*/content",
-						"/customers/by-document", "/customers/*", "/orders", "/orders/*").permitAll()
+						"/customers/by-document", "/customers/*", "/orders", "/orders/*",
+						"/push/public-key").permitAll()
 				.requestMatchers(HttpMethod.POST, "/customers", "/digital-orders", "/digital-orders/*/items",
-						"/orders/*/request-close").permitAll()
+						"/orders/*/request-close", "/push/subscriptions").permitAll()
+				.requestMatchers(HttpMethod.DELETE, "/push/subscriptions").permitAll()
 				.requestMatchers(HttpMethod.PUT, "/customers/*").permitAll()
 				.requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll().anyRequest()
 				.authenticated().and().addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

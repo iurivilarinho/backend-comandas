@@ -11,21 +11,18 @@ public class OrderCheckoutResponse {
 	private final BigDecimal paidAmount;
 	private final BigDecimal remainingAmount;
 	private final BigDecimal changeAmount;
-	private final BigDecimal amountPerPerson;
 	private final boolean closed;
 
 	public OrderCheckoutResponse(
 			Order order,
 			BigDecimal remainingAmount,
 			BigDecimal changeAmount,
-			BigDecimal amountPerPerson,
 			boolean closed) {
 		this.orderId = order.getId();
 		this.totalAmount = order.getTotalAmount();
 		this.paidAmount = order.getPaidAmount();
 		this.remainingAmount = remainingAmount;
 		this.changeAmount = changeAmount;
-		this.amountPerPerson = amountPerPerson;
 		this.closed = closed;
 	}
 
@@ -47,10 +44,6 @@ public class OrderCheckoutResponse {
 
 	public BigDecimal getChangeAmount() {
 		return changeAmount;
-	}
-
-	public BigDecimal getAmountPerPerson() {
-		return amountPerPerson;
 	}
 
 	public boolean isClosed() {

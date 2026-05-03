@@ -82,9 +82,6 @@ public class Order {
 	@Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
 	private BigDecimal totalAmount;
 
-	@Column(name = "split_by_person_count")
-	private Integer splitByPersonCount;
-
 	@Column(name = "opened_at", nullable = false)
 	private LocalDateTime openedAt;
 
@@ -292,14 +289,6 @@ public class Order {
 
 	public void setTotalAmount(BigDecimal totalAmount) {
 		this.totalAmount = totalAmount;
-	}
-
-	public Integer getSplitByPersonCount() {
-		return splitByPersonCount;
-	}
-
-	public void setSplitByPersonCount(Integer splitByPersonCount) {
-		this.splitByPersonCount = splitByPersonCount;
 	}
 
 	public LocalDateTime getOpenedAt() {

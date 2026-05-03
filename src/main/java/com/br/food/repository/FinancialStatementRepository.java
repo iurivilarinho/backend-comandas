@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import com.br.food.models.FinancialEntry;
 import com.br.food.repository.projection.FinancialStatementProjection;
 
+@org.springframework.stereotype.Repository
 public interface FinancialStatementRepository extends Repository<FinancialEntry, Long> {
 
 	@Query(value = """

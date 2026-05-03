@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +19,7 @@ import com.br.food.authentication.GoogleAuthenticationService;
 import com.br.food.authentication.GoogleLoginRequest;
 import com.br.food.authentication.LoginRequest;
 import com.br.food.authentication.response.UserProfileResponse;
+import com.br.food.authentication.models.RefreshToken;
 import com.br.food.authentication.token.RefreshTokenService;
 import com.br.food.authentication.token.TokenService;
 import com.br.food.models.User;
@@ -54,7 +56,7 @@ public class LoginController {
 		try {
 			UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
 					dados.login(), dados.password());
-			var authentication = manager.authenticate(authenticationToken);
+			Authentication authentication = manager.authenticate(authenticationToken);
 			User authenticatedUser = (User) authentication.getPrincipal();
 			return buildAuthenticatedResponse(authenticatedUser, request);
 		} catch (BadCredentialsException exception) {
@@ -78,7 +80,7 @@ public class LoginController {
 			throw new AccessDeniedException("refresh token ausente");
 		}
 
-		var active = refreshTokenService.mustFindActive(refreshRaw);
+		RefreshToken active = refreshTokenService.mustFindActive(refreshRaw);
 		User user = active.getUsuario();
 		boolean secure = isSecureRequest(request);
 

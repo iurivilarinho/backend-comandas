@@ -19,6 +19,10 @@ services:
       SERVER_SSL_KEY_STORE_TYPE: "JKS"
       SERVER_SSL_KEY_STORE_PASSWORD: "123456"
       SERVER_SSL_KEY_ALIAS: "springboot"
+
+      PUSH_VAPID_PUBLIC_KEY: ${PUSH_VAPID_PUBLIC_KEY}
+      PUSH_VAPID_PRIVATE_KEY: ${PUSH_VAPID_PRIVATE_KEY}
+      PUSH_VAPID_SUBJECT: ${PUSH_VAPID_SUBJECT:-mailto:contato@comandas.local}
     volumes:
       - /etc/ssl/private/keystore.jks:/etc/ssl/private/keystore.jks:ro
     restart: unless-stopped

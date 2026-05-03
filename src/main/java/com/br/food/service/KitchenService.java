@@ -18,16 +18,19 @@ public class KitchenService {
 	private final OrderItemService orderItemService;
 	private final OrderService orderService;
 	private final AuditLogService auditLogService;
+	private final PushNotificationService pushNotificationService;
 
 	public KitchenService(
 			OrderItemRepository orderItemRepository,
 			OrderItemService orderItemService,
 			OrderService orderService,
-			AuditLogService auditLogService) {
+			AuditLogService auditLogService,
+			PushNotificationService pushNotificationService) {
 		this.orderItemRepository = orderItemRepository;
 		this.orderItemService = orderItemService;
 		this.orderService = orderService;
 		this.auditLogService = auditLogService;
+		this.pushNotificationService = pushNotificationService;
 	}
 
 	@Transactional(readOnly = true)
@@ -68,6 +71,18 @@ public class KitchenService {
 		}
 		orderItemService.updateStatus(orderItemId, OrderItemStatus.READY);
 		auditLogService.register("OrderItem", orderItemId, "KITCHEN_MARKED_READY", actorName, "Item ready for service.");
+
+		Long customerId = item.getOrder() != null && item.getOrder().getCustomer() != null
+				? item.getOrder().getCustomer().getId()
+				: null;
+		String productLabel = item.getProduct() != null && item.getProduct().getDescription() != null
+				? item.getProduct().getDescription()
+				: "Seu pedido";
+		pushNotificationService.notifyCustomer(
+				customerId,
+				"Seu pedido está pronto",
+				productLabel + " já saiu da cozinha.",
+				"/conta");
 	}
 
 	@Transactional

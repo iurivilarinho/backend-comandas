@@ -41,7 +41,7 @@ public class StatusCellStyleResolver implements CellStyleResolver {
 
     private CellStyle createRgbStyle(Workbook workbook, Color rgb) {
         CellStyle style = workbook.createCellStyle();
-        var xssfStyle = (org.apache.poi.xssf.usermodel.XSSFCellStyle) style;
+        org.apache.poi.xssf.usermodel.XSSFCellStyle xssfStyle = (org.apache.poi.xssf.usermodel.XSSFCellStyle) style;
 
         xssfStyle.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(rgb, null));
         xssfStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);

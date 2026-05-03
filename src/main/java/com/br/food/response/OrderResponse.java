@@ -24,7 +24,6 @@ public class OrderResponse {
 	private final Boolean applyServiceFee;
 	private final BigDecimal paidAmount;
 	private final BigDecimal totalAmount;
-	private final Integer splitByPersonCount;
 	private final LocalDateTime openedAt;
 	private final LocalDateTime closedAt;
 	private final LocalDateTime checkoutRequestedAt;
@@ -48,7 +47,6 @@ public class OrderResponse {
 		this.applyServiceFee = order.getApplyServiceFee();
 		this.paidAmount = order.getPaidAmount();
 		this.totalAmount = order.getTotalAmount();
-		this.splitByPersonCount = order.getSplitByPersonCount();
 		this.openedAt = order.getOpenedAt();
 		this.closedAt = order.getClosedAt();
 		this.checkoutRequestedAt = order.getCheckoutRequestedAt();
@@ -109,10 +107,6 @@ public class OrderResponse {
 
 	public BigDecimal getTotalAmount() {
 		return totalAmount;
-	}
-
-	public Integer getSplitByPersonCount() {
-		return splitByPersonCount;
 	}
 
 	public LocalDateTime getOpenedAt() {

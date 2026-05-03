@@ -51,21 +51,17 @@ public class FinancialService {
 	private final FinancialStatementRepository financialStatementRepository;
 	private final OrderPaymentRepository orderPaymentRepository;
 	private final AuditLogService auditLogService;
-	private final OrderService orderService;
 	private final GeneratorExcel generatorExcel;
 
-	public FinancialService(
-			FinancialEntryRepository financialEntryRepository,
-			FinancialStatementRepository financialStatementRepository,
-			OrderPaymentRepository orderPaymentRepository,
+	public FinancialService(FinancialEntryRepository financialEntryRepository,
+			FinancialStatementRepository financialStatementRepository, OrderPaymentRepository orderPaymentRepository,
 			AuditLogService auditLogService,
-			OrderService orderService,
+
 			GeneratorExcel generatorExcel) {
 		this.financialEntryRepository = financialEntryRepository;
 		this.financialStatementRepository = financialStatementRepository;
 		this.orderPaymentRepository = orderPaymentRepository;
 		this.auditLogService = auditLogService;
-		this.orderService = orderService;
 		this.generatorExcel = generatorExcel;
 	}
 
@@ -81,54 +77,34 @@ public class FinancialService {
 		entry.setOccurredAt(request.getOccurredAt() != null ? request.getOccurredAt() : LocalDateTime.now());
 
 		FinancialEntry savedEntry = financialEntryRepository.save(entry);
-		auditLogService.register(
-				"FinancialEntry",
-				savedEntry.getId(),
-				"FINANCIAL_ENTRY_CREATED",
-				actorName,
+		auditLogService.register("FinancialEntry", savedEntry.getId(), "FINANCIAL_ENTRY_CREATED", actorName,
 				savedEntry.getType() + " " + savedEntry.getCategory() + " " + savedEntry.getAmount());
 		return new FinancialEntryResponse(savedEntry);
 	}
 
 	@Transactional(readOnly = true)
-	public FinancialOverviewResponse overview(
-			LocalDate startDate,
-			LocalDate endDate,
-			FinanceEntryType type,
-			FinanceCategory category,
-			Pageable pageable) {
+	public FinancialOverviewResponse overview(LocalDate startDate, LocalDate endDate, FinanceEntryType type,
+			FinanceCategory category, Pageable pageable) {
 		List<FinancialEntryResponse> entries = buildEntries(startDate, endDate, type, category);
-		Page<FinancialEntryResponse> entriesPage = financialStatementRepository.searchEntries(
-				startDate != null ? startDate.atStartOfDay() : null,
-				endDate != null ? endDate.atTime(LocalTime.MAX) : null,
-				type != null ? type.name() : null,
-				category != null ? category.name() : null,
-				pageable).map(this::toFinancialEntryResponse);
+		Page<FinancialEntryResponse> entriesPage = financialStatementRepository
+				.searchEntries(startDate != null ? startDate.atStartOfDay() : null,
+						endDate != null ? endDate.atTime(LocalTime.MAX) : null, type != null ? type.name() : null,
+						category != null ? category.name() : null, pageable)
+				.map(this::toFinancialEntryResponse);
 
 		return buildOverview(entries, entriesPage);
 	}
 
 	@Transactional(readOnly = true)
-	public byte[] exportReport(
-			LocalDate startDate,
-			LocalDate endDate,
-			FinanceEntryType type,
-			FinanceCategory category) throws Exception {
+	public byte[] exportReport(LocalDate startDate, LocalDate endDate, FinanceEntryType type, FinanceCategory category)
+			throws Exception {
 		List<FinancialEntryResponse> entries = buildEntries(startDate, endDate, type, category);
 		FinancialOverviewResponse overview = buildOverview(entries, null);
 
-		List<FinancialReportSummaryResponse> summaryRows = List.of(new FinancialReportSummaryResponse(
-				startDate,
-				endDate,
-				type,
-				category,
-				overview.getTotalIncome(),
-				overview.getTotalExpense(),
-				overview.getBalance(),
-				entries.size()));
-		List<FinancialReportExcelRow> movementRows = entries.stream()
-				.map(this::toExcelRow)
-				.toList();
+		List<FinancialReportSummaryResponse> summaryRows = List
+				.of(new FinancialReportSummaryResponse(startDate, endDate, type, category, overview.getTotalIncome(),
+						overview.getTotalExpense(), overview.getBalance(), entries.size()));
+		List<FinancialReportExcelRow> movementRows = entries.stream().map(this::toExcelRow).toList();
 
 		Map<String, List<?>> sheets = new LinkedHashMap<>();
 		sheets.put("Resumo", summaryRows);
@@ -139,10 +115,7 @@ public class FinancialService {
 		return generatorExcel.gerarAbas(sheets).toByteArray();
 	}
 
-	private List<FinancialEntryResponse> buildEntries(
-			LocalDate startDate,
-			LocalDate endDate,
-			FinanceEntryType type,
+	private List<FinancialEntryResponse> buildEntries(LocalDate startDate, LocalDate endDate, FinanceEntryType type,
 			FinanceCategory category) {
 		LocalDateTime startDateTime = startDate != null ? startDate.atStartOfDay() : null;
 		LocalDateTime endDateTime = endDate != null ? endDate.atTime(LocalTime.MAX) : null;
@@ -179,19 +152,14 @@ public class FinancialService {
 		return entries;
 	}
 
-	private FinancialOverviewResponse buildOverview(
-			List<FinancialEntryResponse> entries,
+	private FinancialOverviewResponse buildOverview(List<FinancialEntryResponse> entries,
 			Page<FinancialEntryResponse> entriesPage) {
-		BigDecimal totalIncome = entries.stream()
-				.filter(entry -> entry.getType() == FinanceEntryType.INCOME)
-				.map(FinancialEntryResponse::getAmount)
-				.reduce(BigDecimal.ZERO, BigDecimal::add)
+		BigDecimal totalIncome = entries.stream().filter(entry -> entry.getType() == FinanceEntryType.INCOME)
+				.map(FinancialEntryResponse::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add)
 				.setScale(2, RoundingMode.HALF_UP);
 
-		BigDecimal totalExpense = entries.stream()
-				.filter(entry -> entry.getType() == FinanceEntryType.EXPENSE)
-				.map(FinancialEntryResponse::getAmount)
-				.reduce(BigDecimal.ZERO, BigDecimal::add)
+		BigDecimal totalExpense = entries.stream().filter(entry -> entry.getType() == FinanceEntryType.EXPENSE)
+				.map(FinancialEntryResponse::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add)
 				.setScale(2, RoundingMode.HALF_UP);
 
 		List<FinancialDailySummaryResponse> dailySummary = buildDailySummary(entries);
@@ -201,15 +169,9 @@ public class FinancialService {
 		List<FinancialEntryResponse> responseEntries = entriesPage != null ? entriesPage.getContent() : entries;
 		PageMetadataResponse pageMetadata = entriesPage != null ? new PageMetadataResponse(entriesPage) : null;
 
-		return new FinancialOverviewResponse(
-				totalIncome,
-				totalExpense,
-				totalIncome.subtract(totalExpense).setScale(2, RoundingMode.HALF_UP),
-				responseEntries,
-				pageMetadata,
-				dailySummary,
-				categorySummary,
-				paymentSummary);
+		return new FinancialOverviewResponse(totalIncome, totalExpense,
+				totalIncome.subtract(totalExpense).setScale(2, RoundingMode.HALF_UP), responseEntries, pageMetadata,
+				dailySummary, categorySummary, paymentSummary);
 	}
 
 	private FinancialEntryResponse buildOrderPaymentEntry(OrderPayment payment) {
@@ -229,18 +191,12 @@ public class FinancialService {
 		addBreakdownLine(breakdown, "Taxa de servico", serviceFeeAmount.multiply(ratio));
 		addBreakdownLine(breakdown, "Couvert", coverChargeAmount.multiply(ratio));
 
-		return new FinancialEntryResponse(
-				"order-payment-" + payment.getId(),
-				FinanceOrigin.ORDER,
-				FinanceEntryType.INCOME,
-				FinanceCategory.PRODUCTS,
-				"Pedido " + order.getCode() + " - " + (order.getCustomer() != null ? order.getCustomer().getName() : "sem cliente"),
-				order.getCode(),
-				order.getCheckoutRequestNotes(),
-				payment.getAmount(),
-				payment.getPaymentMethod(),
-				payment.getRecordedAt(),
-				breakdown);
+		return new FinancialEntryResponse("order-payment-" + payment.getId(), FinanceOrigin.ORDER,
+				FinanceEntryType.INCOME, FinanceCategory.PRODUCTS,
+				"Pedido " + order.getCode() + " - "
+						+ (order.getCustomer() != null ? order.getCustomer().getName() : "sem cliente"),
+				order.getCode(), order.getCheckoutRequestNotes(), payment.getAmount(), payment.getPaymentMethod(),
+				payment.getRecordedAt(), breakdown);
 	}
 
 	private FinancialEntryResponse toFinancialEntryResponse(FinancialStatementProjection projection) {
@@ -263,7 +219,8 @@ public class FinancialService {
 	}
 
 	private BigDecimal safeAmount(BigDecimal amount) {
-		return amount != null ? amount.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+		return amount != null ? amount.setScale(2, RoundingMode.HALF_UP)
+				: BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 	}
 
 	private boolean matches(LocalDateTime occurredAt, LocalDateTime startDateTime, LocalDateTime endDateTime) {
@@ -284,8 +241,7 @@ public class FinancialService {
 		Map<LocalDate, BigDecimal> expenseByDate = new TreeMap<>();
 
 		for (FinancialEntryResponse entry : entries.stream()
-				.sorted(Comparator.comparing(FinancialEntryResponse::getOccurredAt))
-				.toList()) {
+				.sorted(Comparator.comparing(FinancialEntryResponse::getOccurredAt)).toList()) {
 			LocalDate date = entry.getOccurredAt().toLocalDate();
 			if (entry.getType() == FinanceEntryType.INCOME) {
 				incomeByDate.merge(date, entry.getAmount(), BigDecimal::add);
@@ -306,10 +262,7 @@ public class FinancialService {
 		for (LocalDate date : dates) {
 			BigDecimal income = incomeByDate.getOrDefault(date, BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
 			BigDecimal expense = expenseByDate.getOrDefault(date, BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
-			summary.add(new FinancialDailySummaryResponse(
-					date,
-					income,
-					expense,
+			summary.add(new FinancialDailySummaryResponse(date, income, expense,
 					income.subtract(expense).setScale(2, RoundingMode.HALF_UP)));
 		}
 		return summary;
@@ -325,10 +278,8 @@ public class FinancialService {
 		List<FinancialCategoryTotalResponse> response = new ArrayList<>();
 		for (Map.Entry<String, BigDecimal> entry : totals.entrySet()) {
 			String[] keyParts = entry.getKey().split("\\|");
-			response.add(new FinancialCategoryTotalResponse(
-					FinanceEntryType.valueOf(keyParts[0]),
-					FinanceCategory.valueOf(keyParts[1]),
-					entry.getValue().setScale(2, RoundingMode.HALF_UP)));
+			response.add(new FinancialCategoryTotalResponse(FinanceEntryType.valueOf(keyParts[0]),
+					FinanceCategory.valueOf(keyParts[1]), entry.getValue().setScale(2, RoundingMode.HALF_UP)));
 		}
 		return response;
 	}
@@ -344,8 +295,7 @@ public class FinancialService {
 
 		List<FinancialPaymentMethodTotalResponse> response = new ArrayList<>();
 		for (Map.Entry<PaymentMethod, BigDecimal> entry : totals.entrySet()) {
-			response.add(new FinancialPaymentMethodTotalResponse(
-					entry.getKey(),
+			response.add(new FinancialPaymentMethodTotalResponse(entry.getKey(),
 					entry.getValue().setScale(2, RoundingMode.HALF_UP)));
 		}
 		return response;
@@ -354,19 +304,13 @@ public class FinancialService {
 	private FinancialReportExcelRow toExcelRow(FinancialEntryResponse entry) {
 		String breakdown = entry.getBreakdown().stream()
 				.map(item -> item.getLabel() + ": " + item.getAmount().setScale(2, RoundingMode.HALF_UP))
-				.reduce((left, right) -> left + " | " + right)
-				.orElse("-");
+				.reduce((left, right) -> left + " | " + right).orElse("-");
 
 		return new FinancialReportExcelRow(
 				entry.getOccurredAt() != null ? entry.getOccurredAt().format(EXCEL_DATE_TIME_FORMATTER) : "-",
-				entry.getOriginLabel(),
-				entry.getTypeLabel(),
-				entry.getCategoryLabel(),
-				entry.getDescription(),
+				entry.getOriginLabel(), entry.getTypeLabel(), entry.getCategoryLabel(), entry.getDescription(),
 				entry.getReferenceCode(),
 				entry.getPaymentMethod() != null ? FinancialLabelUtils.paymentMethod(entry.getPaymentMethod()) : "-",
-				entry.getAmount().setScale(2, RoundingMode.HALF_UP).toString(),
-				breakdown,
-				entry.getNotes());
+				entry.getAmount().setScale(2, RoundingMode.HALF_UP).toString(), breakdown, entry.getNotes());
 	}
 }

@@ -8,6 +8,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 
 @Service
 public class EmailSenderService {
@@ -21,8 +22,8 @@ public class EmailSenderService {
 	}
 
 	public void send(String to, String subject, String content, Boolean html) {
-		var message = javaMailSender.createMimeMessage();
-		var helper = new MimeMessageHelper(message, "utf-8");
+		MimeMessage message = javaMailSender.createMimeMessage();
+		MimeMessageHelper helper = new MimeMessageHelper(message, "utf-8");
 		try {
 			String from = environment.getProperty("spring.mail.username");
 			message.setFrom(from);
@@ -38,8 +39,8 @@ public class EmailSenderService {
 	public void sendEmailWithAttachment(String to, String subject, String content, byte[] file, String fileName,
 			Boolean html) throws MessagingException {
 
-		var message = javaMailSender.createMimeMessage();
-		var helper = new MimeMessageHelper(message, html);
+		MimeMessage message = javaMailSender.createMimeMessage();
+		MimeMessageHelper helper = new MimeMessageHelper(message, html);
 		String from = environment.getProperty("spring.mail.username");
 
 		message.setFrom(from);

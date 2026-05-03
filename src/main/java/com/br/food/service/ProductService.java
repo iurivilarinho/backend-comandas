@@ -67,7 +67,10 @@ public class ProductService {
 		if (pageable.getSort().isSorted()) {
 			return pageable;
 		}
-		Sort defaultSort = Sort.by(Sort.Order.asc("description").ignoreCase());
+		// ignoreCase() viraria LOWER(description) no SQL, e o spec usa SELECT DISTINCT
+		// quando filtra por categoria — Postgres rejeita ORDER BY de expressão fora
+		// do SELECT list nesse caso. Sort puro no campo description fica compatível.
+		Sort defaultSort = Sort.by(Sort.Order.asc("description"));
 		return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), defaultSort);
 	}
 

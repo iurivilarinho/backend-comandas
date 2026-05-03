@@ -42,25 +42,25 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(EntityNotFoundException.class)
 	public ResponseEntity<ErrorResponse> tratarErro404(EntityNotFoundException ex) {
-		var msg = ex.getMessage() != null ? ex.getMessage() : "Recurso não encontrado.";
+		String msg = ex.getMessage() != null ? ex.getMessage() : "Recurso não encontrado.";
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(List.of(msg)));
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)
 	public ResponseEntity<ErrorResponse> tratarErro409(DataIntegrityViolationException ex) {
-		var msg = ex.getMessage() != null ? ex.getMessage() : "Violação de integridade dos dados.";
+		String msg = ex.getMessage() != null ? ex.getMessage() : "Violação de integridade dos dados.";
 		return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(List.of(msg)));
 	}
 
 	@ExceptionHandler(AccessDeniedException.class)
 	public ResponseEntity<ErrorResponse> tratarErro403(AccessDeniedException ex) {
-		var msg = ex.getMessage() != null ? ex.getMessage() : "Acesso negado.";
+		String msg = ex.getMessage() != null ? ex.getMessage() : "Acesso negado.";
 		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(List.of(msg)));
 	}
 
 	@ExceptionHandler(AuthenticationException.class)
 	public ResponseEntity<ErrorResponse> tratarErro401(AuthenticationException ex) {
-		var msg = ex.getMessage() != null ? ex.getMessage() : "Não autenticado.";
+		String msg = ex.getMessage() != null ? ex.getMessage() : "Não autenticado.";
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse(List.of(msg)));
 	}
 
