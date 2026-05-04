@@ -157,7 +157,10 @@ public class PushNotificationService {
 					.orElse(null);
 		}
 
-		return new PushDiagnosticsResponse(isConfigured(), counts, currentDevice);
+		String publicKeyPrefix = publicKey == null || publicKey.isBlank()
+				? null
+				: publicKey.substring(0, Math.min(12, publicKey.length()));
+		return new PushDiagnosticsResponse(isConfigured(), subject, publicKeyPrefix, counts, currentDevice);
 	}
 
 	public PushTestResponse sendTestToEndpoint(String endpoint) {
