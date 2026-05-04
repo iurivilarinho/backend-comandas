@@ -1,10 +1,15 @@
 package com.br.food.service;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.Security;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.util.EntityUtils;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
@@ -195,19 +200,36 @@ public class PushNotificationService {
 			Subscription.Keys keys = new Subscription.Keys(record.getP256dh(), record.getAuth());
 			Subscription subscription = new Subscription(record.getEndpoint(), keys);
 			Notification notification = new Notification(subscription, payload);
-			int statusCode = pushService.send(notification).getStatusLine().getStatusCode();
-			log.info("[push] teste entregue id={} status={}", record.getId(), statusCode);
+			HttpResponse response = pushService.send(notification);
+			int statusCode = response.getStatusLine().getStatusCode();
+			String responseBody = readResponseBody(response);
+			log.info("[push] teste entregue id={} status={} body={}",
+					record.getId(), statusCode, responseBody);
 			if (isStaleSubscriptionStatus(statusCode)) {
 				log.info("[push] teste indicou subscription invalida (status={}), removendo id={}",
 						statusCode, record.getId());
 				subscriptionRepository.delete(record);
 			}
-			return new PushTestResponse(true, statusCode, null, record.getId(), record.getTopic());
+			String message = (statusCode >= 200 && statusCode < 300) ? null : responseBody;
+			return new PushTestResponse(true, statusCode, message, record.getId(), record.getTopic());
 		} catch (Exception exception) {
 			log.error("[push] falha entregando teste id={}", record.getId(), exception);
 			return new PushTestResponse(true, null,
 					exception.getMessage() != null ? exception.getMessage() : exception.getClass().getSimpleName(),
 					record.getId(), record.getTopic());
+		}
+	}
+
+	private String readResponseBody(HttpResponse response) {
+		try {
+			HttpEntity entity = response.getEntity();
+			if (entity == null) {
+				return null;
+			}
+			String body = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+			return body == null || body.isBlank() ? null : body.trim();
+		} catch (Exception exception) {
+			return null;
 		}
 	}
 
