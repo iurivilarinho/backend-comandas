@@ -194,8 +194,9 @@ public class PushNotificationService {
 			Notification notification = new Notification(subscription, payload);
 			int statusCode = pushService.send(notification).getStatusLine().getStatusCode();
 			log.info("[push] teste entregue id={} status={}", record.getId(), statusCode);
-			if (statusCode == 404 || statusCode == 410) {
-				log.info("[push] teste indicou subscription expirada, removendo id={}", record.getId());
+			if (isStaleSubscriptionStatus(statusCode)) {
+				log.info("[push] teste indicou subscription invalida (status={}), removendo id={}",
+						statusCode, record.getId());
 				subscriptionRepository.delete(record);
 			}
 			return new PushTestResponse(true, statusCode, null, record.getId(), record.getTopic());
@@ -205,6 +206,13 @@ public class PushNotificationService {
 					exception.getMessage() != null ? exception.getMessage() : exception.getClass().getSimpleName(),
 					record.getId(), record.getTopic());
 		}
+	}
+
+	private boolean isStaleSubscriptionStatus(int statusCode) {
+		// 404/410: gateway nao reconhece mais. 403: VAPID atual nao bate com a usada
+		// no momento da inscricao — subscription nao serve mais, removemos para forcar
+		// re-assinatura no proximo toggle.
+		return statusCode == 403 || statusCode == 404 || statusCode == 410;
 	}
 
 	private String extractHost(String endpoint) {
@@ -238,8 +246,9 @@ public class PushNotificationService {
 				Notification notification = new Notification(subscription, payload);
 				int statusCode = pushService.send(notification).getStatusLine().getStatusCode();
 				log.info("[push] entregue id={} status={}", record.getId(), statusCode);
-				if (statusCode == 404 || statusCode == 410) {
-					log.info("[push] subscription expirada, removendo id={}", record.getId());
+				if (isStaleSubscriptionStatus(statusCode)) {
+					log.info("[push] subscription invalida (status={}), removendo id={}",
+							statusCode, record.getId());
 					subscriptionRepository.delete(record);
 				}
 			} catch (Exception exception) {
