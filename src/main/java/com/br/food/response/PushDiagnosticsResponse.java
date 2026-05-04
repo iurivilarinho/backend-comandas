@@ -1,5 +1,6 @@
 package com.br.food.response;
 
+import java.util.List;
 import java.util.Map;
 
 public class PushDiagnosticsResponse {
@@ -8,13 +9,13 @@ public class PushDiagnosticsResponse {
 	private final String vapidSubject;
 	private final String vapidPublicKeyPrefix;
 	private final Map<String, Long> subscriptionsByTopic;
-	private final SubscriptionInfo currentDevice;
+	private final CurrentDevice currentDevice;
 
 	public PushDiagnosticsResponse(boolean vapidConfigured,
 			String vapidSubject,
 			String vapidPublicKeyPrefix,
 			Map<String, Long> subscriptionsByTopic,
-			SubscriptionInfo currentDevice) {
+			CurrentDevice currentDevice) {
 		this.vapidConfigured = vapidConfigured;
 		this.vapidSubject = vapidSubject;
 		this.vapidPublicKeyPrefix = vapidPublicKeyPrefix;
@@ -38,22 +39,39 @@ public class PushDiagnosticsResponse {
 		return subscriptionsByTopic;
 	}
 
-	public SubscriptionInfo getCurrentDevice() {
+	public CurrentDevice getCurrentDevice() {
 		return currentDevice;
 	}
 
-	public static class SubscriptionInfo {
+	public static class CurrentDevice {
+
+		private final String endpointHost;
+		private final List<TopicEntry> topics;
+
+		public CurrentDevice(String endpointHost, List<TopicEntry> topics) {
+			this.endpointHost = endpointHost;
+			this.topics = topics;
+		}
+
+		public String getEndpointHost() {
+			return endpointHost;
+		}
+
+		public List<TopicEntry> getTopics() {
+			return topics;
+		}
+	}
+
+	public static class TopicEntry {
 
 		private final Long id;
 		private final String topic;
 		private final Long customerId;
-		private final String endpointHost;
 
-		public SubscriptionInfo(Long id, String topic, Long customerId, String endpointHost) {
+		public TopicEntry(Long id, String topic, Long customerId) {
 			this.id = id;
 			this.topic = topic;
 			this.customerId = customerId;
-			this.endpointHost = endpointHost;
 		}
 
 		public Long getId() {
@@ -66,10 +84,6 @@ public class PushDiagnosticsResponse {
 
 		public Long getCustomerId() {
 			return customerId;
-		}
-
-		public String getEndpointHost() {
-			return endpointHost;
 		}
 	}
 }

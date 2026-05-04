@@ -35,7 +35,7 @@ public class SecurityConfigurations {
 						"/push/public-key").permitAll()
 				.requestMatchers(HttpMethod.POST, "/customers", "/digital-orders", "/digital-orders/*/items",
 						"/orders/*/request-close", "/push/subscriptions").permitAll()
-				.requestMatchers(HttpMethod.DELETE, "/push/subscriptions").permitAll()
+				.requestMatchers(HttpMethod.DELETE, "/push/subscriptions", "/push/subscriptions/topic").permitAll()
 				.requestMatchers(HttpMethod.PUT, "/customers/*").permitAll()
 				.requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll().anyRequest()
 				.authenticated().and().addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

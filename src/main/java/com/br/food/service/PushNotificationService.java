@@ -87,7 +87,7 @@ public class PushNotificationService {
 	@Transactional
 	public PushSubscription saveSubscription(PushSubscriptionRequest request) {
 		PushSubscription saved = subscriptionRepository
-				.findByEndpoint(request.getEndpoint())
+				.findByEndpointAndTopic(request.getEndpoint(), request.getTopic())
 				.map(existing -> {
 					existing.update(request.getP256dh(), request.getAuth(), request.getTopic(), request.getCustomerId());
 					return existing;
@@ -108,7 +108,18 @@ public class PushNotificationService {
 
 	@Transactional
 	public void deleteSubscription(String endpoint) {
-		subscriptionRepository.findByEndpoint(endpoint).ifPresent(record -> {
+		List<PushSubscription> records = subscriptionRepository.findByEndpoint(endpoint);
+		if (records.isEmpty()) {
+			return;
+		}
+		subscriptionRepository.deleteAll(records);
+		log.info("[push] subscriptions removidas (todas topics) endpointStart={} qtd={}",
+				endpoint.substring(0, Math.min(50, endpoint.length())), records.size());
+	}
+
+	@Transactional
+	public void deleteSubscriptionTopic(String endpoint, String topic) {
+		subscriptionRepository.findByEndpointAndTopic(endpoint, topic).ifPresent(record -> {
 			subscriptionRepository.delete(record);
 			log.info("[push] subscription removida id={} topic={}", record.getId(), record.getTopic());
 		});
@@ -151,15 +162,18 @@ public class PushNotificationService {
 		counts.put(PushSubscription.TOPIC_TABLES,
 				(long) subscriptionRepository.findByTopic(PushSubscription.TOPIC_TABLES).size());
 
-		PushDiagnosticsResponse.SubscriptionInfo currentDevice = null;
+		PushDiagnosticsResponse.CurrentDevice currentDevice = null;
 		if (endpoint != null && !endpoint.isBlank()) {
-			currentDevice = subscriptionRepository.findByEndpoint(endpoint)
-					.map(record -> new PushDiagnosticsResponse.SubscriptionInfo(
-							record.getId(),
-							record.getTopic(),
-							record.getCustomerId(),
-							extractHost(record.getEndpoint())))
-					.orElse(null);
+			List<PushSubscription> records = subscriptionRepository.findByEndpoint(endpoint);
+			if (!records.isEmpty()) {
+				List<PushDiagnosticsResponse.TopicEntry> topics = records.stream()
+						.map(record -> new PushDiagnosticsResponse.TopicEntry(
+								record.getId(),
+								record.getTopic(),
+								record.getCustomerId()))
+						.toList();
+				currentDevice = new PushDiagnosticsResponse.CurrentDevice(extractHost(endpoint), topics);
+			}
 		}
 
 		String publicKeyPrefix = publicKey == null || publicKey.isBlank()
@@ -177,11 +191,14 @@ public class PushNotificationService {
 			return new PushTestResponse(false, null, "Endpoint nao informado.", null, null);
 		}
 
-		PushSubscription record = subscriptionRepository.findByEndpoint(endpoint).orElse(null);
-		if (record == null) {
+		List<PushSubscription> records = subscriptionRepository.findByEndpoint(endpoint);
+		if (records.isEmpty()) {
 			return new PushTestResponse(false, null,
 					"Subscription nao encontrada no servidor para este dispositivo.", null, null);
 		}
+		// Mesmo endpoint pode ter varias topics; chaves de criptografia sao as mesmas,
+		// entao qualquer record serve para enviar o push de teste.
+		PushSubscription record = records.get(0);
 
 		String payload;
 		try {
@@ -206,9 +223,9 @@ public class PushNotificationService {
 			log.info("[push] teste entregue id={} status={} body={}",
 					record.getId(), statusCode, responseBody);
 			if (isStaleSubscriptionStatus(statusCode)) {
-				log.info("[push] teste indicou subscription invalida (status={}), removendo id={}",
-						statusCode, record.getId());
-				subscriptionRepository.delete(record);
+				log.info("[push] teste indicou subscription invalida (status={}), removendo todas topics do endpoint (qtd={})",
+						statusCode, records.size());
+				subscriptionRepository.deleteAll(records);
 			}
 			String message = (statusCode >= 200 && statusCode < 300) ? null : responseBody;
 			return new PushTestResponse(true, statusCode, message, record.getId(), record.getTopic());

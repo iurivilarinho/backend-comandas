@@ -11,7 +11,9 @@ import com.br.food.models.PushSubscription;
 @Repository
 public interface PushSubscriptionRepository extends JpaRepository<PushSubscription, Long> {
 
-	Optional<PushSubscription> findByEndpoint(String endpoint);
+	List<PushSubscription> findByEndpoint(String endpoint);
+
+	Optional<PushSubscription> findByEndpointAndTopic(String endpoint, String topic);
 
 	List<PushSubscription> findByTopic(String topic);
 

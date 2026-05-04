@@ -12,12 +12,18 @@ import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "push_subscription", indexes = {
-		@Index(name = "idx_push_subscription_topic", columnList = "topic"),
-		@Index(name = "idx_push_subscription_customer", columnList = "customer_id"),
-})
+@Table(name = "push_subscription",
+		uniqueConstraints = @UniqueConstraint(
+				name = "uk_push_subscription_endpoint_topic",
+				columnNames = { "endpoint", "topic" }),
+		indexes = {
+				@Index(name = "idx_push_subscription_topic", columnList = "topic"),
+				@Index(name = "idx_push_subscription_customer", columnList = "customer_id"),
+				@Index(name = "idx_push_subscription_endpoint", columnList = "endpoint"),
+		})
 public class PushSubscription {
 
 	public static final String TOPIC_KITCHEN = "kitchen";
@@ -28,7 +34,7 @@ public class PushSubscription {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "endpoint", nullable = false, length = 1024, unique = true)
+	@Column(name = "endpoint", nullable = false, length = 1024)
 	private String endpoint;
 
 	@Column(name = "p256dh", nullable = false, length = 255)

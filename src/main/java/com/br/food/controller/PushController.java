@@ -43,10 +43,19 @@ public class PushController {
 		return ResponseEntity.noContent().build();
 	}
 
-	@Operation(summary = "Remove subscription pelo endpoint informado")
+	@Operation(summary = "Remove TODAS subscriptions desse endpoint (reset completo do device)")
 	@DeleteMapping("/subscriptions")
 	public ResponseEntity<Void> unsubscribe(@RequestParam("endpoint") String endpoint) {
 		pushNotificationService.deleteSubscription(endpoint);
+		return ResponseEntity.noContent().build();
+	}
+
+	@Operation(summary = "Remove apenas a topic informada para o endpoint (mantem outras topics ativas)")
+	@DeleteMapping("/subscriptions/topic")
+	public ResponseEntity<Void> unsubscribeTopic(
+			@RequestParam("endpoint") String endpoint,
+			@RequestParam("topic") String topic) {
+		pushNotificationService.deleteSubscriptionTopic(endpoint, topic);
 		return ResponseEntity.noContent().build();
 	}
 

@@ -137,7 +137,8 @@ public class SecurityFilter extends OncePerRequestFilter {
 			return true;
 		}
 
-		if (method == HttpMethod.DELETE && requestUri.equals("/push/subscriptions")) {
+		if (method == HttpMethod.DELETE && (requestUri.equals("/push/subscriptions")
+				|| requestUri.equals("/push/subscriptions/topic"))) {
 			return true;
 		}
 

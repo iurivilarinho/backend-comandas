@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.br.food.enums.Types.OrderItemStatus;
+import com.br.food.models.Order;
 import com.br.food.models.OrderItem;
+import com.br.food.models.PushSubscription;
 import com.br.food.repository.OrderItemRepository;
 import com.br.food.response.PendingOrderResponse;
 
@@ -72,8 +74,9 @@ public class KitchenService {
 		orderItemService.updateStatus(orderItemId, OrderItemStatus.READY);
 		auditLogService.register("OrderItem", orderItemId, "KITCHEN_MARKED_READY", actorName, "Item ready for service.");
 
-		Long customerId = item.getOrder() != null && item.getOrder().getCustomer() != null
-				? item.getOrder().getCustomer().getId()
+		Order order = item.getOrder();
+		Long customerId = order != null && order.getCustomer() != null
+				? order.getCustomer().getId()
 				: null;
 		String productLabel = item.getProduct() != null && item.getProduct().getDescription() != null
 				? item.getProduct().getDescription()
@@ -83,6 +86,16 @@ public class KitchenService {
 				"Seu pedido está pronto",
 				productLabel + " já saiu da cozinha.",
 				"/conta");
+
+		String tableLabel = order != null && order.getDiningTable() != null
+				&& order.getDiningTable().getNumber() != null
+						? "Mesa " + order.getDiningTable().getNumber()
+						: "Pedido digital";
+		pushNotificationService.notifyTopic(
+				PushSubscription.TOPIC_TABLES,
+				"Item pronto para entrega — " + tableLabel,
+				productLabel + " saiu da cozinha. Levar para o cliente.",
+				"/admin/mesas");
 	}
 
 	@Transactional
