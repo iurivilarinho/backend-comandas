@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.br.food.request.PushSubscriptionRequest;
+import com.br.food.response.PushDiagnosticsResponse;
 import com.br.food.response.PushPublicKeyResponse;
+import com.br.food.response.PushTestResponse;
 import com.br.food.service.PushNotificationService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,5 +48,18 @@ public class PushController {
 	public ResponseEntity<Void> unsubscribe(@RequestParam("endpoint") String endpoint) {
 		pushNotificationService.deleteSubscription(endpoint);
 		return ResponseEntity.noContent().build();
+	}
+
+	@Operation(summary = "Diagnostico de push: VAPID, contagem por topico e subscription deste dispositivo")
+	@GetMapping("/diagnostics")
+	public ResponseEntity<PushDiagnosticsResponse> diagnostics(
+			@RequestParam(value = "endpoint", required = false) String endpoint) {
+		return ResponseEntity.ok(pushNotificationService.getDiagnostics(endpoint));
+	}
+
+	@Operation(summary = "Envia push de teste para o endpoint informado e retorna status do gateway")
+	@PostMapping("/test")
+	public ResponseEntity<PushTestResponse> sendTest(@RequestParam("endpoint") String endpoint) {
+		return ResponseEntity.ok(pushNotificationService.sendTestToEndpoint(endpoint));
 	}
 }
