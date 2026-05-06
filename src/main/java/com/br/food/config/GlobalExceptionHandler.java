@@ -58,6 +58,12 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(List.of(msg)));
 	}
 
+	@ExceptionHandler(java.nio.file.AccessDeniedException.class)
+	public ResponseEntity<ErrorResponse> tratarErro409Estado(java.nio.file.AccessDeniedException ex) {
+		String msg = ex.getMessage() != null ? ex.getMessage() : "Operação não permitida no estado atual.";
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(List.of(msg)));
+	}
+
 	@ExceptionHandler(AuthenticationException.class)
 	public ResponseEntity<ErrorResponse> tratarErro401(AuthenticationException ex) {
 		String msg = ex.getMessage() != null ? ex.getMessage() : "Não autenticado.";

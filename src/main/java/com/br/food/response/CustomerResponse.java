@@ -9,6 +9,7 @@ public class CustomerResponse {
 	private final String documentNumber;
 	private final String phone;
 	private final Boolean blocked;
+	private final AddressResponse address;
 
 	public CustomerResponse(Customer customer) {
 		this.id = customer.getId();
@@ -16,6 +17,7 @@ public class CustomerResponse {
 		this.documentNumber = customer.getDocumentNumber();
 		this.phone = customer.getPhone();
 		this.blocked = customer.getBlocked();
+		this.address = customer.getAddress() != null ? new AddressResponse(customer.getAddress()) : null;
 	}
 
 	public Long getId() {
@@ -36,5 +38,9 @@ public class CustomerResponse {
 
 	public Boolean getBlocked() {
 		return blocked;
+	}
+
+	public AddressResponse getAddress() {
+		return address;
 	}
 }

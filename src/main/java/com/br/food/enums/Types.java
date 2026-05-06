@@ -17,7 +17,9 @@ public final class Types {
         @Schema(description = "Dine-in order")
         DINE_IN,
         @Schema(description = "Delivery order")
-        DELIVERY
+        DELIVERY,
+        @Schema(description = "Takeaway order")
+        TAKEAWAY
     }
 
     @Schema(description = "Product type")

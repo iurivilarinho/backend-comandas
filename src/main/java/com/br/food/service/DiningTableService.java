@@ -138,10 +138,10 @@ public class DiningTableService {
 	public void reserveTable(Long id) throws AccessDeniedException {
 		DiningTable table = findById(id);
 		if (!Boolean.TRUE.equals(table.getActive())) {
-			throw new AccessDeniedException("Table is inactive.");
+			throw new AccessDeniedException("Mesa inativa.");
 		}
 		if (Boolean.TRUE.equals(table.getOccupied())) {
-			throw new AccessDeniedException("Table is already occupied.");
+			throw new AccessDeniedException("Esta mesa já está ocupada.");
 		}
 		table.setOccupied(true);
 	}

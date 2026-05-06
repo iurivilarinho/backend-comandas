@@ -49,6 +49,9 @@ public class CompanyProfile {
 	@Column(name = "takeaway_enabled", nullable = false)
 	private Boolean takeawayEnabled;
 
+	@Column(name = "whatsapp_number", length = 20)
+	private String whatsappNumber;
+
 	@ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	@JoinColumn(name = "fk_logo_document_id", foreignKey = @ForeignKey(name = "fk_company_profile_logo_document"))
 	private Document logo;
@@ -144,6 +147,14 @@ public class CompanyProfile {
 
 	public void setTakeawayEnabled(Boolean takeawayEnabled) {
 		this.takeawayEnabled = takeawayEnabled;
+	}
+
+	public String getWhatsappNumber() {
+		return whatsappNumber;
+	}
+
+	public void setWhatsappNumber(String whatsappNumber) {
+		this.whatsappNumber = whatsappNumber;
 	}
 
 	public Document getLogo() {

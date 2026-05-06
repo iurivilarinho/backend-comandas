@@ -106,20 +106,50 @@ public class OrderService {
 			return;
 		}
 		String code = order.getCode() != null ? order.getCode() : ("#" + order.getId());
-		String tableNumber = order.getDiningTable() != null && order.getDiningTable().getNumber() != null
-				? "Mesa " + order.getDiningTable().getNumber()
-				: "Pedido digital";
 		pushNotificationService.notifyTopic(
 				com.br.food.models.PushSubscription.TOPIC_KITCHEN,
 				"Novo pedido para a cozinha",
-				code + " — " + tableNumber + " enviou " + pendingForKitchen
+				code + " — " + describeOrderOrigin(order) + " enviou " + pendingForKitchen
 						+ (pendingForKitchen == 1 ? " item." : " itens."),
 				"/admin/cozinha");
+	}
+
+	private void notifyDeliveryOfNewOrder(Order order) {
+		if (order.getChannel() == OrderChannel.DINE_IN) {
+			return;
+		}
+		String code = order.getCode() != null ? order.getCode() : ("#" + order.getId());
+		String customerName = order.getCustomer() != null && order.getCustomer().getName() != null
+				? order.getCustomer().getName()
+				: "Cliente";
+		long itemCount = order.getItems().stream()
+				.filter(item -> item.getStatus() != OrderItemStatus.CANCELED && item.getStatus() != OrderItemStatus.DECLINED)
+				.mapToLong(item -> item.getQuantity() != null ? item.getQuantity() : 0L)
+				.sum();
+		pushNotificationService.notifyTopic(
+				com.br.food.models.PushSubscription.TOPIC_DELIVERY,
+				"Novo pedido " + describeOrderOrigin(order),
+				code + " — " + customerName + " (" + itemCount + (itemCount == 1 ? " item)" : " itens)"),
+				"/admin/delivery");
+	}
+
+	private String describeOrderOrigin(Order order) {
+		if (order.getChannel() == OrderChannel.DELIVERY) {
+			return "Delivery";
+		}
+		if (order.getChannel() == OrderChannel.TAKEAWAY) {
+			return "Retirada";
+		}
+		if (order.getDiningTable() != null && order.getDiningTable().getNumber() != null) {
+			return "Mesa " + order.getDiningTable().getNumber();
+		}
+		return "Pedido digital";
 	}
 
 	@Transactional
 	public Order createFromDigitalMenu(OrderRequest request) throws AccessDeniedException {
 		validateDigitalOrderingEnabled();
+		validateChannelEnabled(request.getChannel());
 		return create(request, null);
 	}
 
@@ -130,11 +160,16 @@ public class OrderService {
 		if (Boolean.TRUE.equals(customer.getBlocked())) {
 			throw new DataIntegrityViolationException("Blocked customers cannot create new orders.");
 		}
+		if (request.getChannel() == OrderChannel.DELIVERY && customer.getAddress() == null) {
+			throw new DataIntegrityViolationException("Delivery orders require a registered customer address.");
+		}
 		Order existingOpenOrder = findActiveOrderByCustomerDocumentNumber(customer.getDocumentNumber());
 		if (existingOpenOrder != null) {
 			return existingOpenOrder;
 		}
-		DiningTable table = diningTableService.findByNumber(request.getTableNumber());
+		DiningTable table = request.getChannel() == OrderChannel.DINE_IN
+				? diningTableService.findByNumber(request.getTableNumber())
+				: null;
 		Order order = new Order(request, customer, generateOrderCode(), table);
 		if (request.getChannel() == OrderChannel.DINE_IN) {
 			diningTableService.reserveTable(table.getId());
@@ -144,6 +179,7 @@ public class OrderService {
 		Order savedOrder = orderRepository.save(order);
 		auditLogService.register("Order", savedOrder.getId(), "ORDER_CREATED", actorName, "Order code " + savedOrder.getCode());
 		notifyKitchenOfNewItems(savedOrder);
+		notifyDeliveryOfNewOrder(savedOrder);
 		return savedOrder;
 	}
 
@@ -155,10 +191,19 @@ public class OrderService {
 			throw new DataIntegrityViolationException("Closed or canceled orders cannot be updated.");
 		}
 
-		DiningTable table = diningTableService.findByNumber(request.getTableNumber());
-		if (order.getDiningTable() != null && !order.getDiningTable().getId().equals(table.getId()) && order.getChannel() == OrderChannel.DINE_IN) {
+		DiningTable table = request.getChannel() == OrderChannel.DINE_IN
+				? diningTableService.findByNumber(request.getTableNumber())
+				: null;
+		if (order.getDiningTable() != null
+				&& order.getChannel() == OrderChannel.DINE_IN
+				&& request.getChannel() == OrderChannel.DINE_IN
+				&& !order.getDiningTable().getId().equals(table.getId())) {
 			diningTableService.releaseTable(order.getDiningTable().getId());
 			diningTableService.reserveTable(table.getId());
+		} else if (order.getDiningTable() != null
+				&& order.getChannel() == OrderChannel.DINE_IN
+				&& request.getChannel() != OrderChannel.DINE_IN) {
+			diningTableService.releaseTable(order.getDiningTable().getId());
 		}
 
 		order.update(request, table);
@@ -176,12 +221,14 @@ public class OrderService {
 	}
 
 	@Transactional(readOnly = true)
-	public Page<Order> search(OrderStatus status, List<OrderStatus> statuses, String tableNumber, String code, Long customerId, Pageable pageable) {
+	public Page<Order> search(OrderStatus status, List<OrderStatus> statuses, String tableNumber, String code, Long customerId, OrderChannel channel, List<OrderChannel> channels, Pageable pageable) {
 		Specification<Order> specification = Specification.where(OrderSpecification.hasStatus(status))
 				.and(OrderSpecification.hasAnyStatus(statuses))
 				.and(OrderSpecification.hasTableNumber(tableNumber))
 				.and(OrderSpecification.hasCode(code))
-				.and(OrderSpecification.hasCustomerId(customerId));
+				.and(OrderSpecification.hasCustomerId(customerId))
+				.and(OrderSpecification.hasChannel(channel))
+				.and(OrderSpecification.hasAnyChannel(channels));
 		List<Order> orders = orderRepository.findAll(specification).stream()
 				.sorted(buildOrderComparator())
 				.toList();
@@ -310,15 +357,13 @@ public class OrderService {
 
 	private void notifyTablesOfCheckoutRequest(Order order) {
 		String code = order.getCode() != null ? order.getCode() : ("#" + order.getId());
-		String tableNumber = order.getDiningTable() != null && order.getDiningTable().getNumber() != null
-				? "Mesa " + order.getDiningTable().getNumber()
-				: "Pedido digital";
+		String origin = describeOrderOrigin(order);
 		String customerName = order.getCustomer() != null && order.getCustomer().getName() != null
 				? order.getCustomer().getName()
 				: "Cliente";
 		pushNotificationService.notifyTopic(
 				com.br.food.models.PushSubscription.TOPIC_TABLES,
-				"Conta solicitada — " + tableNumber,
+				"Conta solicitada — " + origin,
 				customerName + " pediu a conta no pedido " + code + ".",
 				"/admin/mesas");
 	}
@@ -519,6 +564,12 @@ public class OrderService {
 		handleOrderWithoutActiveItems(order);
 	}
 
+	@Transactional
+	public void refreshOrderStatus(Long orderId) {
+		Order order = findById(orderId);
+		refreshOrderStatus(order);
+	}
+
 	@Transactional(readOnly = true)
 	public String generateOrderCode() {
 		Order highestOrder = orderRepository.findTopByOrderByCodeDesc();
@@ -556,8 +607,41 @@ public class OrderService {
 		if (request.getItems() == null || request.getItems().isEmpty()) {
 			throw new DataIntegrityViolationException("Orders must contain at least one item.");
 		}
-		if (request.getChannel() == OrderChannel.DELIVERY && request.getTableNumber() == null) {
-			throw new DataIntegrityViolationException("Table number must be informed for operational tracking.");
+		if (request.getChannel() == OrderChannel.DINE_IN
+				&& (request.getTableNumber() == null || request.getTableNumber().isBlank())) {
+			throw new DataIntegrityViolationException("Table number is required for dine-in orders.");
+		}
+		if (request.getChannel() != OrderChannel.DINE_IN) {
+			validateRemotePayment(request);
+		}
+	}
+
+	private void validateRemotePayment(OrderRequest request) {
+		PaymentMethod method = request.getPaymentMethod();
+
+		if (method == null) {
+			throw new DataIntegrityViolationException(
+					"Payment method is required for delivery and takeaway orders.");
+		}
+		if (request.getChangeForAmount() != null && method != PaymentMethod.CASH) {
+			throw new DataIntegrityViolationException(
+					"Change-for amount only applies to cash payments.");
+		}
+	}
+
+	private void validateChannelEnabled(OrderChannel channel) {
+		CompanyProfile companyProfile = companyProfileService.findCurrent();
+		if (companyProfile == null) {
+			return;
+		}
+		if (channel == OrderChannel.DINE_IN && Boolean.FALSE.equals(companyProfile.getDineInEnabled())) {
+			throw new DataIntegrityViolationException("Dine-in orders are disabled.");
+		}
+		if (channel == OrderChannel.DELIVERY && Boolean.FALSE.equals(companyProfile.getDeliveryEnabled())) {
+			throw new DataIntegrityViolationException("Delivery orders are disabled.");
+		}
+		if (channel == OrderChannel.TAKEAWAY && Boolean.FALSE.equals(companyProfile.getTakeawayEnabled())) {
+			throw new DataIntegrityViolationException("Takeaway orders are disabled.");
 		}
 	}
 

@@ -5,6 +5,7 @@ import java.util.List;
 import com.br.food.enums.Types.OrderChannel;
 import com.br.food.enums.Types.OrderItemStatus;
 import com.br.food.enums.Types.OrderStatus;
+import com.br.food.enums.Types.PaymentMethod;
 import com.br.food.models.Order;
 import com.br.food.models.OrderItem;
 
@@ -17,6 +18,7 @@ public class PendingOrderResponse {
 	private final String code;
 	private final OrderStatus status;
 	private final OrderChannel channel;
+	private final PaymentMethod requestedPaymentMethod;
 
 	public PendingOrderResponse(Order order) {
 		this.id = order.getId();
@@ -29,6 +31,7 @@ public class PendingOrderResponse {
 		this.code = order.getCode();
 		this.status = order.getStatus();
 		this.channel = order.getChannel();
+		this.requestedPaymentMethod = order.getRequestedPaymentMethod();
 	}
 
 	private boolean isPendingForKitchen(OrderItem item) {
@@ -63,5 +66,9 @@ public class PendingOrderResponse {
 
 	public OrderChannel getChannel() {
 		return channel;
+	}
+
+	public PaymentMethod getRequestedPaymentMethod() {
+		return requestedPaymentMethod;
 	}
 }

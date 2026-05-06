@@ -1,6 +1,7 @@
 package com.br.food.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -21,6 +22,9 @@ public class CustomerRequest {
 	@Size(min = 10, max = 15, message = "Phone must have between 10 and 15 characters.")
 	private String phone;
 
+	@Valid
+	private AddressRequest address;
+
 	public String getName() {
 		return name;
 	}
@@ -31,5 +35,9 @@ public class CustomerRequest {
 
 	public String getPhone() {
 		return phone;
+	}
+
+	public AddressRequest getAddress() {
+		return address;
 	}
 }

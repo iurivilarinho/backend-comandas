@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import com.br.food.enums.Types.OrderStatus;
 import com.br.food.enums.Types.ProductType;
+import com.br.food.models.Address;
 import com.br.food.models.Customer;
 import com.br.food.models.DiningTable;
 import com.br.food.models.Order;
@@ -157,7 +158,9 @@ class RestaurantFlowIntegrationTest {
 
 	@Test
 	void cancelItemShouldRestoreStockAndAdjustPaidAmount() throws Exception {
-		Customer customer = customerRepository.save(buildCustomer("Customer Two", "12345678902"));
+		Customer customerEntity = buildCustomer("Customer Two", "12345678902");
+		customerEntity.setAddress(buildAddress());
+		Customer customer = customerRepository.save(customerEntity);
 		DiningTable table = diningTableRepository.save(new DiningTable("11"));
 
 		Product ingredient = productRepository.save(buildProduct("ING-2", "Dough", ProductType.INGREDIENT, new BigDecimal("1.00")));
@@ -373,6 +376,17 @@ class RestaurantFlowIntegrationTest {
 		customer.setPhone("11999999999");
 		customer.setBlocked(false);
 		return customer;
+	}
+
+	private Address buildAddress() {
+		Address address = new Address();
+		address.setStreet("Rua Teste");
+		address.setNumber("100");
+		address.setDistrict("Centro");
+		address.setPostalCode("01001000");
+		address.setCity("Sao Paulo");
+		address.setStatus(true);
+		return address;
 	}
 
 	private Product buildProduct(String code, String description, ProductType type, BigDecimal price) {

@@ -29,6 +29,7 @@ public class PushSubscription {
 	public static final String TOPIC_KITCHEN = "kitchen";
 	public static final String TOPIC_CUSTOMER = "customer";
 	public static final String TOPIC_TABLES = "tables";
+	public static final String TOPIC_DELIVERY = "delivery";
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

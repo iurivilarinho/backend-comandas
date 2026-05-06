@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.br.food.enums.Types.OrderChannel;
 import com.br.food.enums.Types.OrderStatus;
 import com.br.food.request.CancelOrderItemRequest;
 import com.br.food.request.CancelOrderRequest;
@@ -71,8 +72,10 @@ public class OrderController {
 			@RequestParam(required = false) String tableNumber,
 			@RequestParam(required = false) String code,
 			@RequestParam(required = false) Long customerId,
+			@RequestParam(required = false) OrderChannel channel,
+			@RequestParam(required = false) List<OrderChannel> channels,
 			Pageable pageable) {
-		return ResponseEntity.ok(orderService.search(status, statuses, tableNumber, code, customerId, pageable).map(OrderResponse::new));
+		return ResponseEntity.ok(orderService.search(status, statuses, tableNumber, code, customerId, channel, channels, pageable).map(OrderResponse::new));
 	}
 
 	@Operation(summary = "Update order")

@@ -102,6 +102,9 @@ public class Order {
 	@Column(name = "channel", nullable = false)
 	private OrderChannel channel;
 
+	@Column(name = "change_for_amount", precision = 12, scale = 2)
+	private BigDecimal changeForAmount;
+
 	@Column(name = "created_at", updatable = false, nullable = false)
 	private LocalDateTime createdAt;
 
@@ -117,6 +120,8 @@ public class Order {
 		this.diningTable = diningTable;
 		this.status = OrderStatus.OPEN;
 		this.channel = request.getChannel();
+		this.requestedPaymentMethod = request.getPaymentMethod();
+		this.changeForAmount = request.getChangeForAmount();
 		this.discountPercentage = request.getDiscountPercentage() != null ? request.getDiscountPercentage() : BigDecimal.ZERO;
 		this.discountAmount = BigDecimal.ZERO;
 		this.subtotalAmount = BigDecimal.ZERO;
@@ -131,6 +136,7 @@ public class Order {
 	public void update(OrderRequest request, DiningTable diningTable) {
 		this.diningTable = diningTable;
 		this.channel = request.getChannel();
+		this.changeForAmount = request.getChangeForAmount();
 		this.discountPercentage = request.getDiscountPercentage() != null ? request.getDiscountPercentage() : BigDecimal.ZERO;
 		this.discountAmount = BigDecimal.ZERO;
 		this.applyServiceFee = Boolean.TRUE.equals(request.getApplyServiceFee());
@@ -313,6 +319,14 @@ public class Order {
 
 	public void setChannel(OrderChannel channel) {
 		this.channel = channel;
+	}
+
+	public BigDecimal getChangeForAmount() {
+		return changeForAmount;
+	}
+
+	public void setChangeForAmount(BigDecimal changeForAmount) {
+		this.changeForAmount = changeForAmount;
 	}
 
 	public PaymentMethod getRequestedPaymentMethod() {

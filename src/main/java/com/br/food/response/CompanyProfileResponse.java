@@ -15,6 +15,7 @@ public class CompanyProfileResponse {
 	private final Boolean dineInEnabled;
 	private final Boolean deliveryEnabled;
 	private final Boolean takeawayEnabled;
+	private final String whatsappNumber;
 	private final DocumentBasicResponse logo;
 	private final DocumentBasicResponse banner;
 	private final AddressResponse address;
@@ -33,6 +34,7 @@ public class CompanyProfileResponse {
 		this.dineInEnabled = companyProfile.getDineInEnabled();
 		this.deliveryEnabled = companyProfile.getDeliveryEnabled();
 		this.takeawayEnabled = companyProfile.getTakeawayEnabled();
+		this.whatsappNumber = companyProfile.getWhatsappNumber();
 		this.logo = companyProfile.getLogo() != null ? new DocumentBasicResponse(companyProfile.getLogo()) : null;
 		this.banner = companyProfile.getBanner() != null ? new DocumentBasicResponse(companyProfile.getBanner()) : null;
 		this.address = companyProfile.getAddress() != null ? new AddressResponse(companyProfile.getAddress()) : null;
@@ -69,6 +71,10 @@ public class CompanyProfileResponse {
 
 	public Boolean getTakeawayEnabled() {
 		return takeawayEnabled;
+	}
+
+	public String getWhatsappNumber() {
+		return whatsappNumber;
 	}
 
 	public DocumentBasicResponse getLogo() {

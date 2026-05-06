@@ -1,7 +1,9 @@
 package com.br.food.models;
 
+import com.br.food.request.AddressRequest;
 import com.br.food.request.CustomerRequest;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -33,7 +35,7 @@ public class Customer {
 	@Column(name = "blocked", nullable = false)
 	private Boolean blocked;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
 	@JoinColumn(name = "fk_address_id", foreignKey = @ForeignKey(name = "fk_customer_address"))
 	private Address address;
 
@@ -45,12 +47,30 @@ public class Customer {
 		this.name = request.getName();
 		this.documentNumber = request.getDocumentNumber();
 		this.phone = request.getPhone();
+		applyAddress(request.getAddress());
 	}
 
 	public void update(CustomerRequest request) {
 		this.name = request.getName();
 		this.documentNumber = request.getDocumentNumber();
 		this.phone = request.getPhone();
+		applyAddress(request.getAddress());
+	}
+
+	private void applyAddress(AddressRequest addressRequest) {
+		if (addressRequest == null) {
+			return;
+		}
+		Address target = this.address != null ? this.address : new Address();
+		target.setStreet(addressRequest.getStreet());
+		target.setNumber(addressRequest.getNumber());
+		target.setDistrict(addressRequest.getDistrict());
+		target.setPostalCode(addressRequest.getPostalCode());
+		target.setCity(addressRequest.getCity());
+		if (target.getStatus() == null) {
+			target.setStatus(true);
+		}
+		this.address = target;
 	}
 
 	public Long getId() {

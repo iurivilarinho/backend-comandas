@@ -75,6 +75,9 @@ public class KitchenService {
 		auditLogService.register("OrderItem", orderItemId, "KITCHEN_MARKED_READY", actorName, "Item ready for service.");
 
 		Order order = item.getOrder();
+		if (order != null && order.getId() != null) {
+			orderService.refreshOrderStatus(order.getId());
+		}
 		Long customerId = order != null && order.getCustomer() != null
 				? order.getCustomer().getId()
 				: null;

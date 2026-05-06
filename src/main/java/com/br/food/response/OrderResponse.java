@@ -31,6 +31,7 @@ public class OrderResponse {
 	private final String checkoutRequestNotes;
 	private final OrderStatus status;
 	private final OrderChannel channel;
+	private final BigDecimal changeForAmount;
 	private final List<OrderItemResponse> items;
 	private final List<OrderPaymentResponse> payments;
 
@@ -54,6 +55,7 @@ public class OrderResponse {
 		this.checkoutRequestNotes = order.getCheckoutRequestNotes();
 		this.status = order.getStatus();
 		this.channel = order.getChannel();
+		this.changeForAmount = order.getChangeForAmount();
 		this.items = order.getItems().stream()
 				.filter(item -> item.getStatus() != OrderItemStatus.CANCELED && item.getStatus() != OrderItemStatus.DECLINED)
 				.map(OrderItemResponse::new)
@@ -135,6 +137,10 @@ public class OrderResponse {
 
 	public OrderChannel getChannel() {
 		return channel;
+	}
+
+	public BigDecimal getChangeForAmount() {
+		return changeForAmount;
 	}
 
 	public List<OrderItemResponse> getItems() {

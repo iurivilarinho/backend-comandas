@@ -39,6 +39,9 @@ public class CompanyProfileRequest {
 	@NotNull(message = "Takeaway setting is required.")
 	private Boolean takeawayEnabled;
 
+	@Size(max = 20, message = "WhatsApp number must have at most 20 characters.")
+	private String whatsappNumber;
+
 	@Valid
 	@NotNull(message = "Address is required.")
 	private AddressRequest address;
@@ -76,6 +79,14 @@ public class CompanyProfileRequest {
 
 	public Boolean getTakeawayEnabled() {
 		return takeawayEnabled;
+	}
+
+	public String getWhatsappNumber() {
+		if (whatsappNumber == null) {
+			return null;
+		}
+		String digits = whatsappNumber.replaceAll("\\D", "");
+		return digits.isBlank() ? null : digits;
 	}
 
 	public AddressRequest getAddress() {

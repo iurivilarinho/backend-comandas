@@ -20,7 +20,6 @@ public class OrderRequest {
 	@NotNull(message = "Customer id is required.")
 	private Long customerId;
 
-	@NotNull(message = "Table number is required.")
 	private String tableNumber;
 
 	@NotNull(message = "Order channel is required.")
@@ -33,6 +32,9 @@ public class OrderRequest {
 	private Boolean applyServiceFee;
 
 	private PaymentMethod paymentMethod;
+
+	@DecimalMin(value = "0.0", message = "Change-for amount must be at least 0.")
+	private BigDecimal changeForAmount;
 
 	@NotEmpty(message = "At least one order item is required.")
 	@Valid
@@ -60,6 +62,10 @@ public class OrderRequest {
 
 	public PaymentMethod getPaymentMethod() {
 		return paymentMethod;
+	}
+
+	public BigDecimal getChangeForAmount() {
+		return changeForAmount;
 	}
 
 	public List<OrderItemRequest> getItems() {

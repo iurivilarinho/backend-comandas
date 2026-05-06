@@ -161,6 +161,8 @@ public class PushNotificationService {
 				(long) subscriptionRepository.findByTopic(PushSubscription.TOPIC_CUSTOMER).size());
 		counts.put(PushSubscription.TOPIC_TABLES,
 				(long) subscriptionRepository.findByTopic(PushSubscription.TOPIC_TABLES).size());
+		counts.put(PushSubscription.TOPIC_DELIVERY,
+				(long) subscriptionRepository.findByTopic(PushSubscription.TOPIC_DELIVERY).size());
 
 		PushDiagnosticsResponse.CurrentDevice currentDevice = null;
 		if (endpoint != null && !endpoint.isBlank()) {

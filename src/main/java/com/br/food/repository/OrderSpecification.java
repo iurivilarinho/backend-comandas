@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.data.jpa.domain.Specification;
 
+import com.br.food.enums.Types.OrderChannel;
 import com.br.food.enums.Types.OrderItemStatus;
 import com.br.food.enums.Types.OrderStatus;
 import com.br.food.models.Order;
@@ -50,5 +51,17 @@ public final class OrderSpecification {
 		return (root, query, builder) -> customerId == null
 				? builder.conjunction()
 				: builder.equal(root.join("customer").get("id"), customerId);
+	}
+
+	public static Specification<Order> hasChannel(OrderChannel channel) {
+		return (root, query, builder) -> channel == null
+				? builder.conjunction()
+				: builder.equal(root.get("channel"), channel);
+	}
+
+	public static Specification<Order> hasAnyChannel(List<OrderChannel> channels) {
+		return (root, query, builder) -> channels == null || channels.isEmpty()
+				? builder.conjunction()
+				: root.get("channel").in(channels);
 	}
 }
