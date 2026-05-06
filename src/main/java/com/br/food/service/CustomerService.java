@@ -40,7 +40,7 @@ public class CustomerService {
 	@Transactional(readOnly = true)
 	public Customer findById(Long id) {
 		return customerRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Customer not found for id " + id + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Cliente nao encontrado para o id " + id + "."));
 	}
 
 	@Transactional(readOnly = true)
@@ -69,7 +69,7 @@ public class CustomerService {
 		findByDocumentNumber(documentNumber)
 				.filter(customer -> currentCustomerId == null || !customer.getId().equals(currentCustomerId))
 				.ifPresent(customer -> {
-					throw new DataIntegrityViolationException("There is already a customer using this CPF.");
+					throw new DataIntegrityViolationException("Ja existe um cliente utilizando este CPF.");
 				});
 	}
 }

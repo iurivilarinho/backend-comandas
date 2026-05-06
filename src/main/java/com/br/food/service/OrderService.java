@@ -158,10 +158,10 @@ public class OrderService {
 		validateOrderRequest(request);
 		Customer customer = customerService.findById(request.getCustomerId());
 		if (Boolean.TRUE.equals(customer.getBlocked())) {
-			throw new DataIntegrityViolationException("Blocked customers cannot create new orders.");
+			throw new DataIntegrityViolationException("Clientes bloqueados nao podem abrir novos pedidos.");
 		}
 		if (request.getChannel() == OrderChannel.DELIVERY && customer.getAddress() == null) {
-			throw new DataIntegrityViolationException("Delivery orders require a registered customer address.");
+			throw new DataIntegrityViolationException("Pedidos de entrega exigem endereco cadastrado para o cliente.");
 		}
 		Order existingOpenOrder = findActiveOrderByCustomerDocumentNumber(customer.getDocumentNumber());
 		if (existingOpenOrder != null) {
@@ -188,7 +188,7 @@ public class OrderService {
 		validateOrderRequest(request);
 		Order order = findById(id);
 		if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.CANCELED) {
-			throw new DataIntegrityViolationException("Closed or canceled orders cannot be updated.");
+			throw new DataIntegrityViolationException("Pedidos fechados ou cancelados nao podem ser atualizados.");
 		}
 
 		DiningTable table = request.getChannel() == OrderChannel.DINE_IN
@@ -217,7 +217,7 @@ public class OrderService {
 	@Transactional(readOnly = true)
 	public Order findById(Long id) {
 		return orderRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Order not found for id " + id + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Pedido nao encontrado para o id " + id + "."));
 	}
 
 	@Transactional(readOnly = true)
@@ -261,11 +261,11 @@ public class OrderService {
 	@Transactional
 	public Order addItems(Long id, List<OrderItemRequest> items, String actorName) {
 		if (items == null || items.isEmpty()) {
-			throw new DataIntegrityViolationException("At least one order item is required.");
+			throw new DataIntegrityViolationException("Informe ao menos um item para o pedido.");
 		}
 		Order order = findById(id);
 		if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.CANCELED) {
-			throw new DataIntegrityViolationException("Cannot add items to closed or canceled orders.");
+			throw new DataIntegrityViolationException("Nao e possivel adicionar itens a pedidos fechados ou cancelados.");
 		}
 		addItems(order, items);
 		recalculateTotals(order);
@@ -278,7 +278,7 @@ public class OrderService {
 	private void validateDigitalOrderingEnabled() {
 		CompanyProfile companyProfile = companyProfileService.findCurrent();
 		if (companyProfile != null && Boolean.FALSE.equals(companyProfile.getDigitalOrderingEnabled())) {
-			throw new DataIntegrityViolationException("Digital menu ordering is disabled.");
+			throw new DataIntegrityViolationException("Pedidos pelo cardapio digital estao desativados.");
 		}
 	}
 
@@ -318,7 +318,7 @@ public class OrderService {
 	public Order updateServiceFee(Long id, boolean applyServiceFee, String actorName) {
 		Order order = findById(id);
 		if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.CANCELED) {
-			throw new DataIntegrityViolationException("Closed or canceled orders cannot update service fee.");
+			throw new DataIntegrityViolationException("Pedidos fechados ou cancelados nao permitem alterar a taxa de servico.");
 		}
 		order.setApplyServiceFee(applyServiceFee);
 		recalculateTotals(order);
@@ -335,7 +335,7 @@ public class OrderService {
 	public Order requestCheckout(Long id, RequestOrderCheckoutRequest request, String actorName) {
 		Order order = findById(id);
 		if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.CANCELED) {
-			throw new DataIntegrityViolationException("Closed or canceled orders cannot request checkout.");
+			throw new DataIntegrityViolationException("Pedidos fechados ou cancelados nao podem solicitar a conta.");
 		}
 
 		recalculateTotals(order);
@@ -374,9 +374,9 @@ public class OrderService {
 		OrderItem item = order.getItems().stream()
 				.filter(orderItem -> orderItem.getId().equals(itemId))
 				.findFirst()
-				.orElseThrow(() -> new EntityNotFoundException("Order item not found for id " + itemId + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Item do pedido nao encontrado para o id " + itemId + "."));
 		if (item.getStatus() == OrderItemStatus.SERVED) {
-			throw new DataIntegrityViolationException("Served items cannot be canceled.");
+			throw new DataIntegrityViolationException("Itens ja entregues nao podem ser cancelados.");
 		}
 		if (item.getStatus() == OrderItemStatus.CANCELED || item.getStatus() == OrderItemStatus.DECLINED) {
 			return;
@@ -396,7 +396,7 @@ public class OrderService {
 	public void cancelOrder(Long orderId, String reason, String actorName) {
 		Order order = findById(orderId);
 		if (order.getStatus() == OrderStatus.CLOSED) {
-			throw new DataIntegrityViolationException("Closed orders cannot be canceled.");
+			throw new DataIntegrityViolationException("Pedidos fechados nao podem ser cancelados.");
 		}
 		for (OrderItem item : order.getItems()) {
 			if (item.getStatus() != OrderItemStatus.CANCELED && item.getStatus() != OrderItemStatus.DECLINED) {
@@ -414,15 +414,15 @@ public class OrderService {
 	public Order reopen(Long orderId, String actorName) throws AccessDeniedException {
 		Order order = findById(orderId);
 		if (order.getStatus() != OrderStatus.CLOSED) {
-			throw new DataIntegrityViolationException("Only closed orders can be reopened.");
+			throw new DataIntegrityViolationException("Apenas pedidos fechados podem ser reabertos.");
 		}
 		if (order.getDiningTable() != null && order.getChannel() == OrderChannel.DINE_IN) {
 			if (!Boolean.TRUE.equals(order.getDiningTable().getActive())) {
-				throw new DataIntegrityViolationException("Cannot reopen order because the original table is inactive.");
+				throw new DataIntegrityViolationException("Nao e possivel reabrir o pedido porque a mesa original esta inativa.");
 			}
 			if (Boolean.TRUE.equals(order.getDiningTable().getOccupied())) {
 				throw new DataIntegrityViolationException(
-						"Cannot reopen order because table " + order.getDiningTable().getNumber() + " is currently occupied.");
+						"Nao e possivel reabrir o pedido porque a mesa " + order.getDiningTable().getNumber() + " esta ocupada no momento.");
 			}
 			diningTableService.reserveTable(order.getDiningTable().getId());
 		}
@@ -436,14 +436,14 @@ public class OrderService {
 	public Order transfer(Long orderId, String targetTableNumber, String actorName) throws AccessDeniedException {
 		Order order = findById(orderId);
 		if (order.getStatus() == OrderStatus.CLOSED || order.getStatus() == OrderStatus.CANCELED) {
-			throw new DataIntegrityViolationException("Closed or canceled orders cannot be transferred.");
+			throw new DataIntegrityViolationException("Pedidos fechados ou cancelados nao podem ser transferidos.");
 		}
 		if (order.getChannel() != OrderChannel.DINE_IN) {
-			throw new DataIntegrityViolationException("Only dine-in orders can be transferred between tables.");
+			throw new DataIntegrityViolationException("Apenas pedidos no salao podem ser transferidos entre mesas.");
 		}
 		DiningTable targetTable = diningTableService.findByNumber(targetTableNumber);
 		if (order.getDiningTable() != null && order.getDiningTable().getId().equals(targetTable.getId())) {
-			throw new DataIntegrityViolationException("Order is already assigned to the selected table.");
+			throw new DataIntegrityViolationException("O pedido ja esta vinculado a mesa selecionada.");
 		}
 		if (order.getDiningTable() != null) {
 			diningTableService.releaseTable(order.getDiningTable().getId());
@@ -459,20 +459,20 @@ public class OrderService {
 		Order targetOrder = findById(targetOrderId);
 		Order sourceOrder = findById(sourceOrderId);
 		if (targetOrder.getId().equals(sourceOrder.getId())) {
-			throw new DataIntegrityViolationException("Source and target orders must be different.");
+			throw new DataIntegrityViolationException("O pedido de origem e o de destino devem ser diferentes.");
 		}
 		if (targetOrder.getStatus() == OrderStatus.CLOSED || targetOrder.getStatus() == OrderStatus.CANCELED
 				|| sourceOrder.getStatus() == OrderStatus.CLOSED || sourceOrder.getStatus() == OrderStatus.CANCELED) {
-			throw new DataIntegrityViolationException("Only active orders can be merged.");
+			throw new DataIntegrityViolationException("Apenas pedidos ativos podem ser mesclados.");
 		}
 		if (targetOrder.getChannel() != sourceOrder.getChannel()) {
-			throw new DataIntegrityViolationException("Orders from different channels cannot be merged.");
+			throw new DataIntegrityViolationException("Pedidos de canais diferentes nao podem ser mesclados.");
 		}
 		if (targetOrder.getChannel() == OrderChannel.DINE_IN) {
 			String targetTableNumber = targetOrder.getDiningTable() != null ? targetOrder.getDiningTable().getNumber() : null;
 			String sourceTableNumber = sourceOrder.getDiningTable() != null ? sourceOrder.getDiningTable().getNumber() : null;
 			if (targetTableNumber == null || sourceTableNumber == null || !targetTableNumber.equals(sourceTableNumber)) {
-				throw new DataIntegrityViolationException("Dine-in orders can only be merged when they belong to the same table.");
+				throw new DataIntegrityViolationException("Pedidos no salao so podem ser mesclados quando pertencem a mesma mesa.");
 			}
 		}
 		for (OrderItem item : sourceOrder.getItems()) {
@@ -490,14 +490,14 @@ public class OrderService {
 	public Order split(Long orderId, Long destinationTableId, List<Long> orderItemIds, String actorName) throws AccessDeniedException {
 		Order sourceOrder = findById(orderId);
 		if (sourceOrder.getStatus() == OrderStatus.CLOSED || sourceOrder.getStatus() == OrderStatus.CANCELED) {
-			throw new DataIntegrityViolationException("Closed or canceled orders cannot be split.");
+			throw new DataIntegrityViolationException("Pedidos fechados ou cancelados nao podem ser divididos.");
 		}
 		if (sourceOrder.getChannel() != OrderChannel.DINE_IN) {
-			throw new DataIntegrityViolationException("Only dine-in orders can be split between tables.");
+			throw new DataIntegrityViolationException("Apenas pedidos no salao podem ser divididos entre mesas.");
 		}
 		DiningTable destinationTable = diningTableService.findById(destinationTableId);
 		if (sourceOrder.getDiningTable() != null && sourceOrder.getDiningTable().getId().equals(destinationTableId)) {
-			throw new DataIntegrityViolationException("Split destination must be a different table.");
+			throw new DataIntegrityViolationException("A mesa de destino da divisao deve ser diferente da atual.");
 		}
 		diningTableService.reserveTable(destinationTableId);
 		Order splitOrder = new Order();
@@ -514,13 +514,13 @@ public class OrderService {
 				.filter(item -> orderItemIds.contains(item.getId()))
 				.toList();
 		if (selectedItems.isEmpty()) {
-			throw new DataIntegrityViolationException("At least one order item must be selected for splitting.");
+			throw new DataIntegrityViolationException("Selecione ao menos um item para dividir.");
 		}
 		long movableItemsCount = sourceOrder.getItems().stream()
 				.filter(item -> item.getStatus() != OrderItemStatus.CANCELED && item.getStatus() != OrderItemStatus.DECLINED)
 				.count();
 		if (selectedItems.size() >= movableItemsCount) {
-			throw new DataIntegrityViolationException("Split must keep at least one item in the original order. Use transfer to move the whole order.");
+			throw new DataIntegrityViolationException("A divisao precisa manter ao menos um item no pedido original. Use a transferencia para mover o pedido inteiro.");
 		}
 
 		sourceOrder.getItems().removeIf(item -> orderItemIds.contains(item.getId()));
@@ -541,7 +541,7 @@ public class OrderService {
 		OrderItem item = order.getItems().stream()
 				.filter(orderItem -> orderItem.getId().equals(itemId))
 				.findFirst()
-				.orElseThrow(() -> new EntityNotFoundException("Order item not found for id " + itemId + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Item do pedido nao encontrado para o id " + itemId + "."));
 		OrderItemStatus.validateTransition(item.getStatus(), OrderItemStatus.SERVED);
 		item.setStatus(OrderItemStatus.SERVED);
 		refreshOrderStatus(order);
@@ -605,11 +605,11 @@ public class OrderService {
 
 	private void validateOrderRequest(OrderRequest request) {
 		if (request.getItems() == null || request.getItems().isEmpty()) {
-			throw new DataIntegrityViolationException("Orders must contain at least one item.");
+			throw new DataIntegrityViolationException("Pedidos precisam conter ao menos um item.");
 		}
 		if (request.getChannel() == OrderChannel.DINE_IN
 				&& (request.getTableNumber() == null || request.getTableNumber().isBlank())) {
-			throw new DataIntegrityViolationException("Table number is required for dine-in orders.");
+			throw new DataIntegrityViolationException("Informe o numero da mesa para pedidos no salao.");
 		}
 		if (request.getChannel() != OrderChannel.DINE_IN) {
 			validateRemotePayment(request);
@@ -621,11 +621,11 @@ public class OrderService {
 
 		if (method == null) {
 			throw new DataIntegrityViolationException(
-					"Payment method is required for delivery and takeaway orders.");
+					"Informe a forma de pagamento para pedidos de entrega ou retirada.");
 		}
 		if (request.getChangeForAmount() != null && method != PaymentMethod.CASH) {
 			throw new DataIntegrityViolationException(
-					"Change-for amount only applies to cash payments.");
+					"Troco so se aplica a pagamentos em dinheiro.");
 		}
 	}
 
@@ -635,13 +635,13 @@ public class OrderService {
 			return;
 		}
 		if (channel == OrderChannel.DINE_IN && Boolean.FALSE.equals(companyProfile.getDineInEnabled())) {
-			throw new DataIntegrityViolationException("Dine-in orders are disabled.");
+			throw new DataIntegrityViolationException("Pedidos no salao estao desativados.");
 		}
 		if (channel == OrderChannel.DELIVERY && Boolean.FALSE.equals(companyProfile.getDeliveryEnabled())) {
-			throw new DataIntegrityViolationException("Delivery orders are disabled.");
+			throw new DataIntegrityViolationException("Pedidos de entrega estao desativados.");
 		}
 		if (channel == OrderChannel.TAKEAWAY && Boolean.FALSE.equals(companyProfile.getTakeawayEnabled())) {
-			throw new DataIntegrityViolationException("Takeaway orders are disabled.");
+			throw new DataIntegrityViolationException("Pedidos para retirada estao desativados.");
 		}
 	}
 
@@ -693,7 +693,7 @@ public class OrderService {
 
 		BigDecimal promotionTotal = promotion.getPromotionPrice().setScale(2, RoundingMode.HALF_UP);
 		if (rawPromotionTotal.compareTo(BigDecimal.ZERO) <= 0) {
-			throw new DataIntegrityViolationException("Promotion items must produce a valid total.");
+			throw new DataIntegrityViolationException("Os itens da promocao precisam gerar um total valido.");
 		}
 
 		BigDecimal allocatedTotal = BigDecimal.ZERO;
@@ -721,7 +721,7 @@ public class OrderService {
 	private void validatePromotionForOrder(Promotion promotion, List<OrderItemRequest> items) {
 		if (!Boolean.TRUE.equals(promotion.getActive())
 				|| (promotion.getExpiresAt() != null && promotion.getExpiresAt().isBefore(java.time.LocalDate.now()))) {
-			throw new DataIntegrityViolationException("This promotion is no longer available.");
+			throw new DataIntegrityViolationException("Esta promocao nao esta mais disponivel.");
 		}
 
 		Set<Long> requestedProductIds = items.stream()
@@ -732,7 +732,7 @@ public class OrderService {
 				.collect(Collectors.toSet());
 
 		if (!requestedProductIds.equals(promotionProductIds)) {
-			throw new DataIntegrityViolationException("Promotion items must match the products configured for the promotion.");
+			throw new DataIntegrityViolationException("Os itens da promocao precisam corresponder aos produtos configurados nela.");
 		}
 
 		for (OrderItemRequest itemRequest : items) {
@@ -743,10 +743,10 @@ public class OrderService {
 
 	private void validateProductForOrder(Product product) {
 		if (!Boolean.TRUE.equals(product.getActive())) {
-			throw new DataIntegrityViolationException("Inactive products cannot be ordered.");
+			throw new DataIntegrityViolationException("Produtos inativos nao podem ser pedidos.");
 		}
 		if (Boolean.TRUE.equals(product.getComplement())) {
-			throw new DataIntegrityViolationException("Complement products cannot be ordered as standalone items.");
+			throw new DataIntegrityViolationException("Produtos complementares nao podem ser pedidos isoladamente.");
 		}
 	}
 
@@ -761,7 +761,7 @@ public class OrderService {
 		for (OrderItemIngredientRequest ingredientRequest : itemRequest.getIngredients()) {
 			Product ingredientProduct = productService.findById(ingredientRequest.getIngredientProductId());
 			if (ingredientProduct.getType() != ProductType.INGREDIENT) {
-				throw new DataIntegrityViolationException("Customized ingredients must use products of type INGREDIENT.");
+				throw new DataIntegrityViolationException("Ingredientes personalizados precisam usar produtos do tipo INGREDIENT.");
 			}
 
 			BigDecimal baseQuantity = recipeItemsByIngredientId.containsKey(ingredientProduct.getId())
@@ -800,14 +800,14 @@ public class OrderService {
 
 	private void validateOrderReadyForCheckout(Order order) {
 		if (order.getItems().isEmpty()) {
-			throw new DataIntegrityViolationException("Orders cannot be checked out without items.");
+			throw new DataIntegrityViolationException("Nao e possivel fechar pedidos sem itens.");
 		}
 		boolean hasOpenKitchenItem = order.getItems().stream()
 				.filter(item -> item.getStatus() != OrderItemStatus.CANCELED && item.getStatus() != OrderItemStatus.DECLINED)
 				.filter(item -> item.getProduct() != null && Boolean.TRUE.equals(item.getProduct().getSendToKitchen()))
 				.anyMatch(item -> item.getStatus() != OrderItemStatus.READY && item.getStatus() != OrderItemStatus.SERVED);
 		if (hasOpenKitchenItem) {
-			throw new DataIntegrityViolationException("There are still items pending in the kitchen workflow.");
+			throw new DataIntegrityViolationException("Ainda existem itens pendentes no fluxo da cozinha.");
 		}
 	}
 
@@ -833,7 +833,7 @@ public class OrderService {
 			return;
 		}
 		if (paymentLine.getCashReceived() == null || paymentLine.getCashReceived().compareTo(paymentLine.getAmount()) < 0) {
-			throw new DataIntegrityViolationException("Cash received must be greater than or equal to the cash payment amount.");
+			throw new DataIntegrityViolationException("O valor recebido em dinheiro precisa ser maior ou igual ao valor pago em dinheiro.");
 		}
 	}
 
@@ -932,13 +932,13 @@ public class OrderService {
 
 		if (activeGroups.isEmpty()) {
 			if (!requestedIds.isEmpty()) {
-				throw new DataIntegrityViolationException("This product does not accept variation selections.");
+				throw new DataIntegrityViolationException("Este produto nao aceita selecao de variacoes.");
 			}
 			return List.of();
 		}
 
 		if (requestedIds.size() != activeGroups.size()) {
-			throw new DataIntegrityViolationException("Select one option for each variation group of this product.");
+			throw new DataIntegrityViolationException("Selecione uma opcao para cada grupo de variacao deste produto.");
 		}
 
 		List<ProductVariation> resolved = new ArrayList<>();
@@ -946,7 +946,7 @@ public class OrderService {
 
 		for (Long variationId : requestedIds) {
 			if (variationId == null) {
-				throw new DataIntegrityViolationException("Selected variation id cannot be null.");
+				throw new DataIntegrityViolationException("O id da variacao selecionada nao pode ser nulo.");
 			}
 
 			ProductVariation match = activeGroups.stream()
@@ -954,11 +954,11 @@ public class OrderService {
 					.filter(variation -> variation.getId().equals(variationId))
 					.filter(variation -> Boolean.TRUE.equals(variation.getActive()))
 					.findFirst()
-					.orElseThrow(() -> new DataIntegrityViolationException("Selected product variation is invalid."));
+					.orElseThrow(() -> new DataIntegrityViolationException("A variacao selecionada do produto e invalida."));
 
 			Long groupId = match.getGroup() != null ? match.getGroup().getId() : null;
 			if (groupId == null || !coveredGroupIds.add(groupId)) {
-				throw new DataIntegrityViolationException("Select only one option per variation group.");
+				throw new DataIntegrityViolationException("Selecione apenas uma opcao por grupo de variacao.");
 			}
 
 			resolved.add(match);

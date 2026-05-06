@@ -27,7 +27,7 @@ public class TableAccessTokenService {
 			return JWT.require(algorithm).withIssuer("food-table-access").withSubject("table-access").build()
 					.verify(token).getClaim("tableNumber").asString();
 		} catch (JWTVerificationException exception) {
-			throw new DataIntegrityViolationException("Invalid table access token.");
+			throw new DataIntegrityViolationException("Token de acesso da mesa invalido.");
 		}
 	}
 }

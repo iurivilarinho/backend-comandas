@@ -43,7 +43,7 @@ public class StockEntryService {
 	@Transactional(readOnly = true)
 	public StockEntry findById(Long id) {
 		return stockEntryRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Stock entry not found for id " + id + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Entrada de estoque nao encontrada para o id " + id + "."));
 	}
 
 	@Transactional(readOnly = true)

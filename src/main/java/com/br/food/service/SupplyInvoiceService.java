@@ -56,7 +56,7 @@ public class SupplyInvoiceService {
 	@Transactional(readOnly = true)
 	public SupplyInvoice findById(Long id) {
 		return supplyInvoiceRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Supply invoice not found for id " + id + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Nota de suprimento nao encontrada para o id " + id + "."));
 	}
 
 	@Transactional(readOnly = true)

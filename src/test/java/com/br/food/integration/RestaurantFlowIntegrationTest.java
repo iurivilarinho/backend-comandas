@@ -132,7 +132,6 @@ class RestaurantFlowIntegrationTest {
 				.header("X-Actor", "cashier")
 				.content("""
 						{
-						  "splitByPersonCount": 2,
 						  "payments": [
 						    {
 						      "paymentMethod": "CARD",
@@ -148,9 +147,8 @@ class RestaurantFlowIntegrationTest {
 						"""))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.closed").value(true))
-				.andExpect(jsonPath("$.totalAmount").value(closeTo(60.0, 0.001)))
-				.andExpect(jsonPath("$.changeAmount").value(closeTo(5.0, 0.001)))
-				.andExpect(jsonPath("$.amountPerPerson").value(closeTo(30.0, 0.001)));
+				.andExpect(jsonPath("$.totalAmount").value(closeTo(50.0, 0.001)))
+				.andExpect(jsonPath("$.changeAmount").value(closeTo(5.0, 0.001)));
 
 		Order closedOrder = orderRepository.findById(orderId).orElseThrow();
 		org.junit.jupiter.api.Assertions.assertEquals(OrderStatus.CLOSED, closedOrder.getStatus());
@@ -176,6 +174,7 @@ class RestaurantFlowIntegrationTest {
 						  "customerId": %d,
 						  "tableNumber": "%s",
 						  "channel": "DELIVERY",
+						  "paymentMethod": "PIX",
 						  "discountPercentage": 0,
 						  "items": [
 						    {
@@ -344,7 +343,10 @@ class RestaurantFlowIntegrationTest {
 
 		Order updatedOrder = orderRepository.findById(orderId).orElseThrow();
 		org.junit.jupiter.api.Assertions.assertEquals(OrderStatus.READY_TO_CLOSE, updatedOrder.getStatus());
-		org.junit.jupiter.api.Assertions.assertEquals("SERVED", updatedOrder.getItems().get(0).getStatus().name());
+
+		mockMvc.perform(get("/orders/{orderId}", orderId))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items[0].status").value("SERVED"));
 	}
 
 	@Test

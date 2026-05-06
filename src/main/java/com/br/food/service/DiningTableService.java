@@ -44,7 +44,7 @@ public class DiningTableService {
 	@Transactional
 	public List<DiningTable> createMany(Integer tableCount) {
 		if (tableCount == null || tableCount <= 0) {
-			throw new DataIntegrityViolationException("Table batch count must be greater than zero.");
+			throw new DataIntegrityViolationException("A quantidade de mesas precisa ser maior que zero.");
 		}
 
 		int nextNumber = resolveNextTableNumber();
@@ -92,13 +92,13 @@ public class DiningTableService {
 	@Transactional(readOnly = true)
 	public DiningTable findById(Long id) {
 		return diningTableRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Table not found for id " + id + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Mesa nao encontrada para o id " + id + "."));
 	}
 
 	@Transactional(readOnly = true)
 	public DiningTable findByNumber(String number) {
 		return diningTableRepository.findByNumber(number)
-				.orElseThrow(() -> new EntityNotFoundException("Table not found for number " + number + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Mesa nao encontrada para o numero " + number + "."));
 	}
 
 	@Transactional(readOnly = true)
@@ -161,7 +161,7 @@ public class DiningTableService {
 	public String generateAccessToken(String tableNumber) {
 		DiningTable table = findByNumber(tableNumber);
 		if (!Boolean.TRUE.equals(table.getActive())) {
-			throw new EntityNotFoundException("Table not available for number " + tableNumber + ".");
+			throw new EntityNotFoundException("Mesa nao disponivel para o numero " + tableNumber + ".");
 		}
 		return tableAccessTokenService.generate(table.getNumber());
 	}
@@ -249,14 +249,14 @@ public class DiningTableService {
 	private void validateTableNumberUniqueness(String number, Long currentTableId) {
 		diningTableRepository.findByNumber(number).ifPresent(existingTable -> {
 			if (currentTableId == null || !existingTable.getId().equals(currentTableId)) {
-				throw new DataIntegrityViolationException("There is already a table using number " + number + ".");
+				throw new DataIntegrityViolationException("Ja existe uma mesa utilizando o numero " + number + ".");
 			}
 		});
 	}
 
 	private String normalizeTableNumber(String number) {
 		if (number == null || number.isBlank()) {
-			throw new DataIntegrityViolationException("Table number must be informed.");
+			throw new DataIntegrityViolationException("Informe o numero da mesa.");
 		}
 
 		return number.trim();

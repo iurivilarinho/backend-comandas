@@ -38,14 +38,14 @@ public class RecipeService {
 				recipeItemRepository.deleteByFinalProductId(productId);
 				return List.of();
 			}
-			throw new DataIntegrityViolationException("Recipes can only be assigned to finished products.");
+			throw new DataIntegrityViolationException("Receitas so podem ser vinculadas a produtos finais.");
 		}
 
 		recipeItemRepository.deleteByFinalProductId(productId);
 		return recipeItems.stream().map(recipeItemRequest -> {
 			Product ingredientProduct = productService.findById(recipeItemRequest.getIngredientProductId());
 			if (ingredientProduct.getType() != ProductType.INGREDIENT) {
-				throw new DataIntegrityViolationException("Recipe ingredients must use products of type INGREDIENT.");
+				throw new DataIntegrityViolationException("Os ingredientes da receita precisam usar produtos do tipo INGREDIENT.");
 			}
 			return recipeItemRepository.save(new RecipeItem(finalProduct, ingredientProduct, recipeItemRequest.getQuantity()));
 		}).toList();

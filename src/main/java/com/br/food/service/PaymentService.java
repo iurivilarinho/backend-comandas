@@ -24,7 +24,7 @@ public class PaymentService {
 	@Transactional(readOnly = true)
 	public Payment findByPaymentMethod(PaymentMethod paymentMethod) {
 		return paymentRepository.findByPaymentMethod(paymentMethod)
-				.orElseThrow(() -> new EntityNotFoundException("Payment method configuration not found for " + paymentMethod + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Configuracao da forma de pagamento nao encontrada para " + paymentMethod + "."));
 	}
 
 	@Transactional(readOnly = true)

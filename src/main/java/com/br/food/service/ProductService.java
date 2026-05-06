@@ -48,7 +48,7 @@ public class ProductService {
 	@Transactional(readOnly = true)
 	public Product findById(Long id) {
 		return productRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Product not found for id " + id + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Produto nao encontrado para o id " + id + "."));
 	}
 
 	@Transactional(readOnly = true)
@@ -135,13 +135,13 @@ public class ProductService {
 		Product complement = findById(complementId);
 
 		if (!Boolean.TRUE.equals(complement.getComplement())) {
-			throw new DataIntegrityViolationException("Only products flagged as complement can be linked.");
+			throw new DataIntegrityViolationException("Apenas produtos marcados como complemento podem ser vinculados.");
 		}
 		if (!Boolean.TRUE.equals(complement.getActive())) {
-			throw new DataIntegrityViolationException("Inactive complements cannot be linked.");
+			throw new DataIntegrityViolationException("Complementos inativos nao podem ser vinculados.");
 		}
 		if (productId.equals(complementId)) {
-			throw new DataIntegrityViolationException("A product cannot complement itself.");
+			throw new DataIntegrityViolationException("Um produto nao pode ser complemento de si mesmo.");
 		}
 
 		boolean alreadyLinked = product.getComplements().stream()
@@ -170,7 +170,7 @@ public class ProductService {
 		productRepository.findAll().stream().filter(product -> product.getCode().equalsIgnoreCase(code))
 				.filter(product -> currentId == null || !product.getId().equals(currentId)).findFirst()
 				.ifPresent(product -> {
-					throw new DataIntegrityViolationException("There is already a product using code " + code + ".");
+					throw new DataIntegrityViolationException("Ja existe um produto utilizando o codigo " + code + ".");
 				});
 	}
 
@@ -179,14 +179,14 @@ public class ProductService {
 			return;
 		}
 		if (request.getResolvedRequiresPreparation() && !request.getResolvedSendToKitchen()) {
-			throw new DataIntegrityViolationException("Products that require preparation must be sent to the kitchen.");
+			throw new DataIntegrityViolationException("Produtos que exigem preparo precisam ser enviados para a cozinha.");
 		}
 	}
 
 	private void validateVariationGroups(ProductRequest request) {
 		if (request.getType() != ProductType.FINISHED) {
 			if (!request.getVariationGroups().isEmpty()) {
-				throw new DataIntegrityViolationException("Only final products can have variation groups.");
+				throw new DataIntegrityViolationException("Apenas produtos finais podem ter grupos de variacao.");
 			}
 			return;
 		}
@@ -195,19 +195,19 @@ public class ProductService {
 		for (com.br.food.request.ProductVariationGroupRequest group : request.getVariationGroups()) {
 			String normalizedTitle = group.getTitle().trim().toLowerCase();
 			if (normalizedTitles.contains(normalizedTitle)) {
-				throw new DataIntegrityViolationException("Variation group titles must be unique per product.");
+				throw new DataIntegrityViolationException("Os titulos dos grupos de variacao precisam ser unicos por produto.");
 			}
 			normalizedTitles.add(normalizedTitle);
 
 			if (group.getVariations().isEmpty()) {
-				throw new DataIntegrityViolationException("Variation group \"" + group.getTitle() + "\" must have at least one option.");
+				throw new DataIntegrityViolationException("O grupo de variacao \"" + group.getTitle() + "\" precisa ter ao menos uma opcao.");
 			}
 
 			List<String> normalizedNames = new ArrayList<>();
 			for (com.br.food.request.ProductVariationRequest variation : group.getVariations()) {
 				String normalizedName = variation.getName().trim().toLowerCase();
 				if (normalizedNames.contains(normalizedName)) {
-					throw new DataIntegrityViolationException("Variation names must be unique inside group \"" + group.getTitle() + "\".");
+					throw new DataIntegrityViolationException("Os nomes das variacoes precisam ser unicos dentro do grupo \"" + group.getTitle() + "\".");
 				}
 				normalizedNames.add(normalizedName);
 			}
@@ -224,7 +224,7 @@ public class ProductService {
 				.collect(java.util.stream.Collectors.toCollection(ArrayList::new));
 
 		if (categories.size() != categoryIds.stream().distinct().count()) {
-			throw new DataIntegrityViolationException("One or more product categories are invalid or inactive.");
+			throw new DataIntegrityViolationException("Uma ou mais categorias do produto sao invalidas ou estao inativas.");
 		}
 
 		return categories;

@@ -21,7 +21,7 @@ public class OrderItemService {
 	@Transactional(readOnly = true)
 	public OrderItem findById(Long id) {
 		return orderItemRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Order item not found for id " + id + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Item do pedido nao encontrado para o id " + id + "."));
 	}
 
 	@Transactional
