@@ -61,6 +61,7 @@ public class CompanyProfileService {
 		profile.setDineInEnabled(request.getDineInEnabled());
 		profile.setDeliveryEnabled(request.getDeliveryEnabled());
 		profile.setTakeawayEnabled(request.getTakeawayEnabled());
+		profile.setWaiterOrderingOnly(request.getWaiterOrderingOnly());
 		profile.setWhatsappNumber(request.getWhatsappNumber());
 		profile.setAddress(buildAddress(profile.getAddress(), request.getAddress()));
 

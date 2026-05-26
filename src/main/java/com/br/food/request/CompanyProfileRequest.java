@@ -15,6 +15,7 @@ public class CompanyProfileRequest {
 
 	public static final String DEFAULT_PRIMARY_COLOR = "#EA1D2C";
 	public static final Boolean DEFAULT_DIGITAL_ORDERING_ENABLED = Boolean.TRUE;
+	public static final Boolean DEFAULT_WAITER_ORDERING_ONLY = Boolean.FALSE;
 
 	@NotBlank(message = "Company name is required.")
 	@Size(min = 2, max = 120, message = "Company name must have between 2 and 120 characters.")
@@ -38,6 +39,9 @@ public class CompanyProfileRequest {
 
 	@NotNull(message = "Takeaway setting is required.")
 	private Boolean takeawayEnabled;
+
+	@Schema(description = "When true, customers can only browse the menu — orders must be created by an authenticated waiter.", example = "false")
+	private Boolean waiterOrderingOnly = DEFAULT_WAITER_ORDERING_ONLY;
 
 	@Size(max = 20, message = "WhatsApp number must have at most 20 characters.")
 	private String whatsappNumber;
@@ -79,6 +83,10 @@ public class CompanyProfileRequest {
 
 	public Boolean getTakeawayEnabled() {
 		return takeawayEnabled;
+	}
+
+	public Boolean getWaiterOrderingOnly() {
+		return waiterOrderingOnly != null ? waiterOrderingOnly : DEFAULT_WAITER_ORDERING_ONLY;
 	}
 
 	public String getWhatsappNumber() {

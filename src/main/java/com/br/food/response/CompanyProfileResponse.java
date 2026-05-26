@@ -15,6 +15,7 @@ public class CompanyProfileResponse {
 	private final Boolean dineInEnabled;
 	private final Boolean deliveryEnabled;
 	private final Boolean takeawayEnabled;
+	private final Boolean waiterOrderingOnly;
 	private final String whatsappNumber;
 	private final DocumentBasicResponse logo;
 	private final DocumentBasicResponse banner;
@@ -34,6 +35,9 @@ public class CompanyProfileResponse {
 		this.dineInEnabled = companyProfile.getDineInEnabled();
 		this.deliveryEnabled = companyProfile.getDeliveryEnabled();
 		this.takeawayEnabled = companyProfile.getTakeawayEnabled();
+		this.waiterOrderingOnly = companyProfile.getWaiterOrderingOnly() != null
+				? companyProfile.getWaiterOrderingOnly()
+				: CompanyProfileRequest.DEFAULT_WAITER_ORDERING_ONLY;
 		this.whatsappNumber = companyProfile.getWhatsappNumber();
 		this.logo = companyProfile.getLogo() != null ? new DocumentBasicResponse(companyProfile.getLogo()) : null;
 		this.banner = companyProfile.getBanner() != null ? new DocumentBasicResponse(companyProfile.getBanner()) : null;
@@ -71,6 +75,10 @@ public class CompanyProfileResponse {
 
 	public Boolean getTakeawayEnabled() {
 		return takeawayEnabled;
+	}
+
+	public Boolean getWaiterOrderingOnly() {
+		return waiterOrderingOnly;
 	}
 
 	public String getWhatsappNumber() {

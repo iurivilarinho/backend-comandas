@@ -49,6 +49,9 @@ public class CompanyProfile {
 	@Column(name = "takeaway_enabled", nullable = false)
 	private Boolean takeawayEnabled;
 
+	@Column(name = "waiter_ordering_only")
+	private Boolean waiterOrderingOnly;
+
 	@Column(name = "whatsapp_number", length = 20)
 	private String whatsappNumber;
 
@@ -147,6 +150,14 @@ public class CompanyProfile {
 
 	public void setTakeawayEnabled(Boolean takeawayEnabled) {
 		this.takeawayEnabled = takeawayEnabled;
+	}
+
+	public Boolean getWaiterOrderingOnly() {
+		return waiterOrderingOnly;
+	}
+
+	public void setWaiterOrderingOnly(Boolean waiterOrderingOnly) {
+		this.waiterOrderingOnly = waiterOrderingOnly;
 	}
 
 	public String getWhatsappNumber() {
