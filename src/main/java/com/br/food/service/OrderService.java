@@ -150,22 +150,32 @@ public class OrderService {
 	public Order createFromDigitalMenu(OrderRequest request) throws AccessDeniedException {
 		validateDigitalOrderingEnabled();
 		validateChannelEnabled(request.getChannel());
+		if (request.getCustomerId() == null) {
+			throw new DataIntegrityViolationException("Cliente e obrigatorio em pedidos do cardapio digital.");
+		}
 		return create(request, null);
 	}
 
 	@Transactional
 	public Order create(OrderRequest request, String actorName) throws AccessDeniedException {
 		validateOrderRequest(request);
-		Customer customer = customerService.findById(request.getCustomerId());
-		if (Boolean.TRUE.equals(customer.getBlocked())) {
-			throw new DataIntegrityViolationException("Clientes bloqueados nao podem abrir novos pedidos.");
+		Customer customer = null;
+		if (request.getCustomerId() != null) {
+			customer = customerService.findById(request.getCustomerId());
+			if (Boolean.TRUE.equals(customer.getBlocked())) {
+				throw new DataIntegrityViolationException("Clientes bloqueados nao podem abrir novos pedidos.");
+			}
 		}
-		if (request.getChannel() == OrderChannel.DELIVERY && customer.getAddress() == null) {
-			throw new DataIntegrityViolationException("Pedidos de entrega exigem endereco cadastrado para o cliente.");
+		if (request.getChannel() == OrderChannel.DELIVERY) {
+			if (customer == null || customer.getAddress() == null) {
+				throw new DataIntegrityViolationException("Pedidos de entrega exigem cliente com endereco cadastrado.");
+			}
 		}
-		Order existingOpenOrder = findActiveOrderByCustomerDocumentNumber(customer.getDocumentNumber());
-		if (existingOpenOrder != null) {
-			return existingOpenOrder;
+		if (customer != null) {
+			Order existingOpenOrder = findActiveOrderByCustomerDocumentNumber(customer.getDocumentNumber());
+			if (existingOpenOrder != null) {
+				return existingOpenOrder;
+			}
 		}
 		DiningTable table = request.getChannel() == OrderChannel.DINE_IN
 				? diningTableService.findByNumber(request.getTableNumber())

@@ -17,7 +17,7 @@ import jakarta.validation.constraints.NotNull;
 @Schema(description = "Order payload")
 public class OrderRequest {
 
-	@NotNull(message = "Customer id is required.")
+	@Schema(description = "Cliente vinculado ao pedido. Opcional para pedidos criados pelo garcom no painel admin; obrigatorio em pedidos do cardapio digital.")
 	private Long customerId;
 
 	private String tableNumber;
