@@ -13,6 +13,7 @@ public class ProductResponse {
 	private final String description;
 	private final ProductType type;
 	private final BigDecimal price;
+	private final BigDecimal costPrice;
 	private final BigDecimal minimumStock;
 	private final Boolean active;
 	private final Boolean complement;
@@ -31,6 +32,7 @@ public class ProductResponse {
 		this.description = product.getDescription();
 		this.type = product.getType();
 		this.price = product.getPrice();
+		this.costPrice = product.getCostPrice();
 		this.minimumStock = product.getMinimumStock();
 		this.active = product.getActive();
 		this.complement = product.getComplement();
@@ -65,6 +67,10 @@ public class ProductResponse {
 
 	public BigDecimal getPrice() {
 		return price;
+	}
+
+	public BigDecimal getCostPrice() {
+		return costPrice;
 	}
 
 	public BigDecimal getMinimumStock() {

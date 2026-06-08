@@ -17,14 +17,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
+
 import com.br.food.enums.Types.ProductType;
 import com.br.food.models.Document;
 import com.br.food.models.Product;
 import com.br.food.models.ProductCategory;
+import com.br.food.models.ProductCostHistory;
 import com.br.food.repository.ProductCategoryRepository;
+import com.br.food.repository.ProductCostHistoryRepository;
 import com.br.food.repository.ProductRepository;
 import com.br.food.repository.ProductSpecification;
 import com.br.food.request.ProductRequest;
+import com.br.food.response.ProductCostHistoryResponse;
 import com.br.food.response.ProductResponse;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -36,12 +41,14 @@ public class ProductService {
 
 	private final ProductRepository productRepository;
 	private final ProductCategoryRepository productCategoryRepository;
+	private final ProductCostHistoryRepository productCostHistoryRepository;
 	private final DocumentService documentService;
 
 	public ProductService(ProductRepository productRepository, ProductCategoryRepository productCategoryRepository,
-			DocumentService documentService) {
+			ProductCostHistoryRepository productCostHistoryRepository, DocumentService documentService) {
 		this.productRepository = productRepository;
 		this.productCategoryRepository = productCategoryRepository;
+		this.productCostHistoryRepository = productCostHistoryRepository;
 		this.documentService = documentService;
 	}
 
@@ -94,7 +101,11 @@ public class ProductService {
 		Product product = new Product(request, document);
 		product.setCategories(resolveCategories(request.getCategoryIds()));
 		product.replaceVariationGroups(request.getVariationGroups());
-		return productRepository.save(product);
+		Product saved = productRepository.save(product);
+		if (saved.getCostPrice() != null) {
+			recordCostHistory(saved, saved.getCostPrice());
+		}
+		return saved;
 	}
 
 	@Transactional
@@ -104,6 +115,7 @@ public class ProductService {
 		validateUniqueCode(request.getCode(), id);
 		validatePreparationFlags(request);
 		validateVariationGroups(request);
+		BigDecimal previousCostPrice = product.getCostPrice();
 		Document document = image != null ? documentService.convertToDocument(image) : null;
 		product.update(request, document);
 		product.setCategories(resolveCategories(request.getCategoryIds()));
@@ -111,7 +123,30 @@ public class ProductService {
 		if (request.getType() == ProductType.INGREDIENT || !request.getResolvedRequiresPreparation()) {
 			product.getRecipeItems().clear();
 		}
-		return productRepository.save(product);
+		Product saved = productRepository.save(product);
+		if (costPriceChanged(previousCostPrice, saved.getCostPrice())) {
+			recordCostHistory(saved, saved.getCostPrice());
+		}
+		return saved;
+	}
+
+	@Transactional(readOnly = true)
+	public List<ProductCostHistoryResponse> findCostHistory(Long productId) {
+		findById(productId);
+		return productCostHistoryRepository.findByProductIdOrderByRecordedAtDesc(productId).stream()
+				.map(ProductCostHistoryResponse::new)
+				.toList();
+	}
+
+	private void recordCostHistory(Product product, BigDecimal costPrice) {
+		productCostHistoryRepository.save(new ProductCostHistory(product, costPrice));
+	}
+
+	private boolean costPriceChanged(BigDecimal previous, BigDecimal current) {
+		if (current == null) {
+			return false;
+		}
+		return previous == null || previous.compareTo(current) != 0;
 	}
 
 	@Transactional

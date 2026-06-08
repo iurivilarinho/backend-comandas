@@ -70,6 +70,9 @@ public class Product {
 	@Column(name = "price", nullable = false)
 	private BigDecimal price;
 
+	@Column(name = "cost_price")
+	private BigDecimal costPrice;
+
 	@Column(name = "minimum_stock")
 	private BigDecimal minimumStock;
 
@@ -109,6 +112,7 @@ public class Product {
 		this.sendToKitchen = request.getResolvedSendToKitchen();
 		this.requiresPreparation = request.getResolvedRequiresPreparation();
 		this.price = request.getPrice();
+		this.costPrice = request.getCostPrice();
 		this.minimumStock = request.getMinimumStock();
 	}
 
@@ -117,6 +121,7 @@ public class Product {
 		this.description = request.getDescription();
 		this.code = request.getCode();
 		this.price = request.getPrice();
+		this.costPrice = request.getCostPrice();
 		this.minimumStock = request.getMinimumStock();
 		this.complement = request.getComplement();
 		this.visibleOnMenu = request.getVisibleOnMenu();
@@ -234,6 +239,14 @@ public class Product {
 
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+	}
+
+	public BigDecimal getCostPrice() {
+		return costPrice;
+	}
+
+	public void setCostPrice(BigDecimal costPrice) {
+		this.costPrice = costPrice;
 	}
 
 	public BigDecimal getMinimumStock() {

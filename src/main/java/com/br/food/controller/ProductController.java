@@ -25,6 +25,7 @@ import com.br.food.models.Product;
 import com.br.food.enums.Types.ProductType;
 import com.br.food.request.ProductRequest;
 import com.br.food.request.RecipeItemRequest;
+import com.br.food.response.ProductCostHistoryResponse;
 import com.br.food.response.ProductResponse;
 import com.br.food.response.RecipeItemResponse;
 import com.br.food.service.ProductService;
@@ -85,6 +86,12 @@ public class ProductController {
 			@Valid @RequestPart("request") ProductRequest request,
 			@RequestPart(value = "image", required = false) MultipartFile image) throws IOException {
 		return ResponseEntity.ok(new ProductResponse(productService.update(id, request, image)));
+	}
+
+	@Operation(summary = "List product cost price history")
+	@GetMapping("/{id}/cost-history")
+	public ResponseEntity<List<ProductCostHistoryResponse>> findCostHistory(@PathVariable Long id) {
+		return ResponseEntity.ok(productService.findCostHistory(id));
 	}
 
 	@Operation(summary = "Update product status")
