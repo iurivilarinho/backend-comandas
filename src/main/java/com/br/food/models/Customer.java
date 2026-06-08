@@ -26,7 +26,7 @@ public class Customer {
 	@Column(name = "name", length = 100, nullable = false)
 	private String name;
 
-	@Column(name = "document_number", length = 14, nullable = false, unique = true)
+	@Column(name = "document_number", length = 14, unique = true)
 	private String documentNumber;
 
 	@Column(name = "phone", length = 15, nullable = false)
@@ -45,16 +45,24 @@ public class Customer {
 	public Customer(CustomerRequest request) {
 		this.blocked = false;
 		this.name = request.getName();
-		this.documentNumber = request.getDocumentNumber();
+		this.documentNumber = normalizeDocumentNumber(request.getDocumentNumber());
 		this.phone = request.getPhone();
 		applyAddress(request.getAddress());
 	}
 
 	public void update(CustomerRequest request) {
 		this.name = request.getName();
-		this.documentNumber = request.getDocumentNumber();
+		this.documentNumber = normalizeDocumentNumber(request.getDocumentNumber());
 		this.phone = request.getPhone();
 		applyAddress(request.getAddress());
+	}
+
+	private static String normalizeDocumentNumber(String documentNumber) {
+		if (documentNumber == null) {
+			return null;
+		}
+		String trimmed = documentNumber.trim();
+		return trimmed.isEmpty() ? null : trimmed;
 	}
 
 	private void applyAddress(AddressRequest addressRequest) {

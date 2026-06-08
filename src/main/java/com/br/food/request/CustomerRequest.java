@@ -13,9 +13,7 @@ public class CustomerRequest {
 	@Size(max = 100, message = "Name must have at most 100 characters.")
 	private String name;
 
-	@NotBlank(message = "CPF is required.")
-	@Size(min = 11, max = 11, message = "CPF must have exactly 11 digits.")
-	@Pattern(regexp = "^[0-9]{11}$", message = "CPF must contain only 11 digits.")
+	@Pattern(regexp = "^$|^[0-9]{11}$", message = "CPF must contain only 11 digits when provided.")
 	private String documentNumber;
 
 	@NotBlank(message = "Phone is required.")

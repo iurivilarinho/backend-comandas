@@ -11,4 +11,6 @@ import com.br.food.models.Customer;
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
 	Optional<Customer> findByDocumentNumber(String documentNumber);
+
+	Optional<Customer> findByPhone(String phone);
 }

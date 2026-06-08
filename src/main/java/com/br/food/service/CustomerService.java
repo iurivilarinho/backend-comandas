@@ -50,8 +50,26 @@ public class CustomerService {
 
 	@Transactional(readOnly = true)
 	public Optional<Customer> findByDocumentNumber(String documentNumber) {
+		if (documentNumber == null || documentNumber.isBlank()) {
+			return Optional.empty();
+		}
 		String normalizedDocumentNumber = documentNumber.replaceAll("\\D", "");
+		if (normalizedDocumentNumber.isEmpty()) {
+			return Optional.empty();
+		}
 		return customerRepository.findByDocumentNumber(normalizedDocumentNumber);
+	}
+
+	@Transactional(readOnly = true)
+	public Optional<Customer> findByPhone(String phone) {
+		if (phone == null || phone.isBlank()) {
+			return Optional.empty();
+		}
+		String normalizedPhone = phone.replaceAll("\\D", "");
+		if (normalizedPhone.isEmpty()) {
+			return Optional.empty();
+		}
+		return customerRepository.findByPhone(normalizedPhone);
 	}
 
 	@Transactional
@@ -66,6 +84,9 @@ public class CustomerService {
 	}
 
 	private void validateUniqueDocumentNumber(String documentNumber, Long currentCustomerId) {
+		if (documentNumber == null || documentNumber.isBlank()) {
+			return;
+		}
 		findByDocumentNumber(documentNumber)
 				.filter(customer -> currentCustomerId == null || !customer.getId().equals(currentCustomerId))
 				.ifPresent(customer -> {
