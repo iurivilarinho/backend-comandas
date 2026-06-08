@@ -51,6 +51,9 @@ public class StockEntry {
 	@Column(name = "input_quantity", nullable = false)
 	private BigDecimal inputQuantity;
 
+	@Column(name = "unit_cost")
+	private BigDecimal unitCost;
+
 	@Column(name = "manufacturing_date")
 	private LocalDate manufacturingDate;
 
@@ -75,6 +78,7 @@ public class StockEntry {
 		this.reservedQuantity = BigDecimal.ZERO;
 		this.soldQuantity = BigDecimal.ZERO;
 		this.inputQuantity = request.getQuantity();
+		this.unitCost = request.getUnitCost();
 		this.manufacturingDate = request.getManufacturingDate();
 		this.expirationDate = request.getExpirationDate();
 		this.retained = false;
@@ -138,6 +142,14 @@ public class StockEntry {
 
 	public void setInputQuantity(BigDecimal inputQuantity) {
 		this.inputQuantity = inputQuantity;
+	}
+
+	public BigDecimal getUnitCost() {
+		return unitCost;
+	}
+
+	public void setUnitCost(BigDecimal unitCost) {
+		this.unitCost = unitCost;
 	}
 
 	public LocalDate getManufacturingDate() {

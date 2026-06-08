@@ -161,6 +161,9 @@ public class StockEntryService {
 		existingStockEntry.setAvailableQuantity(existingStockEntry.getAvailableQuantity().add(request.getQuantity()));
 		existingStockEntry.setManufacturingDate(request.getManufacturingDate());
 		existingStockEntry.setExpirationDate(request.getExpirationDate());
+		if (request.getUnitCost() != null) {
+			existingStockEntry.setUnitCost(request.getUnitCost());
+		}
 		return stockEntryRepository.save(existingStockEntry);
 	}
 

@@ -14,6 +14,7 @@ public class StockEntryResponse {
 	private final BigDecimal reservedQuantity;
 	private final BigDecimal soldQuantity;
 	private final BigDecimal inputQuantity;
+	private final BigDecimal unitCost;
 	private final LocalDate manufacturingDate;
 	private final LocalDate expirationDate;
 	private final boolean retained;
@@ -26,6 +27,7 @@ public class StockEntryResponse {
 		this.reservedQuantity = stockEntry.getReservedQuantity();
 		this.soldQuantity = stockEntry.getSoldQuantity();
 		this.inputQuantity = stockEntry.getInputQuantity();
+		this.unitCost = stockEntry.getUnitCost();
 		this.manufacturingDate = stockEntry.getManufacturingDate();
 		this.expirationDate = stockEntry.getExpirationDate();
 		this.retained = stockEntry.isRetained();
@@ -57,6 +59,10 @@ public class StockEntryResponse {
 
 	public BigDecimal getInputQuantity() {
 		return inputQuantity;
+	}
+
+	public BigDecimal getUnitCost() {
+		return unitCost;
 	}
 
 	public LocalDate getManufacturingDate() {

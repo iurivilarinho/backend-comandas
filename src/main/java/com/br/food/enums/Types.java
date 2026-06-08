@@ -30,6 +30,14 @@ public final class Types {
         FINISHED
     }
 
+    @Schema(description = "Origin of a product cost price record")
+    public enum CostPriceSource {
+        @Schema(description = "Manually informed cost")
+        MANUAL,
+        @Schema(description = "Cost derived from a supply invoice")
+        SUPPLY_INVOICE
+    }
+
     @Schema(description = "Promotion type")
     public enum PromotionType {
         @Schema(description = "Discount promotion")

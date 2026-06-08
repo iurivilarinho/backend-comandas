@@ -3,9 +3,13 @@ package com.br.food.models;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.br.food.enums.Types.CostPriceSource;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
@@ -33,15 +37,26 @@ public class ProductCostHistory {
 	@Column(name = "cost_price", nullable = false)
 	private BigDecimal costPrice;
 
+	// nullable no banco para o ddl-auto=update conseguir adicionar a coluna em
+	// tabelas que ja tenham linhas; a aplicacao sempre preenche (null = MANUAL).
+	@Enumerated(EnumType.STRING)
+	@Column(name = "source", length = 30)
+	private CostPriceSource source;
+
+	@Column(name = "invoice_number", length = 20)
+	private String invoiceNumber;
+
 	@Column(name = "recorded_at", updatable = false, nullable = false)
 	private LocalDateTime recordedAt;
 
 	public ProductCostHistory() {
 	}
 
-	public ProductCostHistory(Product product, BigDecimal costPrice) {
+	public ProductCostHistory(Product product, BigDecimal costPrice, CostPriceSource source, String invoiceNumber) {
 		this.product = product;
 		this.costPrice = costPrice;
+		this.source = source;
+		this.invoiceNumber = invoiceNumber;
 	}
 
 	@PrePersist
@@ -67,6 +82,22 @@ public class ProductCostHistory {
 
 	public void setCostPrice(BigDecimal costPrice) {
 		this.costPrice = costPrice;
+	}
+
+	public CostPriceSource getSource() {
+		return source;
+	}
+
+	public void setSource(CostPriceSource source) {
+		this.source = source;
+	}
+
+	public String getInvoiceNumber() {
+		return invoiceNumber;
+	}
+
+	public void setInvoiceNumber(String invoiceNumber) {
+		this.invoiceNumber = invoiceNumber;
 	}
 
 	public LocalDateTime getRecordedAt() {

@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -24,6 +25,9 @@ public class StockEntryRequest {
 	@Size(min = 1, max = 50, message = "Batch must have between 1 and 50 characters.")
 	private String batch;
 
+	@DecimalMin(value = "0.0", message = "Unit cost cannot be negative.")
+	private BigDecimal unitCost;
+
 	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
 	private LocalDate manufacturingDate;
 
@@ -40,6 +44,10 @@ public class StockEntryRequest {
 
 	public String getBatch() {
 		return batch;
+	}
+
+	public BigDecimal getUnitCost() {
+		return unitCost;
 	}
 
 	public LocalDate getManufacturingDate() {

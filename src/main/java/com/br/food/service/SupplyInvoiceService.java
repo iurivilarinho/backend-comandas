@@ -105,6 +105,8 @@ public class SupplyInvoiceService {
 			if (!invoice.getItems().contains(stockEntry)) {
 				invoice.getItems().add(stockEntry);
 			}
+			// Custo declarado na NF sobrescreve o custo do produto e entra no historico.
+			productService.applyCostFromInvoice(product, item.getUnitCost(), invoice.getInvoiceNumber());
 		}
 	}
 }

@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 
+import com.br.food.enums.Types.CostPriceSource;
 import com.br.food.enums.Types.ProductType;
 import com.br.food.models.Document;
 import com.br.food.models.Product;
@@ -103,7 +104,7 @@ public class ProductService {
 		product.replaceVariationGroups(request.getVariationGroups());
 		Product saved = productRepository.save(product);
 		if (saved.getCostPrice() != null) {
-			recordCostHistory(saved, saved.getCostPrice());
+			recordCostHistory(saved, saved.getCostPrice(), CostPriceSource.MANUAL, null);
 		}
 		return saved;
 	}
@@ -125,7 +126,7 @@ public class ProductService {
 		}
 		Product saved = productRepository.save(product);
 		if (costPriceChanged(previousCostPrice, saved.getCostPrice())) {
-			recordCostHistory(saved, saved.getCostPrice());
+			recordCostHistory(saved, saved.getCostPrice(), CostPriceSource.MANUAL, null);
 		}
 		return saved;
 	}
@@ -138,8 +139,26 @@ public class ProductService {
 				.toList();
 	}
 
-	private void recordCostHistory(Product product, BigDecimal costPrice) {
-		productCostHistoryRepository.save(new ProductCostHistory(product, costPrice));
+	/**
+	 * Aplica o custo declarado em uma nota fiscal ao produto. A NF mais recente
+	 * sempre sobrescreve o custo atual; o historico so registra quando muda.
+	 */
+	@Transactional
+	@CacheEvict(cacheNames = MENU_PRODUCTS_CACHE, allEntries = true)
+	public void applyCostFromInvoice(Product product, BigDecimal unitCost, String invoiceNumber) {
+		if (unitCost == null) {
+			return;
+		}
+		BigDecimal previousCostPrice = product.getCostPrice();
+		product.setCostPrice(unitCost);
+		productRepository.save(product);
+		if (costPriceChanged(previousCostPrice, unitCost)) {
+			recordCostHistory(product, unitCost, CostPriceSource.SUPPLY_INVOICE, invoiceNumber);
+		}
+	}
+
+	private void recordCostHistory(Product product, BigDecimal costPrice, CostPriceSource source, String invoiceNumber) {
+		productCostHistoryRepository.save(new ProductCostHistory(product, costPrice, source, invoiceNumber));
 	}
 
 	private boolean costPriceChanged(BigDecimal previous, BigDecimal current) {
