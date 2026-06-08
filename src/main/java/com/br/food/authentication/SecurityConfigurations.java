@@ -28,7 +28,8 @@ public class SecurityConfigurations {
 		return http.csrf().disable().cors().and().sessionManagement()
 				.sessionCreationPolicy(SessionCreationPolicy.STATELESS).and().authorizeHttpRequests()
 				.requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
-				.requestMatchers(HttpMethod.GET, "/products", "/products/*", "/product-categories",
+				.requestMatchers(HttpMethod.GET, "/products", "/products/*", "/products/*/cost-history",
+						"/product-categories",
 						"/promotions", "/promotions/*", "/company-profile", "/tables", "/tables/*",
 						"/menu/products", "/documents/*", "/documents/*/content",
 						"/customers/by-document", "/customers/*", "/orders", "/orders/*",
