@@ -26,8 +26,8 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 			where oi.product is not null
 			  and oi.order.status = :orderStatus
 			  and oi.status not in :excludedStatuses
-			  and (:startDateTime is null or oi.requestedAt >= :startDateTime)
-			  and (:endDateTime is null or oi.requestedAt <= :endDateTime)
+			  and oi.requestedAt >= :startDateTime
+			  and oi.requestedAt <= :endDateTime
 			group by oi.product.id
 			""")
 	List<ProductSalesAggregationProjection> aggregateSalesByProduct(@Param("orderStatus") OrderStatus orderStatus,

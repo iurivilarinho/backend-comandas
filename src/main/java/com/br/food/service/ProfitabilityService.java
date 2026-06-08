@@ -73,8 +73,11 @@ public class ProfitabilityService {
 	}
 
 	private Map<Long, ProductSalesAggregationProjection> loadSalesByProduct(LocalDate startDate, LocalDate endDate) {
-		LocalDateTime startDateTime = startDate != null ? startDate.atStartOfDay() : null;
-		LocalDateTime endDateTime = endDate != null ? endDate.atTime(LocalTime.MAX) : null;
+		// Datas sempre nao-nulas: o Postgres nao consegue inferir o tipo de um
+		// parametro usado apenas em ":param is null", entao usamos limites abertos.
+		LocalDateTime startDateTime = startDate != null ? startDate.atStartOfDay() : LocalDateTime.of(1970, 1, 1, 0, 0);
+		LocalDateTime endDateTime = endDate != null ? endDate.atTime(LocalTime.MAX)
+				: LocalDateTime.of(9999, 12, 31, 23, 59, 59);
 
 		Map<Long, ProductSalesAggregationProjection> salesByProduct = new HashMap<>();
 		for (ProductSalesAggregationProjection aggregation : orderItemRepository.aggregateSalesByProduct(
