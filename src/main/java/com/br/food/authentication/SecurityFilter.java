@@ -102,7 +102,7 @@ public class SecurityFilter extends OncePerRequestFilter {
 
 		if ((requestUri.startsWith("/auth") && method == HttpMethod.POST)
 				|| requestUri.startsWith("/swagger")
-				|| requestUri.startsWith("/v3")) {
+				|| requestUri.startsWith("/v3") || requestUri.startsWith("/docs")) {
 			return true;
 		}
 
