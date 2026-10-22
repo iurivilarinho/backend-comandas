@@ -11,14 +11,18 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.br.food.turnstile.TurnstileFilter;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfigurations {
 
 	private final SecurityFilter securityFilter;
+	private final TurnstileFilter turnstileFilter;
 
-	public SecurityConfigurations(SecurityFilter securityFilter) {
+	public SecurityConfigurations(SecurityFilter securityFilter, TurnstileFilter turnstileFilter) {
 		this.securityFilter = securityFilter;
+		this.turnstileFilter = turnstileFilter;
 	}
 
 	@SuppressWarnings("removal")
@@ -28,6 +32,7 @@ public class SecurityConfigurations {
 		return http.csrf().disable().cors().and().sessionManagement()
 				.sessionCreationPolicy(SessionCreationPolicy.STATELESS).and().authorizeHttpRequests()
 				.requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
+				.requestMatchers(HttpMethod.GET, "/public/turnstile").permitAll()
 				.requestMatchers(HttpMethod.GET, "/products", "/products/*", "/products/*/cost-history",
 						"/product-categories",
 						"/promotions", "/promotions/*", "/company-profile", "/tables", "/tables/*",
@@ -39,7 +44,9 @@ public class SecurityConfigurations {
 				.requestMatchers(HttpMethod.DELETE, "/push/subscriptions", "/push/subscriptions/topic").permitAll()
 				.requestMatchers(HttpMethod.PUT, "/customers/*").permitAll()
 				.requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/docs", "/docs/**").permitAll().anyRequest()
-				.authenticated().and().addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+				.authenticated().and()
+				.addFilterBefore(turnstileFilter, UsernamePasswordAuthenticationFilter.class)
+				.addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
 				.build();
 	}
 
