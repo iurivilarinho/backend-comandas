@@ -34,3 +34,9 @@ build/
 
 # Local secrets
 .env
+
+# Keystores (the production one is mounted from the host) and local environment files
+*.jks
+*.p12
+.env.*
+!.env.example
