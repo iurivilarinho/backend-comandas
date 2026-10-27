@@ -1,8 +1,7 @@
 package com.br.food.authentication.token;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,6 +37,8 @@ public class TokenService {
 	@Schema(description = "Password recovery token expiration time in hours (configured property).")
 	private String expirationRecoveryPassword;
 
+	private static final String ISSUER = "comandas";
+
 	private final UserRepository userRepository;
 
 	public TokenService(UserRepository userRepository) {
@@ -51,8 +52,8 @@ public class TokenService {
 
 			Algorithm algorithm = Algorithm.HMAC256(secret);
 
-			return JWT.create().withIssuer("API Authentication").withSubject(user.getId().toString())
-					.withClaim("roles", roles).withExpiresAt(accessTokenExpiration()).sign(algorithm);
+			return JWT.create().withIssuer(ISSUER).withSubject(user.getId().toString())
+					.withClaim(TenantClaim.NAME, TenantClaim.current()).withClaim("roles", roles).withExpiresAt(accessTokenExpiration()).sign(algorithm);
 		} catch (JWTCreationException exception) {
 			throw new RuntimeException("Error generating JWT token.", exception);
 		}
@@ -63,8 +64,8 @@ public class TokenService {
 		try {
 			Algorithm algorithm = Algorithm.HMAC256(secret);
 
-			return JWT.create().withIssuer("API Authentication").withSubject(user.getId().toString())
-					.withExpiresAt(passwordRecoveryTokenExpiration()).sign(algorithm);
+			return JWT.create().withIssuer(ISSUER).withSubject(user.getId().toString())
+					.withClaim(TenantClaim.NAME, TenantClaim.current()).withExpiresAt(passwordRecoveryTokenExpiration()).sign(algorithm);
 		} catch (JWTCreationException exception) {
 			throw new RuntimeException("Error generating JWT token.", exception);
 		}
@@ -72,16 +73,13 @@ public class TokenService {
 
 	@Schema(description = "Returns the subject (user id) from the JWT.")
 	public String getSubject(String jwtToken) {
-		Algorithm algorithm = Algorithm.HMAC256(secret);
-		return JWT.require(algorithm).withIssuer("API Authentication").build().verify(jwtToken).getSubject();
+		return verify(jwtToken).getSubject();
 	}
 
 	@Schema(description = "Validates a JWT token signature, issuer and expiration.")
 	public boolean isTokenValid(String jwtToken) {
 		try {
-			Algorithm algorithm = Algorithm.HMAC256(secret);
-			JWTVerifier verifier = JWT.require(algorithm).withIssuer("API Authentication").build();
-			verifier.verify(jwtToken);
+			verify(jwtToken);
 			return true;
 		} catch (JWTVerificationException e) {
 			return false;
@@ -91,9 +89,7 @@ public class TokenService {
 	@Schema(description = "Loads a user by subject (user id) contained in the JWT.")
 	public User getUserFromToken(String jwtToken) {
 		try {
-			Algorithm algorithm = Algorithm.HMAC256(secret);
-			JWTVerifier verifier = JWT.require(algorithm).withIssuer("API Authentication").build();
-			DecodedJWT decodedJWT = verifier.verify(jwtToken);
+			DecodedJWT decodedJWT = verify(jwtToken);
 
 			String id = decodedJWT.getSubject();
 			return userRepository.findById(Long.parseLong(id)).orElseThrow();
@@ -102,13 +98,19 @@ public class TokenService {
 		}
 	}
 
+	/** Verifies signature, issuer, expiration and that the token belongs to the current tenant. */
+	private DecodedJWT verify(String jwtToken) {
+		JWTVerifier verifier = JWT.require(Algorithm.HMAC256(secret)).withIssuer(ISSUER).build();
+		DecodedJWT decoded = verifier.verify(jwtToken);
+		TenantClaim.requireCurrent(decoded);
+		return decoded;
+	}
+
 	private Instant accessTokenExpiration() {
-		return LocalDateTime.now().plusDays(Integer.parseInt(expiration)).toInstant(ZoneOffset.of("-03:00"));
+		return Instant.now().plus(Integer.parseInt(expiration), ChronoUnit.DAYS);
 	}
 
 	private Instant passwordRecoveryTokenExpiration() {
-		return LocalDateTime.now().plusHours(Integer.parseInt(expirationRecoveryPassword))
-				.toInstant(ZoneOffset.of("-03:00"));
+		return Instant.now().plus(Integer.parseInt(expirationRecoveryPassword), ChronoUnit.HOURS);
 	}
 }
-

@@ -22,6 +22,9 @@ public class OrderRequest {
 
 	private String tableNumber;
 
+	@Schema(description = "Token do QR code da mesa. Obrigatorio em pedido de consumo no local feito pelo cardapio digital; a mesa vem do token e o numero informado e ignorado.")
+	private String tableAccessToken;
+
 	@NotNull(message = "Order channel is required.")
 	private OrderChannel channel;
 
@@ -42,6 +45,10 @@ public class OrderRequest {
 
 	public Long getCustomerId() {
 		return customerId;
+	}
+
+	public void setTableNumber(String tableNumber) {
+		this.tableNumber = tableNumber;
 	}
 
 	public String getTableNumber() {
@@ -70,5 +77,13 @@ public class OrderRequest {
 
 	public List<OrderItemRequest> getItems() {
 		return items;
+	}
+
+	public String getTableAccessToken() {
+		return tableAccessToken;
+	}
+
+	public void setTableAccessToken(String tableAccessToken) {
+		this.tableAccessToken = tableAccessToken;
 	}
 }

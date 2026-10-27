@@ -5,10 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -16,6 +19,8 @@ import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Optional;
 
+import br.com.gloomy.platform.entitlements.Entitlements;
+import br.com.gloomy.platform.exception.FeatureNotInPlanException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,6 +30,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.br.food.enums.Types.OrderChannel;
+import com.br.food.models.DiningTable;
 import com.br.food.enums.Types.OrderStatus;
 import com.br.food.enums.Types.PaymentMethod;
 import com.br.food.models.Address;
@@ -79,6 +85,9 @@ class DeliveryOrderServiceTest {
 
 	@Mock
 	private PushNotificationService pushNotificationService;
+
+	@Mock
+	private Entitlements entitlements;
 
 	@InjectMocks
 	private OrderService orderService;
@@ -173,7 +182,7 @@ class DeliveryOrderServiceTest {
 				DataIntegrityViolationException.class,
 				() -> orderService.create(request, "tester"));
 
-		assertEquals("Pedidos de entrega exigem endereco cadastrado para o cliente.", exception.getMessage());
+		assertEquals("Pedidos de entrega exigem cliente com endereco cadastrado.", exception.getMessage());
 	}
 
 	@Test
@@ -233,6 +242,50 @@ class DeliveryOrderServiceTest {
 		Order result = orderService.create(request, "tester");
 
 		assertSame(existingOpenOrder, result);
+	}
+
+	@Test
+	void createFromDigitalMenuShouldTakeTheTableFromTheQrTokenAndIgnoreTheBody() throws AccessDeniedException {
+		Customer customer = buildCustomer(7L, "12345678901", null);
+		Order existingOpenOrder = new Order();
+		existingOpenOrder.setStatus(OrderStatus.OPEN);
+		OrderRequest request = buildDineInRequest(7L, "999", "qr-token");
+
+		when(diningTableService.findByAccessToken("qr-token")).thenReturn(new DiningTable("10"));
+		when(customerService.findById(7L)).thenReturn(customer);
+		when(customerService.findByDocumentNumber("12345678901")).thenReturn(Optional.of(customer));
+		when(orderRepository.findFirstByCustomerIdAndStatusInOrderByOpenedAtDesc(customer.getId(),
+				List.of(OrderStatus.OPEN, OrderStatus.READY_TO_CLOSE))).thenReturn(existingOpenOrder);
+
+		Order result = orderService.createFromDigitalMenu(request);
+
+		assertSame(existingOpenOrder, result);
+		assertEquals("10", request.getTableNumber());
+		verify(entitlements, never()).require(anyString());
+	}
+
+	@Test
+	void createFromDigitalMenuShouldRefuseAnInvalidQrTokenBeforeTouchingTheCustomer() {
+		OrderRequest request = buildDineInRequest(7L, "10", "old-qr-token");
+
+		when(diningTableService.findByAccessToken("old-qr-token"))
+				.thenThrow(new org.springframework.security.access.AccessDeniedException("old"));
+
+		assertThrows(org.springframework.security.access.AccessDeniedException.class,
+				() -> orderService.createFromDigitalMenu(request));
+
+		verifyNoInteractions(customerService);
+		verify(orderRepository, never()).save(any());
+	}
+
+	@Test
+	void createShouldRequireTheDeliveryFeatureOfThePlanForDeliveryAndTakeaway() {
+		OrderRequest request = buildTakeawayRequest(7L, PaymentMethod.CASH);
+		doThrow(new FeatureNotInPlanException("delivery")).when(entitlements).require("delivery");
+
+		assertThrows(FeatureNotInPlanException.class, () -> orderService.create(request, "tester"));
+
+		verifyNoInteractions(customerService);
 	}
 
 	@Test
@@ -348,6 +401,16 @@ class DeliveryOrderServiceTest {
 	void findActiveOrderByCustomerDocumentNumberShouldReturnNullForBlankDocument() {
 		assertNull(orderService.findActiveOrderByCustomerDocumentNumber(""));
 		assertNull(orderService.findActiveOrderByCustomerDocumentNumber(null));
+	}
+
+	private OrderRequest buildDineInRequest(Long customerId, String tableNumber, String tableAccessToken) {
+		OrderRequest request = new OrderRequest();
+		ReflectionTestUtils.setField(request, "customerId", customerId);
+		ReflectionTestUtils.setField(request, "channel", OrderChannel.DINE_IN);
+		ReflectionTestUtils.setField(request, "tableNumber", tableNumber);
+		ReflectionTestUtils.setField(request, "tableAccessToken", tableAccessToken);
+		ReflectionTestUtils.setField(request, "items", List.of(buildItemRequest()));
+		return request;
 	}
 
 	private OrderRequest buildDeliveryRequest(Long customerId, PaymentMethod paymentMethod) {

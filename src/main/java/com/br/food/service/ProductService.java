@@ -19,6 +19,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 
+import com.br.food.authentication.token.TenantClaim;
+import com.br.food.config.PlanFeatures;
 import com.br.food.enums.Types.CostPriceSource;
 import com.br.food.enums.Types.ProductType;
 import com.br.food.models.Document;
@@ -33,6 +35,7 @@ import com.br.food.request.ProductRequest;
 import com.br.food.response.ProductCostHistoryResponse;
 import com.br.food.response.ProductResponse;
 
+import br.com.gloomy.platform.entitlements.Entitlements;
 import jakarta.persistence.EntityNotFoundException;
 
 @Service
@@ -44,9 +47,12 @@ public class ProductService {
 	private final ProductCategoryRepository productCategoryRepository;
 	private final ProductCostHistoryRepository productCostHistoryRepository;
 	private final DocumentService documentService;
+	private final Entitlements entitlements;
 
 	public ProductService(ProductRepository productRepository, ProductCategoryRepository productCategoryRepository,
-			ProductCostHistoryRepository productCostHistoryRepository, DocumentService documentService) {
+			ProductCostHistoryRepository productCostHistoryRepository, DocumentService documentService,
+			Entitlements entitlements) {
+		this.entitlements = entitlements;
 		this.productRepository = productRepository;
 		this.productCategoryRepository = productCategoryRepository;
 		this.productCostHistoryRepository = productCostHistoryRepository;
@@ -95,6 +101,7 @@ public class ProductService {
 	@Transactional
 	@CacheEvict(cacheNames = MENU_PRODUCTS_CACHE, allEntries = true)
 	public Product create(ProductRequest request, MultipartFile image) throws IOException {
+		entitlements.requireBelow(PlanFeatures.PRODUCTS_MAX, productRepository.count());
 		validateUniqueCode(request.getCode(), null);
 		validatePreparationFlags(request);
 		validateVariationGroups(request);
@@ -217,7 +224,7 @@ public class ProductService {
 		int pageSize = pageable != null ? pageable.getPageSize() : 20;
 		String sort = pageable != null ? pageable.getSort().toString() : "UNSORTED";
 		String normalizedTerm = term == null ? "" : term.trim().toLowerCase();
-		return pageNumber + "|" + pageSize + "|" + sort + "|" + categoryId + "|" + normalizedTerm;
+		return TenantClaim.current() + "|" + pageNumber + "|" + pageSize + "|" + sort + "|" + categoryId + "|" + normalizedTerm;
 	}
 
 	private void validateUniqueCode(String code, Long currentId) {

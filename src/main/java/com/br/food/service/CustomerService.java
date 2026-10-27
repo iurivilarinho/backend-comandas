@@ -60,6 +60,20 @@ public class CustomerService {
 		return customerRepository.findByDocumentNumber(normalizedDocumentNumber);
 	}
 
+	/**
+	 * The customer whose CPF and phone both match (digits only). Used by the digital menu to recover a registration;
+	 * a wrong phone and an unknown CPF are indistinguishable on purpose.
+	 */
+	@Transactional(readOnly = true)
+	public Optional<Customer> identify(String phone, String documentNumber) {
+		String phoneDigits = phone == null ? "" : phone.replaceAll("\\D", "");
+		if (phoneDigits.isEmpty()) {
+			return Optional.empty();
+		}
+		return findByDocumentNumber(documentNumber)
+				.filter(customer -> customer.getPhone() != null && customer.getPhone().replaceAll("\\D", "").equals(phoneDigits));
+	}
+
 	@Transactional(readOnly = true)
 	public Optional<Customer> findByPhone(String phone) {
 		if (phone == null || phone.isBlank()) {

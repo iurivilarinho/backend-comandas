@@ -23,10 +23,10 @@ public class RecoveryPassword {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Schema(description = "Chave primÃ¡ria do registro de recuperaÃ§Ã£o de senha.", example = "10")
+	@Schema(description = "Codigo de recuperacao: 4 digitos no esqueci-minha-senha, 12 caracteres no link de definir senha.", example = "1234")
 	private Long id;
 
-	@Column(length = 4, nullable = false)
+	@Column(length = 16, nullable = false)
 	@Schema(description = "CÃ³digo de recuperaÃ§Ã£o com 4 dÃ­gitos.", example = "1234")
 	private String code;
 

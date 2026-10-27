@@ -3,6 +3,8 @@ package com.br.food.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,12 +28,16 @@ import com.br.food.request.OrderItemRequest;
 import com.br.food.request.OrderRequest;
 import com.br.food.response.OrderResponse;
 import com.br.food.service.OrderService;
+import com.br.food.service.PortalAccessService;
 
 @ExtendWith(MockitoExtension.class)
 class DigitalOrderControllerTest {
 
 	@Mock
 	private OrderService orderService;
+
+	@Mock
+	private PortalAccessService portalAccessService;
 
 	@InjectMocks
 	private DigitalOrderController digitalOrderController;
@@ -43,7 +49,7 @@ class DigitalOrderControllerTest {
 
 		when(orderService.createFromDigitalMenu(request)).thenReturn(serviceOrder);
 
-		ResponseEntity<OrderResponse> response = digitalOrderController.create(request);
+		ResponseEntity<OrderResponse> response = digitalOrderController.create(request, "customer-token");
 
 		assertEquals(HttpStatus.CREATED, response.getStatusCode());
 		assertNotNull(response.getBody());
@@ -62,7 +68,7 @@ class DigitalOrderControllerTest {
 
 		AccessDeniedException exception = org.junit.jupiter.api.Assertions.assertThrows(
 				AccessDeniedException.class,
-				() -> digitalOrderController.create(request));
+				() -> digitalOrderController.create(request, "customer-token"));
 
 		assertEquals("denied", exception.getMessage());
 	}
@@ -75,7 +81,7 @@ class DigitalOrderControllerTest {
 
 		when(orderService.addItemsFromDigitalMenu(60L, items)).thenReturn(serviceOrder);
 
-		ResponseEntity<OrderResponse> response = digitalOrderController.addItems(60L, items);
+		ResponseEntity<OrderResponse> response = digitalOrderController.addItems(60L, items, "customer-token");
 
 		assertEquals(HttpStatus.OK, response.getStatusCode());
 		assertNotNull(response.getBody());
@@ -83,6 +89,28 @@ class DigitalOrderControllerTest {
 		assertEquals("XYZ789", response.getBody().getCode());
 		assertEquals(OrderChannel.TAKEAWAY, response.getBody().getChannel());
 		verify(orderService).addItemsFromDigitalMenu(eq(60L), eq(items));
+	}
+
+	@Test
+	void createShouldCheckThatTheCallerOwnsTheCustomerOfTheOrder() throws AccessDeniedException {
+		OrderRequest request = buildDeliveryRequest();
+		when(orderService.createFromDigitalMenu(request)).thenReturn(buildOpenOrder(50L, "ABC123", OrderChannel.DELIVERY));
+
+		digitalOrderController.create(request, "customer-token");
+
+		verify(portalAccessService).requireStaffOrCustomer("customer-token", 7L);
+	}
+
+	@Test
+	void createShouldNotReachTheServiceWhenTheCallerIsNotTheCustomer() throws AccessDeniedException {
+		OrderRequest request = buildDeliveryRequest();
+		doThrow(new org.springframework.security.access.AccessDeniedException("other customer"))
+				.when(portalAccessService).requireStaffOrCustomer("stolen-token", 7L);
+
+		org.junit.jupiter.api.Assertions.assertThrows(org.springframework.security.access.AccessDeniedException.class,
+				() -> digitalOrderController.create(request, "stolen-token"));
+
+		verify(orderService, never()).createFromDigitalMenu(request);
 	}
 
 	private OrderRequest buildDeliveryRequest() {

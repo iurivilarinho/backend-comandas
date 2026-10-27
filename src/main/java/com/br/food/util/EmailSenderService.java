@@ -25,7 +25,7 @@ public class EmailSenderService {
 		MimeMessage message = javaMailSender.createMimeMessage();
 		MimeMessageHelper helper = new MimeMessageHelper(message, "utf-8");
 		try {
-			String from = environment.getProperty("spring.mail.username");
+			String from = senderAddress();
 			message.setFrom(from);
 			helper.setTo(to);
 			helper.setSubject(subject);
@@ -41,7 +41,7 @@ public class EmailSenderService {
 
 		MimeMessage message = javaMailSender.createMimeMessage();
 		MimeMessageHelper helper = new MimeMessageHelper(message, html);
-		String from = environment.getProperty("spring.mail.username");
+		String from = senderAddress();
 
 		message.setFrom(from);
 		helper.setTo(to);
@@ -52,5 +52,10 @@ public class EmailSenderService {
 		helper.addAttachment(fileName, inputStreamSource);
 
 		javaMailSender.send(message);
+	}
+
+	private String senderAddress() {
+		String from = environment.getProperty("mail.from");
+		return from == null || from.isBlank() ? environment.getProperty("spring.mail.username") : from;
 	}
 }

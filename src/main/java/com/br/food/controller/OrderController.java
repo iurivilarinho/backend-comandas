@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.br.food.enums.Types.OrderChannel;
 import com.br.food.enums.Types.OrderStatus;
+import com.br.food.models.Order;
 import com.br.food.request.CancelOrderItemRequest;
 import com.br.food.request.CancelOrderRequest;
 import com.br.food.request.CloseOrderRequest;
@@ -33,6 +34,7 @@ import com.br.food.request.TransferOrderRequest;
 import com.br.food.response.OrderCheckoutResponse;
 import com.br.food.response.OrderResponse;
 import com.br.food.service.OrderService;
+import com.br.food.service.PortalAccessService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,9 +47,11 @@ import jakarta.validation.Valid;
 public class OrderController {
 
 	private final OrderService orderService;
+	private final PortalAccessService portalAccessService;
 
-	public OrderController(OrderService orderService) {
+	public OrderController(OrderService orderService, PortalAccessService portalAccessService) {
 		this.orderService = orderService;
+		this.portalAccessService = portalAccessService;
 	}
 
 	@Operation(summary = "Create order")
@@ -58,13 +62,16 @@ public class OrderController {
 		return ResponseEntity.status(201).body(new OrderResponse(orderService.create(request, actorName)));
 	}
 
-	@Operation(summary = "Find order by id")
+	@Operation(summary = "Find order by id", description = "Equipe, ou o cliente dono do pedido com X-Customer-Token.")
 	@GetMapping("/{id}")
-	public ResponseEntity<OrderResponse> findById(@PathVariable Long id) {
-		return ResponseEntity.ok(new OrderResponse(orderService.findById(id)));
+	public ResponseEntity<OrderResponse> findById(@PathVariable Long id,
+			@RequestHeader(name = PortalAccessService.CUSTOMER_TOKEN_HEADER, required = false) String customerToken) {
+		Order order = portalAccessService.loadOwned(customerToken, () -> orderService.findById(id),
+				OrderController::ownerOf);
+		return ResponseEntity.ok(new OrderResponse(order));
 	}
 
-	@Operation(summary = "Search orders")
+	@Operation(summary = "Search orders", description = "Equipe. O cliente do cardapio digital so lista os proprios pedidos (X-Customer-Token).")
 	@GetMapping
 	public ResponseEntity<Page<OrderResponse>> findAll(
 			@RequestParam(required = false) OrderStatus status,
@@ -74,8 +81,10 @@ public class OrderController {
 			@RequestParam(required = false) Long customerId,
 			@RequestParam(required = false) OrderChannel channel,
 			@RequestParam(required = false) List<OrderChannel> channels,
+			@RequestHeader(name = PortalAccessService.CUSTOMER_TOKEN_HEADER, required = false) String customerToken,
 			Pageable pageable) {
-		return ResponseEntity.ok(orderService.search(status, statuses, tableNumber, code, customerId, channel, channels, pageable).map(OrderResponse::new));
+		Long customerFilter = portalAccessService.resolveCustomerFilter(customerToken, customerId);
+		return ResponseEntity.ok(orderService.search(status, statuses, tableNumber, code, customerFilter, channel, channels, pageable).map(OrderResponse::new));
 	}
 
 	@Operation(summary = "Update order")
@@ -124,12 +133,14 @@ public class OrderController {
 		return ResponseEntity.ok(new OrderResponse(orderService.updateServiceFee(id, request.getApplyServiceFee(), actorName)));
 	}
 
-	@Operation(summary = "Request order checkout")
+	@Operation(summary = "Request order checkout", description = "Equipe, ou o cliente dono do pedido com X-Customer-Token.")
 	@PostMapping("/{id}/request-close")
 	public ResponseEntity<OrderResponse> requestClose(
 			@PathVariable Long id,
 			@Valid @RequestBody RequestOrderCheckoutRequest request,
-			@RequestHeader(name = "X-Actor", required = false) String actorName) {
+			@RequestHeader(name = "X-Actor", required = false) String actorName,
+			@RequestHeader(name = PortalAccessService.CUSTOMER_TOKEN_HEADER, required = false) String customerToken) {
+		portalAccessService.loadOwned(customerToken, () -> orderService.findById(id), OrderController::ownerOf);
 		return ResponseEntity.ok(new OrderResponse(orderService.requestCheckout(id, request, actorName)));
 	}
 
@@ -188,5 +199,9 @@ public class OrderController {
 			@RequestHeader(name = "X-Actor", required = false) String actorName) throws AccessDeniedException {
 		return ResponseEntity.status(201)
 				.body(new OrderResponse(orderService.split(id, request.getDestinationTableId(), request.getOrderItemIds(), actorName)));
+	}
+
+	private static Long ownerOf(Order order) {
+		return order.getCustomer() != null ? order.getCustomer().getId() : null;
 	}
 }

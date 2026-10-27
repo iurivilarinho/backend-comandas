@@ -60,13 +60,19 @@ public class DiningTableController {
 		return ResponseEntity.ok(diningTableService.findAll(status));
 	}
 
+	@Operation(summary = "Regenerate the QR code of a table", description = "Invalida o QR impresso antes e devolve o token do novo.")
+	@PostMapping("/{id}/access-token/regenerate")
+	public ResponseEntity<String> regenerateAccessToken(@PathVariable Long id) {
+		return ResponseEntity.ok(diningTableService.regenerateAccessToken(id));
+	}
+
 	@Operation(summary = "Generate secure access token for table QR code")
 	@GetMapping("/access-token")
 	public ResponseEntity<String> generateAccessToken(@RequestParam String tableNumber) {
 		return ResponseEntity.ok(diningTableService.generateAccessToken(tableNumber));
 	}
 
-	@Operation(summary = "Resolve secure access token for table QR code")
+	@Operation(summary = "Resolve secure access token for table QR code", description = "Publico. Devolve o numero da mesa se o QR for o vigente.")
 	@GetMapping("/resolve-access-token")
 	public ResponseEntity<String> resolveAccessToken(@RequestParam String token) {
 		return ResponseEntity.ok(diningTableService.resolveAccessToken(token));

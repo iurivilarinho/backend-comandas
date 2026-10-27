@@ -6,6 +6,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.Optional;
 
+import br.com.gloomy.platform.entitlements.Entitlements;
+import br.com.gloomy.platform.exception.PlanLimitReachedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,8 +26,22 @@ class ProductServiceTest {
 	@Mock
 	private DocumentService documentService;
 
+	@Mock
+	private Entitlements entitlements;
+
 	@InjectMocks
 	private ProductService productService;
+
+	@Test
+	void createShouldStopAtThePlanLimitBeforeTouchingTheCatalog() throws java.io.IOException {
+		when(productRepository.count()).thenReturn(60L);
+		org.mockito.Mockito.doThrow(new PlanLimitReachedException("products.max", 60, 60)).when(entitlements)
+				.requireBelow("products.max", 60L);
+
+		assertThrows(PlanLimitReachedException.class, () -> productService.create(null, null));
+
+		org.mockito.Mockito.verify(productRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
+	}
 
 	@Test
 	void addComplementShouldLinkProvidedComplementId() {

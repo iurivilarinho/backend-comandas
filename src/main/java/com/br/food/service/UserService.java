@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,12 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.JWTDecodeException;
-import com.auth0.jwt.interfaces.DecodedJWT;
-import com.auth0.jwt.interfaces.JWTVerifier;
+import com.br.food.authentication.models.Role;
 import com.br.food.authentication.request.GoogleRegistrationCompletionRequest;
+import com.br.food.config.PlanFeatures;
 import com.br.food.models.Document;
 import com.br.food.models.User;
 import com.br.food.repository.UserRepository;
@@ -30,6 +27,7 @@ import com.br.food.request.UserRequest;
 import com.br.food.request.UserUpdateRequest;
 import com.br.food.specification.UserSpecification;
 
+import br.com.gloomy.platform.entitlements.Entitlements;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 
@@ -40,12 +38,11 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final EntityManager entityManager;
 	private final PasswordEncoder passwordEncoder;
-
-	@Value("${api.security.token.secret}")
-	private String secret;
+	private final Entitlements entitlements;
 
 	public UserService(DocumentService documentService, UserRepository userRepository, EntityManager entityManager,
-			PasswordEncoder passwordEncoder) {
+			PasswordEncoder passwordEncoder, Entitlements entitlements) {
+		this.entitlements = entitlements;
 		this.documentService = documentService;
 		this.userRepository = userRepository;
 		this.entityManager = entityManager;
@@ -92,7 +89,7 @@ public class UserService {
 
 	@Transactional
 	public void resetPassword(User user, String newPassword) {
-		user.setPassword(newPassword);
+		user.setPassword(passwordEncoder.encode(newPassword));
 		user.setForcePasswordChange(false);
 		user.setPasswordLastChanged(LocalDateTime.now());
 		userRepository.save(user);
@@ -105,20 +102,6 @@ public class UserService {
 		user.setForcePasswordChange(true);
 		user.setPasswordLastChanged(LocalDateTime.now());
 		userRepository.save(user);
-	}
-
-	@Transactional(readOnly = true)
-	public User findByToken(String tokenJWT) {
-		try {
-			Algorithm algorithm = Algorithm.HMAC256(secret);
-			JWTVerifier verifier = JWT.require(algorithm).withIssuer("API Autenticacao").build();
-			DecodedJWT decodedJWT = verifier.verify(tokenJWT);
-			String id = decodedJWT.getSubject();
-			return userRepository.findById(Long.parseLong(id))
-					.orElseThrow(() -> new EntityNotFoundException("Usuario nao encontrado para o login informado."));
-		} catch (JWTDecodeException exception) {
-			throw new DataIntegrityViolationException("token invalido!");
-		}
 	}
 
 	@Transactional(readOnly = true)
@@ -153,6 +136,7 @@ public class UserService {
 
 	@Transactional
 	public User create(UserRequest form, MultipartFile img) throws IOException {
+		entitlements.requireBelow(PlanFeatures.USERS_MAX, userRepository.count());
 		if (form.getEmail() != null && !form.getEmail().isBlank()) {
 			emailValidate(form.getEmail());
 		}
@@ -165,6 +149,25 @@ public class UserService {
 
 		User user = new User(form, document);
 
+		return userRepository.save(user);
+	}
+
+	/**
+	 * A user nobody can sign in as yet: a random password nobody knows, so the first access goes through the
+	 * set-password link sent to the e-mail, as for the tenant administrator created at provisioning.
+	 */
+	@Transactional
+	public User createInvited(String name, String email, Role role) {
+		User user = new User();
+		user.setName(name);
+		user.setLogin(email);
+		user.setEmail(email);
+		user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+		user.setPasswordLastChanged(LocalDateTime.now());
+		user.setForcePasswordChange(false);
+		user.setActive(Boolean.TRUE);
+		user.setRegistrationCompleted(Boolean.TRUE);
+		user.getRoles().add(role);
 		return userRepository.save(user);
 	}
 

@@ -42,7 +42,7 @@ public class CompanyProfileService {
 	}
 
 	@Transactional(readOnly = true)
-	@Cacheable(cacheNames = COMPANY_PROFILE_CACHE, key = "'current'")
+	@Cacheable(cacheNames = COMPANY_PROFILE_CACHE, key = "T(com.br.food.authentication.token.TenantClaim).current()")
 	public CompanyProfileResponse findCurrentResponse() {
 		CompanyProfile companyProfile = findCurrent();
 		return companyProfile != null ? new CompanyProfileResponse(companyProfile) : null;

@@ -26,6 +26,9 @@ public class DiningTable {
 	@Column(name = "occupied", nullable = false)
 	private Boolean occupied;
 
+	@Column(name = "access_version", nullable = false)
+	private Integer accessVersion = 1;
+
 	public DiningTable() {
 	}
 
@@ -41,6 +44,15 @@ public class DiningTable {
 
 	public void update(DiningTableRequest request) {
 		this.number = request.getNumber();
+	}
+
+	/** Invalidates every QR token printed for this table so far. */
+	public void regenerateAccess() {
+		this.accessVersion = getAccessVersion() + 1;
+	}
+
+	public int getAccessVersion() {
+		return accessVersion == null ? 1 : accessVersion;
 	}
 
 	public Long getId() {

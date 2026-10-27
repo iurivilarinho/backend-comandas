@@ -1,8 +1,10 @@
 package com.br.food.authentication;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.Random;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,12 @@ public class PasswordRecoveryService {
 	private static final int CODE_RANGE = 9000; // 1000..9999
 	private static final int EXPIRATION_MINUTES = 10;
 
+	// Set-password link of a new tenant administrator (CMD-016): long random code, valid for a week.
+	private static final String SETUP_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+	private static final int SETUP_CODE_LENGTH = 12;
+	private static final int SETUP_EXPIRATION_DAYS = 7;
+	private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
 	private final EmailSenderService emailService;
 	private final UserService userService;
 	private final RecoveryPasswordRepository recoveryRepository;
@@ -37,12 +45,9 @@ public class PasswordRecoveryService {
 
 	@Transactional
 	public void sendRecoveryEmail(String email) {
-		// Se vocÃª NÃƒO quiser vazar se o email existe, troque findByEmail por um mÃ©todo
-		// opcional.
-		// Mantive o seu comportamento: se nÃ£o existir, vai lanÃ§ar.
 		User user = userService.findByEmail(email);
 
-		// Garante "um cÃ³digo ativo por vez"
+		// One active code at a time.
 		recoveryRepository.deleteByUserId(user.getId());
 
 		String code = generateFourDigitCode();
@@ -51,7 +56,31 @@ public class PasswordRecoveryService {
 		recoveryRepository.save(new RecoveryPassword(code, expiresAt, user));
 
 		String html = buildRecoveryEmailHtml(code);
-		emailService.send(email, "RecuperaÃ§Ã£o de Senha - Fala Vereador", html, true);
+		emailService.send(email, "Recuperação de senha - Comandas", html, true);
+	}
+
+	/**
+	 * E-mails the user a link that opens the password recovery page with the e-mail and a one-week code already
+	 * filled in, so a new administrator can choose a password. Uses the same code table and reset endpoint as
+	 * "forgot my password"; only the code is longer and lives longer.
+	 *
+	 * @param accessUrl address of the tenant with scheme, e.g. {@code https://comandas.gloomy.com.br/zil}
+	 */
+	@Transactional
+	public void sendSetPasswordLink(User user, String accessUrl, String siteName) {
+		recoveryRepository.deleteByUserId(user.getId());
+
+		String code = generateSetupCode();
+		recoveryRepository.save(new RecoveryPassword(code, LocalDateTime.now().plusDays(SETUP_EXPIRATION_DAYS), user));
+
+		String base = accessUrl.endsWith("/") ? accessUrl.substring(0, accessUrl.length() - 1) : accessUrl;
+		String link = base + "/recuperar-senha?email=" + URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8)
+				+ "&code=" + code;
+		String html = "<html><body><h2>" + escapeHtml(siteName) + "</h2>"
+				+ "<p>Sua conta de administrador foi criada. Clique no link para definir sua senha (válido por "
+				+ SETUP_EXPIRATION_DAYS + " dias):</p><p><a href=\"" + escapeHtml(link) + "\">" + escapeHtml(link)
+				+ "</a></p></body></html>";
+		emailService.send(user.getEmail(), "Defina sua senha - " + siteName, html, true);
 	}
 
 	@Transactional(readOnly = true)
@@ -62,7 +91,7 @@ public class PasswordRecoveryService {
 				LocalDateTime.now());
 
 		if (!valid) {
-			throw new AccessDeniedException("CÃ³digo de recuperaÃ§Ã£o de senha invÃ¡lido!");
+			throw new AccessDeniedException("Código de recuperação de senha inválido!");
 		}
 	}
 
@@ -74,26 +103,29 @@ public class PasswordRecoveryService {
 				.findFirstByUserIdAndCodeAndExpirationDateAfter(user.getId(), form.getCode(), LocalDateTime.now());
 
 		if (recovery.isEmpty()) {
-			throw new AccessDeniedException("CÃ³digo de recuperaÃ§Ã£o de senha invÃ¡lido!");
+			throw new AccessDeniedException("Código de recuperação de senha inválido!");
 		}
 
 		userService.resetPassword(user, form.getNewPassword());
 
-		// Invalida o cÃ³digo apÃ³s uso (evita reuso)
+		// The code is single use.
 		recoveryRepository.delete(recovery.get());
+	}
 
-		// Se preferir, pode limpar todos do usuÃ¡rio:
-		// recoveryRepository.deleteByUserId(user.getId());
+	private String generateSetupCode() {
+		StringBuilder code = new StringBuilder(SETUP_CODE_LENGTH);
+		for (int i = 0; i < SETUP_CODE_LENGTH; i++) {
+			code.append(SETUP_CODE_ALPHABET.charAt(SECURE_RANDOM.nextInt(SETUP_CODE_ALPHABET.length())));
+		}
+		return code.toString();
 	}
 
 	private String generateFourDigitCode() {
-		Random random = new Random();
-		int value = random.nextInt(CODE_RANGE) + CODE_MIN;
-		return String.valueOf(value);
+		return String.valueOf(SECURE_RANDOM.nextInt(CODE_RANGE) + CODE_MIN);
 	}
 
 	private String buildRecoveryEmailHtml(String code) {
-		return "<html><body>" + "<h2>Fala Vereador</h2>" + "<p>Seu cÃ³digo de recuperaÃ§Ã£o de senha Ã©:</p>" + "<h2>"
+		return "<html><body>" + "<h2>Comandas</h2>" + "<p>Seu código de recuperação de senha é:</p>" + "<h2>"
 				+ escapeHtml(code) + "</h2>" + "</body></html>";
 	}
 

@@ -13,6 +13,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.br.food.authentication.token.TableAccessClaims;
+import com.br.food.config.PlanFeatures;
 import com.br.food.enums.Types.OrderItemStatus;
 import com.br.food.enums.Types.OrderStatus;
 import com.br.food.models.DiningTable;
@@ -23,6 +25,7 @@ import com.br.food.repository.OrderSpecification;
 import com.br.food.request.DiningTableRequest;
 import com.br.food.response.DiningTableResponse;
 
+import br.com.gloomy.platform.entitlements.Entitlements;
 import jakarta.persistence.EntityNotFoundException;
 
 @Service
@@ -31,14 +34,17 @@ public class DiningTableService {
 	private final DiningTableRepository diningTableRepository;
 	private final OrderRepository orderRepository;
 	private final TableAccessTokenService tableAccessTokenService;
+	private final Entitlements entitlements;
 
 	public DiningTableService(
 			DiningTableRepository diningTableRepository,
 			OrderRepository orderRepository,
-			TableAccessTokenService tableAccessTokenService) {
+			TableAccessTokenService tableAccessTokenService,
+			Entitlements entitlements) {
 		this.diningTableRepository = diningTableRepository;
 		this.orderRepository = orderRepository;
 		this.tableAccessTokenService = tableAccessTokenService;
+		this.entitlements = entitlements;
 	}
 
 	@Transactional
@@ -46,6 +52,7 @@ public class DiningTableService {
 		if (tableCount == null || tableCount <= 0) {
 			throw new DataIntegrityViolationException("A quantidade de mesas precisa ser maior que zero.");
 		}
+		entitlements.requireBelow(PlanFeatures.TABLES_MAX, diningTableRepository.count() + tableCount - 1);
 
 		int nextNumber = resolveNextTableNumber();
 		Set<String> existingNumbers = new HashSet<>(diningTableRepository.findAll().stream()
@@ -66,6 +73,7 @@ public class DiningTableService {
 
 	@Transactional
 	public DiningTable create(DiningTableRequest request) {
+		entitlements.requireBelow(PlanFeatures.TABLES_MAX, diningTableRepository.count());
 		String normalizedNumber = normalizeTableNumber(request.getNumber());
 		validateTableNumberUniqueness(normalizedNumber, null);
 
@@ -163,14 +171,33 @@ public class DiningTableService {
 		if (!Boolean.TRUE.equals(table.getActive())) {
 			throw new EntityNotFoundException("Mesa nao disponivel para o numero " + tableNumber + ".");
 		}
-		return tableAccessTokenService.generate(table.getNumber());
+		return tableAccessTokenService.generate(table.getNumber(), table.getAccessVersion());
+	}
+
+	/** Makes the QR printed so far useless and returns the token of the new one. */
+	@Transactional
+	public String regenerateAccessToken(Long id) {
+		DiningTable table = findById(id);
+		table.regenerateAccess();
+		diningTableRepository.save(table);
+		return tableAccessTokenService.generate(table.getNumber(), table.getAccessVersion());
 	}
 
 	@Transactional(readOnly = true)
 	public String resolveAccessToken(String token) {
-		String tableNumber = tableAccessTokenService.resolve(token);
-		findByNumber(tableNumber);
-		return tableNumber;
+		return findByAccessToken(token).getNumber();
+	}
+
+	/** The table a QR token points to; refuses an old QR (version), an inactive table and another tenant's token. */
+	@Transactional(readOnly = true)
+	public DiningTable findByAccessToken(String token) {
+		TableAccessClaims claims = tableAccessTokenService.resolve(token);
+		DiningTable table = diningTableRepository.findByNumber(claims.tableNumber())
+				.orElseThrow(() -> new org.springframework.security.access.AccessDeniedException("Token de acesso da mesa invalido."));
+		if (table.getAccessVersion() != claims.version() || !Boolean.TRUE.equals(table.getActive())) {
+			throw new org.springframework.security.access.AccessDeniedException("Token de acesso da mesa invalido.");
+		}
+		return table;
 	}
 
 	private Order pickOrderWithHigherPriority(Order currentOrder, Order candidateOrder) {

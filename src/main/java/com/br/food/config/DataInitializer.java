@@ -3,9 +3,12 @@ package com.br.food.config;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.br.food.authentication.models.Role;
 import com.br.food.models.User;
@@ -14,39 +17,78 @@ import com.br.food.repository.UserRepository;
 import com.br.food.service.PaymentService;
 import com.br.food.service.SystemSettingService;
 
-@Configuration
+/**
+ * Per-tenant base data: payment methods, service fee, cover charge, the administrator role and, when
+ * {@code APP_ADMIN_PASSWORD} is set, the "admin" user of an own instance. {@link #seedCurrentTenant()} runs against the
+ * tenant bound to the thread; {@link TenantSeeding} calls it for every tenant at startup and the tenant provisioner
+ * calls it for a new tenant (CMD-016). The password is never in the code (CMD-015).
+ */
+@Component
 public class DataInitializer {
 
-	@Bean
-	CommandLineRunner initializeSeedData(PaymentService paymentService, SystemSettingService systemSettingService,
-			RoleRepository roleRepository, UserRepository userRepository) {
-		return args -> {
-			paymentService.ensureDefaultMethods();
-			systemSettingService.createIfAbsent(SystemSettingService.SERVICE_FEE_PERCENT, "10.00");
-			systemSettingService.createIfAbsent(SystemSettingService.COVER_CHARGE_AMOUNT, "0.00");
+	public static final String ROLE_ADMIN = "ROLE_ADMIN";
 
-			Role adminRole = roleRepository.findByDescription("ROLE_ADMIN");
-			if (adminRole == null) {
-				adminRole = new Role();
-				adminRole.setDescription("Default administrator role");
-				adminRole.setAuthority("ROLE_ADMIN");
-				adminRole = roleRepository.save(adminRole);
-			}
+	private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
+	private static final String DEFAULT_ADMIN_LOGIN = "admin";
 
-			Optional<User> adminUserOptional = userRepository.findByLogin("admin");
-			if (adminUserOptional.isEmpty()) {
+	private final PaymentService paymentService;
+	private final SystemSettingService systemSettingService;
+	private final RoleRepository roleRepository;
+	private final UserRepository userRepository;
+	private final PasswordEncoder passwordEncoder;
+	private final String initialAdminPassword;
 
-				User adminUser = new User();
-				adminUser.setName("Administrator");
-				adminUser.setLogin("admin");
-				adminUser.setEmail("admin@restaurant.local");
-				adminUser.setPassword("$2y$10$x7mhJQXxb941hVtAfVbKe.mpwYVe9CtuNJhmiqiRN2dH7R1Mn8Pz.");
-				adminUser.getRoles().add(adminRole);
-				adminUser.setPasswordLastChanged(LocalDateTime.now());
-				adminUser.setForcePasswordChange(false);
-				adminUser.setActive(true);
-				userRepository.save(adminUser);
-			}
-		};
+	public DataInitializer(PaymentService paymentService, SystemSettingService systemSettingService,
+			RoleRepository roleRepository, UserRepository userRepository, PasswordEncoder passwordEncoder,
+			@Value("${comandas.admin.initial-password:}") String initialAdminPassword) {
+		this.paymentService = paymentService;
+		this.systemSettingService = systemSettingService;
+		this.roleRepository = roleRepository;
+		this.userRepository = userRepository;
+		this.passwordEncoder = passwordEncoder;
+		this.initialAdminPassword = initialAdminPassword;
+	}
+
+	/** Idempotent. Returns the administrator role of the current tenant. */
+	@Transactional
+	public Role seedCurrentTenant() {
+		paymentService.ensureDefaultMethods();
+		systemSettingService.createIfAbsent(SystemSettingService.SERVICE_FEE_PERCENT, "10.00");
+		systemSettingService.createIfAbsent(SystemSettingService.COVER_CHARGE_AMOUNT, "0.00");
+
+		Role adminRole = ensureAdminRole();
+
+		Optional<User> existingAdmin = userRepository.findByLogin(DEFAULT_ADMIN_LOGIN);
+		if (existingAdmin.isEmpty() && initialAdminPassword.isBlank()) {
+			log.debug("[init] Sem usuario admin e sem APP_ADMIN_PASSWORD: o administrador vem do provisionamento.");
+		} else if (existingAdmin.isEmpty()) {
+			User admin = new User();
+			admin.setName("Administrador");
+			admin.setLogin(DEFAULT_ADMIN_LOGIN);
+			admin.setEmail("admin@comandas.local");
+			admin.setPassword(passwordEncoder.encode(initialAdminPassword));
+			admin.setPasswordLastChanged(LocalDateTime.now());
+			admin.setForcePasswordChange(false);
+			admin.setActive(Boolean.TRUE);
+			admin.setRegistrationCompleted(Boolean.TRUE);
+			admin.getRoles().add(adminRole);
+			userRepository.save(admin);
+			log.info("[init] Usuario admin inicial criado: login={} (senha vinda de APP_ADMIN_PASSWORD)",
+					DEFAULT_ADMIN_LOGIN);
+		}
+		return adminRole;
+	}
+
+	private Role ensureAdminRole() {
+		Optional<Role> byName = roleRepository.findByNameIgnoreCase(ROLE_ADMIN);
+		if (byName.isPresent()) {
+			return byName.get();
+		}
+		// Databases created before CMD-015 stored ROLE_ADMIN only in the description and left the name empty.
+		Role legacy = roleRepository.findByDescription(ROLE_ADMIN);
+		Role role = legacy != null ? legacy : new Role();
+		role.setName(ROLE_ADMIN);
+		role.setDescription(ROLE_ADMIN);
+		return roleRepository.save(role);
 	}
 }

@@ -20,6 +20,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.br.food.config.PlanFeatures;
 import com.br.food.enums.Types.OrderChannel;
 import com.br.food.enums.Types.OrderItemStatus;
 import com.br.food.enums.Types.OrderStatus;
@@ -49,6 +50,7 @@ import com.br.food.request.PaymentLineRequest;
 import com.br.food.request.RequestOrderCheckoutRequest;
 import com.br.food.response.OrderCheckoutResponse;
 
+import br.com.gloomy.platform.entitlements.Entitlements;
 import jakarta.persistence.EntityNotFoundException;
 
 @Service
@@ -67,6 +69,7 @@ public class OrderService {
 	private final PromotionService promotionService;
 	private final CompanyProfileService companyProfileService;
 	private final PushNotificationService pushNotificationService;
+	private final Entitlements entitlements;
 
 	public OrderService(
 			OrderRepository orderRepository,
@@ -81,7 +84,8 @@ public class OrderService {
 			SystemSettingService systemSettingService,
 			PromotionService promotionService,
 			CompanyProfileService companyProfileService,
-			PushNotificationService pushNotificationService) {
+			PushNotificationService pushNotificationService,
+			Entitlements entitlements) {
 		this.orderRepository = orderRepository;
 		this.orderPaymentRepository = orderPaymentRepository;
 		this.customerService = customerService;
@@ -95,6 +99,7 @@ public class OrderService {
 		this.promotionService = promotionService;
 		this.companyProfileService = companyProfileService;
 		this.pushNotificationService = pushNotificationService;
+		this.entitlements = entitlements;
 	}
 
 	private void notifyKitchenOfNewItems(Order order) {
@@ -153,11 +158,18 @@ public class OrderService {
 		if (request.getCustomerId() == null) {
 			throw new DataIntegrityViolationException("Cliente e obrigatorio em pedidos do cardapio digital.");
 		}
+		if (request.getChannel() == OrderChannel.DINE_IN) {
+			// The table comes from the QR token, never from the body (CMD-015).
+			request.setTableNumber(diningTableService.findByAccessToken(request.getTableAccessToken()).getNumber());
+		}
 		return create(request, null);
 	}
 
 	@Transactional
 	public Order create(OrderRequest request, String actorName) throws AccessDeniedException {
+		if (request.getChannel() != null && request.getChannel() != OrderChannel.DINE_IN) {
+			entitlements.require(PlanFeatures.DELIVERY);
+		}
 		validateOrderRequest(request);
 		Customer customer = null;
 		if (request.getCustomerId() != null) {

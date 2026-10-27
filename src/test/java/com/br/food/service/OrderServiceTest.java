@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import br.com.gloomy.platform.entitlements.Entitlements;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -72,6 +73,9 @@ class OrderServiceTest {
 
 	@Mock
 	private CompanyProfileService companyProfileService;
+
+	@Mock
+	private Entitlements entitlements;
 
 	@InjectMocks
 	private OrderService orderService;

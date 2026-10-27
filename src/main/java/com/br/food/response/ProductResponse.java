@@ -3,8 +3,12 @@ package com.br.food.response;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 import com.br.food.enums.Types.ProductType;
 import com.br.food.models.Product;
+import com.br.food.models.User;
 
 public class ProductResponse {
 
@@ -69,8 +73,17 @@ public class ProductResponse {
 		return price;
 	}
 
+	/**
+	 * Cost is for the staff only (CMD-015). Decided when the response is serialized, not when it is built, because the
+	 * menu is cached and the same object serves the staff and the visitor.
+	 */
 	public BigDecimal getCostPrice() {
-		return costPrice;
+		return isStaffRequest() ? costPrice : null;
+	}
+
+	private static boolean isStaffRequest() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		return authentication != null && authentication.getPrincipal() instanceof User;
 	}
 
 	public BigDecimal getMinimumStock() {

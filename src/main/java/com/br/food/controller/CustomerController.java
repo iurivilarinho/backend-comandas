@@ -11,13 +11,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.br.food.models.Customer;
+import com.br.food.request.CustomerIdentifyRequest;
 import com.br.food.request.CustomerRequest;
 import com.br.food.response.CustomerResponse;
+import com.br.food.service.CustomerAccessTokenService;
 import com.br.food.service.CustomerService;
+import com.br.food.service.PortalAccessService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,20 +35,38 @@ import jakarta.validation.Valid;
 public class CustomerController {
 
 	private final CustomerService customerService;
+	private final CustomerAccessTokenService customerAccessTokenService;
+	private final PortalAccessService portalAccessService;
 
-	public CustomerController(CustomerService customerService) {
+	public CustomerController(CustomerService customerService, CustomerAccessTokenService customerAccessTokenService,
+			PortalAccessService portalAccessService) {
 		this.customerService = customerService;
+		this.customerAccessTokenService = customerAccessTokenService;
+		this.portalAccessService = portalAccessService;
 	}
 
-	@Operation(summary = "Create customer")
+	@Operation(summary = "Create customer", description = "Publico (cadastro pelo cardapio digital). A resposta traz o token do cliente.")
 	@PostMapping
 	public ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerRequest request) {
-		return ResponseEntity.status(201).body(new CustomerResponse(customerService.create(request)));
+		Customer customer = customerService.create(request);
+		return ResponseEntity.status(201)
+				.body(new CustomerResponse(customer, customerAccessTokenService.generate(customer.getId())));
 	}
 
-	@Operation(summary = "Find customer by id")
+	@Operation(summary = "Identify customer", description = "Publico. Recupera o proprio cadastro com telefone e CPF que casam; devolve o token do cliente. Qualquer outra combinacao responde 404.")
+	@PostMapping("/identify")
+	public ResponseEntity<CustomerResponse> identify(@Valid @RequestBody CustomerIdentifyRequest request) {
+		return customerService.identify(request.getPhone(), request.getDocumentNumber())
+				.map(customer -> ResponseEntity
+						.ok(new CustomerResponse(customer, customerAccessTokenService.generate(customer.getId()))))
+				.orElseGet(() -> ResponseEntity.notFound().build());
+	}
+
+	@Operation(summary = "Find customer by id", description = "Equipe, ou o proprio cliente com X-Customer-Token.")
 	@GetMapping("/{id}")
-	public ResponseEntity<CustomerResponse> findById(@PathVariable Long id) {
+	public ResponseEntity<CustomerResponse> findById(@PathVariable Long id,
+			@RequestHeader(name = PortalAccessService.CUSTOMER_TOKEN_HEADER, required = false) String customerToken) {
+		portalAccessService.requireStaffOrCustomer(customerToken, id);
 		return ResponseEntity.ok(new CustomerResponse(customerService.findById(id)));
 	}
 
@@ -69,9 +92,11 @@ public class CustomerController {
 		return ResponseEntity.ok(customerService.findAll(pageable).map(CustomerResponse::new));
 	}
 
-	@Operation(summary = "Update customer")
+	@Operation(summary = "Update customer", description = "Equipe, ou o proprio cliente com X-Customer-Token.")
 	@PutMapping("/{id}")
-	public ResponseEntity<CustomerResponse> update(@PathVariable Long id, @Valid @RequestBody CustomerRequest request) {
+	public ResponseEntity<CustomerResponse> update(@PathVariable Long id, @Valid @RequestBody CustomerRequest request,
+			@RequestHeader(name = PortalAccessService.CUSTOMER_TOKEN_HEADER, required = false) String customerToken) {
+		portalAccessService.requireStaffOrCustomer(customerToken, id);
 		return ResponseEntity.ok(new CustomerResponse(customerService.update(id, request)));
 	}
 

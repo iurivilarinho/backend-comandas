@@ -14,22 +14,29 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.br.food.enums.Types.OrderStatus;
+import com.br.food.migration.EmbeddedPostgresSupport;
 import com.br.food.enums.Types.ProductType;
 import com.br.food.models.Address;
 import com.br.food.models.Customer;
 import com.br.food.models.DiningTable;
 import com.br.food.models.Order;
 import com.br.food.models.Product;
+import com.br.food.models.User;
 import com.br.food.models.RecipeItem;
 import com.br.food.models.StockEntry;
 import com.br.food.repository.CustomerRepository;
@@ -41,9 +48,28 @@ import com.br.food.repository.StockEntryRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-@SpringBootTest
+import br.com.gloomy.platform.model.TenantInfo;
+import br.com.gloomy.platform.tenant.TenantContext;
+
+/**
+ * End-to-end restaurant flow through the controllers. The application boots as the own instance
+ * ({@code CENTRAL_MODE=off}) on an embedded PostgreSQL with the real {@code application.properties}; the servlet filters
+ * are off, so the test binds the tenant and the staff user to its own thread, which MockMvc shares.
+ */
+@SpringBootTest(properties = { "CENTRAL_MODE=off", "SPRING_DATASOURCE_PASSWORD=", "spring.datasource.username=postgres",
+		"JWT_SECRET=test-only-jwt-secret-not-for-production-0123456789",
+		"api.security.token.secret=test-only-jwt-secret-not-for-production-0123456789", "SPRING_MAIL_USERNAME=test@example.com",
+		"SPRING_MAIL_PASSWORD=test" })
 @AutoConfigureMockMvc(addFilters = false)
 class RestaurantFlowIntegrationTest {
+
+	@DynamicPropertySource
+	static void database(DynamicPropertyRegistry registry) throws Exception {
+		String url = EmbeddedPostgresSupport.createDatabase("flow");
+		registry.add("spring.datasource.url", () -> url);
+	}
+
+	private TenantContext.Scope tenantScope;
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -71,12 +97,21 @@ class RestaurantFlowIntegrationTest {
 
 	@BeforeEach
 	void setUp() {
+		tenantScope = TenantContext.bind(TenantInfo.owner("Test"));
+		SecurityContextHolder.getContext()
+				.setAuthentication(new UsernamePasswordAuthenticationToken(new User(), null, List.of()));
 		orderRepository.deleteAll();
 		recipeItemRepository.deleteAll();
 		stockEntryRepository.deleteAll();
 		productRepository.deleteAll();
 		customerRepository.deleteAll();
 		diningTableRepository.deleteAll();
+	}
+
+	@AfterEach
+	void tearDown() {
+		SecurityContextHolder.clearContext();
+		tenantScope.close();
 	}
 
 	@Test
