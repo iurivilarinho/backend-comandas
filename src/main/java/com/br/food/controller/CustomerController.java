@@ -20,12 +20,14 @@ import com.br.food.models.Customer;
 import com.br.food.request.CustomerIdentifyRequest;
 import com.br.food.request.CustomerRequest;
 import com.br.food.response.CustomerResponse;
+import com.br.food.service.ClientRateLimiter;
 import com.br.food.service.CustomerAccessTokenService;
 import com.br.food.service.CustomerService;
 import com.br.food.service.PortalAccessService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
@@ -37,12 +39,14 @@ public class CustomerController {
 	private final CustomerService customerService;
 	private final CustomerAccessTokenService customerAccessTokenService;
 	private final PortalAccessService portalAccessService;
+	private final ClientRateLimiter clientRateLimiter;
 
 	public CustomerController(CustomerService customerService, CustomerAccessTokenService customerAccessTokenService,
-			PortalAccessService portalAccessService) {
+			PortalAccessService portalAccessService, ClientRateLimiter clientRateLimiter) {
 		this.customerService = customerService;
 		this.customerAccessTokenService = customerAccessTokenService;
 		this.portalAccessService = portalAccessService;
+		this.clientRateLimiter = clientRateLimiter;
 	}
 
 	@Operation(summary = "Create customer", description = "Publico (cadastro pelo cardapio digital). A resposta traz o token do cliente.")
@@ -53,9 +57,11 @@ public class CustomerController {
 				.body(new CustomerResponse(customer, customerAccessTokenService.generate(customer.getId())));
 	}
 
-	@Operation(summary = "Identify customer", description = "Publico. Recupera o proprio cadastro com telefone e CPF que casam; devolve o token do cliente. Qualquer outra combinacao responde 404.")
+	@Operation(summary = "Identify customer", description = "Publico. Recupera o proprio cadastro com telefone e CPF que casam; devolve o token do cliente. Qualquer outra combinacao responde 404. No maximo 10 tentativas por minuto por endereco (429).")
 	@PostMapping("/identify")
-	public ResponseEntity<CustomerResponse> identify(@Valid @RequestBody CustomerIdentifyRequest request) {
+	public ResponseEntity<CustomerResponse> identify(@Valid @RequestBody CustomerIdentifyRequest request,
+			HttpServletRequest http) {
+		clientRateLimiter.check("identify", http);
 		return customerService.identify(request.getPhone(), request.getDocumentNumber())
 				.map(customer -> ResponseEntity
 						.ok(new CustomerResponse(customer, customerAccessTokenService.generate(customer.getId()))))

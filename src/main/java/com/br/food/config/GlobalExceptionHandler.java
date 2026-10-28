@@ -52,6 +52,13 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(List.of(msg)));
 	}
 
+	@ExceptionHandler(TooManyRequestsException.class)
+	public ResponseEntity<ErrorResponse> tratarErro429(TooManyRequestsException ex) {
+		return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+				.header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
+				.body(new ErrorResponse(List.of(ex.getMessage())));
+	}
+
 	@ExceptionHandler(AccessDeniedException.class)
 	public ResponseEntity<ErrorResponse> tratarErro403(AccessDeniedException ex) {
 		String msg = ex.getMessage() != null ? ex.getMessage() : "Acesso negado.";

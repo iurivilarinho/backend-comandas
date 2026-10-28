@@ -48,7 +48,8 @@ class PublicRoutesSecurityTest {
 	@BeforeAll
 	static void boot() throws Exception {
 		String jdbcUrl = EmbeddedPostgresSupport.createDatabase("routes");
-		app = PlatformApp.startOwnerEdition(jdbcUrl, new Class<?>[0], "--comandas.admin.initial-password=" + ADMIN_PASSWORD);
+		app = PlatformApp.startOwnerEdition(jdbcUrl, new Class<?>[0], "--comandas.admin.initial-password=" + ADMIN_PASSWORD,
+				"--comandas.rate-limit.identify.per-minute=6");
 
 		Reply login = app.postJson(HOST, "/auth/login", Map.of("login", "admin", "password", ADMIN_PASSWORD), null);
 		assertThat(login.status()).isEqualTo(200);
@@ -245,6 +246,23 @@ class PublicRoutesSecurityTest {
 		assertThat(tenant.status()).isEqualTo(200);
 		assertThat(tenant.json().path("ownerEdition").asBoolean()).isTrue();
 		assertThat(app.get("restaurante.example.com", "/company-profile", null).status()).isIn(200, 204);
+	}
+
+	@Test
+	@Order(10)
+	void identifyIsLimitedPerAddressAndTheLimitAnswers429() {
+		Reply last = null;
+		int attempts = 0;
+		while (attempts < 10 && (last == null || last.status() != 429)) {
+			last = app.postJson(HOST, "/customers/identify", Map.of("phone", "31999990009", "documentNumber", "00000000000"),
+					null);
+			attempts++;
+		}
+
+		// three attempts were already used by the identify test, so the limit of six is reached on the fourth call
+		assertThat(last.status()).isEqualTo(429);
+		assertThat(attempts).isEqualTo(4);
+		assertThat(last.json().path("message").get(0).asText()).contains("Muitas tentativas");
 	}
 
 	private Reply customerGet(String path, String customerToken) {
