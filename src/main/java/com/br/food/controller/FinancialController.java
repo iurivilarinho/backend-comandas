@@ -50,7 +50,7 @@ public class FinancialController {
 		return ResponseEntity.ok(financialService.overview(startDate, endDate, type, category, pageable));
 	}
 
-	@Operation(summary = "Exportar relatorio financeiro em Excel")
+	@Operation(summary = "Exportar relatório financeiro em Excel")
 	@GetMapping("/report")
 	public ResponseEntity<byte[]> report(
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -63,7 +63,7 @@ public class FinancialController {
 				.body(financialService.exportReport(startDate, endDate, type, category));
 	}
 
-	@Operation(summary = "Registrar lancamento financeiro manual")
+	@Operation(summary = "Registrar lançamento financeiro manual")
 	@PostMapping("/entries")
 	public ResponseEntity<FinancialEntryResponse> create(
 			@Valid @RequestBody FinancialEntryRequest request,

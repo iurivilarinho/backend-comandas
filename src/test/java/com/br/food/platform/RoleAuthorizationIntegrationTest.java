@@ -188,7 +188,7 @@ class RoleAuthorizationIntegrationTest {
 	void theAdministratorInvitesChangesTheRoleAndDisablesFromTheUsersScreen() {
 		String admin = COOKIES.get(StaffRole.ADMIN);
 
-		Reply invited = app.call("POST", HOST, "/users", Map.of("name", "Novo Garcom", "email", "Novo@Example.com",
+		Reply invited = app.call("POST", HOST, "/users", Map.of("name", "Novo Garçom", "email", "Novo@Example.com",
 				"role", "WAITER"), admin, Map.of("X-Forwarded-Proto", "https", "X-Forwarded-Prefix", "/zil"));
 		assertThat(invited.status()).as(invited.body()).isEqualTo(201);
 		long id = invited.json().path("id").asLong();

@@ -25,7 +25,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-@Tag(name = "Auth", description = "Endpoints de autenticacao e controle de acesso")
+@Tag(name = "Auth", description = "Endpoints de autenticação e controle de acesso")
 @RestController
 @RequestMapping("/auth")
 public class LoginController {
@@ -43,7 +43,7 @@ public class LoginController {
 		this.sessionResponder = sessionResponder;
 	}
 
-	@Operation(summary = "Login", description = "Realiza autenticacao via credenciais.")
+	@Operation(summary = "Login", description = "Realiza autenticação via credenciais.")
 	@PostMapping("/login")
 	public ResponseEntity<UserProfileResponse> efetuarLogin(@RequestBody LoginRequest dados,
 			HttpServletRequest request) {
@@ -58,7 +58,7 @@ public class LoginController {
 		}
 	}
 
-	@Operation(summary = "Renova o access token via refresh token (com rotacao)", description = "Le o cookie 'refresh_token', valida, revoga o antigo, emite um novo refresh e devolve um novo access curto no cookie 'token'.")
+	@Operation(summary = "Renova o access token via refresh token (com rotação)", description = "Lê o cookie 'refresh_token', valida, revoga o antigo, emite um novo refresh e devolve um novo access curto no cookie 'token'.")
 	@PostMapping("/refresh")
 	public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {
 		String refreshRaw = readCookie(request, "refresh_token");

@@ -64,7 +64,7 @@ public class DataInitializer {
 
 		Optional<User> existingAdmin = userRepository.findByLogin(DEFAULT_ADMIN_LOGIN);
 		if (existingAdmin.isEmpty() && initialAdminPassword.isBlank()) {
-			log.debug("[init] Sem usuario admin e sem APP_ADMIN_PASSWORD: o administrador vem do provisionamento.");
+			log.debug("[init] Sem usuário admin e sem APP_ADMIN_PASSWORD: o administrador vem do provisionamento.");
 		} else if (existingAdmin.isEmpty()) {
 			User admin = new User();
 			admin.setName("Administrador");
@@ -77,7 +77,7 @@ public class DataInitializer {
 			admin.setRegistrationCompleted(Boolean.TRUE);
 			admin.getRoles().add(adminRole);
 			userRepository.save(admin);
-			log.info("[init] Usuario admin inicial criado: login={} (senha vinda de APP_ADMIN_PASSWORD)",
+			log.info("[init] Usuário admin inicial criado: login={} (senha vinda de APP_ADMIN_PASSWORD)",
 					DEFAULT_ADMIN_LOGIN);
 		}
 		return adminRole;

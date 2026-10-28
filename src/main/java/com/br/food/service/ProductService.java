@@ -62,7 +62,7 @@ public class ProductService {
 	@Transactional(readOnly = true)
 	public Product findById(Long id) {
 		return productRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Produto nao encontrado para o id " + id + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Produto não encontrado para o id " + id + "."));
 	}
 
 	@Transactional(readOnly = true)
@@ -199,10 +199,10 @@ public class ProductService {
 			throw new DataIntegrityViolationException("Apenas produtos marcados como complemento podem ser vinculados.");
 		}
 		if (!Boolean.TRUE.equals(complement.getActive())) {
-			throw new DataIntegrityViolationException("Complementos inativos nao podem ser vinculados.");
+			throw new DataIntegrityViolationException("Complementos inativos não podem ser vinculados.");
 		}
 		if (productId.equals(complementId)) {
-			throw new DataIntegrityViolationException("Um produto nao pode ser complemento de si mesmo.");
+			throw new DataIntegrityViolationException("Um produto não pode ser complemento de si mesmo.");
 		}
 
 		boolean alreadyLinked = product.getComplements().stream()
@@ -231,7 +231,7 @@ public class ProductService {
 		productRepository.findAll().stream().filter(product -> product.getCode().equalsIgnoreCase(code))
 				.filter(product -> currentId == null || !product.getId().equals(currentId)).findFirst()
 				.ifPresent(product -> {
-					throw new DataIntegrityViolationException("Ja existe um produto utilizando o codigo " + code + ".");
+					throw new DataIntegrityViolationException("Já existe um produto utilizando o código " + code + ".");
 				});
 	}
 
@@ -247,7 +247,7 @@ public class ProductService {
 	private void validateVariationGroups(ProductRequest request) {
 		if (request.getType() != ProductType.FINISHED) {
 			if (!request.getVariationGroups().isEmpty()) {
-				throw new DataIntegrityViolationException("Apenas produtos finais podem ter grupos de variacao.");
+				throw new DataIntegrityViolationException("Apenas produtos finais podem ter grupos de variação.");
 			}
 			return;
 		}
@@ -256,19 +256,19 @@ public class ProductService {
 		for (com.br.food.request.ProductVariationGroupRequest group : request.getVariationGroups()) {
 			String normalizedTitle = group.getTitle().trim().toLowerCase();
 			if (normalizedTitles.contains(normalizedTitle)) {
-				throw new DataIntegrityViolationException("Os titulos dos grupos de variacao precisam ser unicos por produto.");
+				throw new DataIntegrityViolationException("Os títulos dos grupos de variação precisam ser únicos por produto.");
 			}
 			normalizedTitles.add(normalizedTitle);
 
 			if (group.getVariations().isEmpty()) {
-				throw new DataIntegrityViolationException("O grupo de variacao \"" + group.getTitle() + "\" precisa ter ao menos uma opcao.");
+				throw new DataIntegrityViolationException("O grupo de variação \"" + group.getTitle() + "\" precisa ter ao menos uma opção.");
 			}
 
 			List<String> normalizedNames = new ArrayList<>();
 			for (com.br.food.request.ProductVariationRequest variation : group.getVariations()) {
 				String normalizedName = variation.getName().trim().toLowerCase();
 				if (normalizedNames.contains(normalizedName)) {
-					throw new DataIntegrityViolationException("Os nomes das variacoes precisam ser unicos dentro do grupo \"" + group.getTitle() + "\".");
+					throw new DataIntegrityViolationException("Os nomes das variações precisam ser únicos dentro do grupo \"" + group.getTitle() + "\".");
 				}
 				normalizedNames.add(normalizedName);
 			}
@@ -285,7 +285,7 @@ public class ProductService {
 				.collect(java.util.stream.Collectors.toCollection(ArrayList::new));
 
 		if (categories.size() != categoryIds.stream().distinct().count()) {
-			throw new DataIntegrityViolationException("Uma ou mais categorias do produto sao invalidas ou estao inativas.");
+			throw new DataIntegrityViolationException("Uma ou mais categorias do produto são inválidas ou estão inativas.");
 		}
 
 		return categories;

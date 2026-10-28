@@ -100,13 +100,13 @@ public class DiningTableService {
 	@Transactional(readOnly = true)
 	public DiningTable findById(Long id) {
 		return diningTableRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Mesa nao encontrada para o id " + id + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Mesa não encontrada para o id " + id + "."));
 	}
 
 	@Transactional(readOnly = true)
 	public DiningTable findByNumber(String number) {
 		return diningTableRepository.findByNumber(number)
-				.orElseThrow(() -> new EntityNotFoundException("Mesa nao encontrada para o numero " + number + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Mesa não encontrada para o número " + number + "."));
 	}
 
 	@Transactional(readOnly = true)
@@ -169,7 +169,7 @@ public class DiningTableService {
 	public String generateAccessToken(String tableNumber) {
 		DiningTable table = findByNumber(tableNumber);
 		if (!Boolean.TRUE.equals(table.getActive())) {
-			throw new EntityNotFoundException("Mesa nao disponivel para o numero " + tableNumber + ".");
+			throw new EntityNotFoundException("Mesa não disponível para o número " + tableNumber + ".");
 		}
 		return tableAccessTokenService.generate(table.getNumber(), table.getAccessVersion());
 	}
@@ -193,9 +193,9 @@ public class DiningTableService {
 	public DiningTable findByAccessToken(String token) {
 		TableAccessClaims claims = tableAccessTokenService.resolve(token);
 		DiningTable table = diningTableRepository.findByNumber(claims.tableNumber())
-				.orElseThrow(() -> new org.springframework.security.access.AccessDeniedException("Token de acesso da mesa invalido."));
+				.orElseThrow(() -> new org.springframework.security.access.AccessDeniedException("Token de acesso da mesa inválido."));
 		if (table.getAccessVersion() != claims.version() || !Boolean.TRUE.equals(table.getActive())) {
-			throw new org.springframework.security.access.AccessDeniedException("Token de acesso da mesa invalido.");
+			throw new org.springframework.security.access.AccessDeniedException("Token de acesso da mesa inválido.");
 		}
 		return table;
 	}
@@ -276,14 +276,14 @@ public class DiningTableService {
 	private void validateTableNumberUniqueness(String number, Long currentTableId) {
 		diningTableRepository.findByNumber(number).ifPresent(existingTable -> {
 			if (currentTableId == null || !existingTable.getId().equals(currentTableId)) {
-				throw new DataIntegrityViolationException("Ja existe uma mesa utilizando o numero " + number + ".");
+				throw new DataIntegrityViolationException("Já existe uma mesa utilizando o número " + number + ".");
 			}
 		});
 	}
 
 	private String normalizeTableNumber(String number) {
 		if (number == null || number.isBlank()) {
-			throw new DataIntegrityViolationException("Informe o numero da mesa.");
+			throw new DataIntegrityViolationException("Informe o número da mesa.");
 		}
 
 		return number.trim();

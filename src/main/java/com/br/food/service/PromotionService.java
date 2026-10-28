@@ -32,7 +32,7 @@ public class PromotionService {
 	@Transactional(readOnly = true)
 	public Promotion findById(Long id) {
 		return promotionRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Promocao nao encontrada para o id " + id + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Promoção não encontrada para o id " + id + "."));
 	}
 
 	@Transactional(readOnly = true)
@@ -77,7 +77,7 @@ public class PromotionService {
 				.toList();
 
 		if (products.size() != productIds.stream().distinct().count()) {
-			throw new DataIntegrityViolationException("Um ou mais produtos selecionados para a promocao sao invalidos.");
+			throw new DataIntegrityViolationException("Um ou mais produtos selecionados para a promoção são inválidos.");
 		}
 
 		return products;
@@ -87,7 +87,7 @@ public class PromotionService {
 		boolean hasOldPrice = request.getOldPrice() != null;
 		boolean hasNewPrice = request.getNewPrice() != null;
 		if (hasOldPrice != hasNewPrice) {
-			throw new DataIntegrityViolationException("O preco antigo e o novo precisam ser informados juntos.");
+			throw new DataIntegrityViolationException("O preço antigo e o novo precisam ser informados juntos.");
 		}
 	}
 }

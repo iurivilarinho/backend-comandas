@@ -41,7 +41,7 @@ public class PushController {
 		return ResponseEntity.ok(new PushPublicKeyResponse(pushNotificationService.getPublicKey()));
 	}
 
-	@Operation(summary = "Registra subscription do navegador (cliente ou cozinha)", description = "Topico do cliente: o proprio cliente (X-Customer-Token) ou a equipe. Demais topicos: so a equipe.")
+	@Operation(summary = "Registra subscription do navegador (cliente ou cozinha)", description = "Tópico do cliente: o próprio cliente (X-Customer-Token) ou a equipe. Demais tópicos: so a equipe.")
 	@PostMapping("/subscriptions")
 	public ResponseEntity<Void> subscribe(@Valid @RequestBody PushSubscriptionRequest request,
 			@RequestHeader(name = PortalAccessService.CUSTOMER_TOKEN_HEADER, required = false) String customerToken) {
@@ -70,7 +70,7 @@ public class PushController {
 		return ResponseEntity.noContent().build();
 	}
 
-	@Operation(summary = "Diagnostico de push: VAPID, contagem por topico e subscription deste dispositivo")
+	@Operation(summary = "Diagnóstico de push: VAPID, contagem por tópico e subscription deste dispositivo")
 	@GetMapping("/diagnostics")
 	public ResponseEntity<PushDiagnosticsResponse> diagnostics(
 			@RequestParam(value = "endpoint", required = false) String endpoint) {

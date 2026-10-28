@@ -18,25 +18,25 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "tbRecoveryPassword")
-@Schema(name = "RecoveryPassword", description = "Entidade que armazena cÃ³digos de recuperaÃ§Ã£o de senha e sua expiraÃ§Ã£o para um usuÃ¡rio.")
+@Schema(name = "RecoveryPassword", description = "Entidade que armazena códigos de recuperação de senha e sua expiração para um usuário.")
 public class RecoveryPassword {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Schema(description = "Codigo de recuperacao: 4 digitos no esqueci-minha-senha, 12 caracteres no link de definir senha.", example = "1234")
+	@Schema(description = "Código de recuperação: 4 dígitos no esqueci-minha-senha, 12 caracteres no link de definir senha.", example = "1234")
 	private Long id;
 
 	@Column(length = 16, nullable = false)
-	@Schema(description = "CÃ³digo de recuperaÃ§Ã£o com 4 dÃ­gitos.", example = "1234")
+	@Schema(description = "Código de recuperação com 4 dígitos.", example = "1234")
 	private String code;
 
 	@Column(nullable = false)
-	@Schema(description = "Data/hora de expiraÃ§Ã£o do cÃ³digo.", example = "2026-02-10T23:59:59")
+	@Schema(description = "Data/hora de expiração do código.", example = "2026-02-10T23:59:59")
 	private LocalDateTime expirationDate;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "fk_Id_User", nullable = false, foreignKey = @ForeignKey(name = "FK_FROM_TBRECOVERYPASSWORD_FOR_TBUSER"))
-	@Schema(description = "UsuÃ¡rio associado ao cÃ³digo de recuperaÃ§Ã£o.")
+	@Schema(description = "Usuário associado ao código de recuperação.")
 	private User user;
 
 	public RecoveryPassword() {

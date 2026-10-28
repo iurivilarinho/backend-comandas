@@ -24,7 +24,7 @@ public class ProductCategoryService {
 	@Transactional(readOnly = true)
 	public ProductCategory findById(Long id) {
 		return productCategoryRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Categoria de produto nao encontrada para o id " + id + "."));
+				.orElseThrow(() -> new EntityNotFoundException("Categoria de produto não encontrada para o id " + id + "."));
 	}
 
 	@Transactional(readOnly = true)

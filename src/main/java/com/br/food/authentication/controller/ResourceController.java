@@ -49,7 +49,7 @@ public class ResourceController {
 
 	@Operation(summary = "Buscar recurso por ID", description = "Retorna um recurso pelo identificador.")
 	@ApiResponse(responseCode = "200", description = "Recurso encontrado com sucesso.")
-	@ApiResponse(responseCode = "404", description = "Recurso nÃ£o encontrado.")
+	@ApiResponse(responseCode = "404", description = "Recurso não encontrado.")
 	@GetMapping("/{id}")
 	public ResponseEntity<ResourceResponse> findById(@PathVariable Long id) {
 		Resource resource = resourceService.findById(id);
@@ -58,7 +58,7 @@ public class ResourceController {
 
 	@Operation(summary = "Criar recurso", description = "Cria um novo recurso.")
 	@ApiResponse(responseCode = "201", description = "Recurso criado com sucesso.")
-	@ApiResponse(responseCode = "400", description = "Payload invÃ¡lido.")
+	@ApiResponse(responseCode = "400", description = "Payload inválido.")
 	@PostMapping
 	public ResponseEntity<ResourceResponse> create(@Valid @RequestBody ResourceRequest payload) {
 		Resource created = resourceService.create(payload);
@@ -67,7 +67,7 @@ public class ResourceController {
 
 	@Operation(summary = "Atualizar recurso", description = "Atualiza um recurso existente.")
 	@ApiResponse(responseCode = "200", description = "Recurso atualizado com sucesso.")
-	@ApiResponse(responseCode = "404", description = "Recurso nÃ£o encontrado.")
+	@ApiResponse(responseCode = "404", description = "Recurso não encontrado.")
 	@PutMapping("/{id}")
 	public ResponseEntity<ResourceResponse> update(@PathVariable Long id, @Valid @RequestBody ResourceRequest payload) {
 		Resource updated = resourceService.update(id, payload);

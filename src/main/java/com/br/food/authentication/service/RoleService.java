@@ -33,13 +33,13 @@ public class RoleService {
 	@Transactional(readOnly = true)
 	public Role findById(Long id) {
 		return roleRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Perfil nÃ£o encontrado para ID: " + id));
+				.orElseThrow(() -> new EntityNotFoundException("Perfil não encontrado para ID: " + id));
 	}
 
 	@Transactional(readOnly = true)
 	public Role findByName(String name) {
 		return roleRepository.findByNameIgnoreCase(name)
-				.orElseThrow(() -> new EntityNotFoundException("Perfil nÃ£o encontrado para nome: " + name));
+				.orElseThrow(() -> new EntityNotFoundException("Perfil não encontrado para nome: " + name));
 	}
 
 	@Transactional(readOnly = true)

@@ -18,7 +18,7 @@ public final class TokenUtil {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
-    /** Hash do refresh para persistir com seguranÃ§a (nÃ£o salvar o raw no banco) */
+    /** Hash do refresh para persistir com segurança (não salvar o raw no banco) */
     public static String sha256(String value) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");

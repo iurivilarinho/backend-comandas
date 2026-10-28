@@ -105,7 +105,7 @@ class DeliveryOrderServiceTest {
 				DataIntegrityViolationException.class,
 				() -> orderService.createFromDigitalMenu(request));
 
-		assertEquals("Pedidos pelo cardapio digital estao desativados.", exception.getMessage());
+		assertEquals("Pedidos pelo cardápio digital estão desativados.", exception.getMessage());
 	}
 
 	@Test
@@ -122,7 +122,7 @@ class DeliveryOrderServiceTest {
 				DataIntegrityViolationException.class,
 				() -> orderService.createFromDigitalMenu(request));
 
-		assertEquals("Pedidos de entrega estao desativados.", exception.getMessage());
+		assertEquals("Pedidos de entrega estão desativados.", exception.getMessage());
 	}
 
 	@Test
@@ -139,7 +139,7 @@ class DeliveryOrderServiceTest {
 				DataIntegrityViolationException.class,
 				() -> orderService.createFromDigitalMenu(request));
 
-		assertEquals("Pedidos para retirada estao desativados.", exception.getMessage());
+		assertEquals("Pedidos para retirada estão desativados.", exception.getMessage());
 	}
 
 	@Test
@@ -182,7 +182,7 @@ class DeliveryOrderServiceTest {
 				DataIntegrityViolationException.class,
 				() -> orderService.create(request, "tester"));
 
-		assertEquals("Pedidos de entrega exigem cliente com endereco cadastrado.", exception.getMessage());
+		assertEquals("Pedidos de entrega exigem cliente com endereço cadastrado.", exception.getMessage());
 	}
 
 	@Test
@@ -198,7 +198,7 @@ class DeliveryOrderServiceTest {
 				DataIntegrityViolationException.class,
 				() -> orderService.create(request, "tester"));
 
-		assertEquals("Clientes bloqueados nao podem abrir novos pedidos.", exception.getMessage());
+		assertEquals("Clientes bloqueados não podem abrir novos pedidos.", exception.getMessage());
 	}
 
 	@Test
@@ -299,7 +299,7 @@ class DeliveryOrderServiceTest {
 				DataIntegrityViolationException.class,
 				() -> orderService.create(request, "tester"));
 
-		assertEquals("Informe o numero da mesa para pedidos no salao.", exception.getMessage());
+		assertEquals("Informe o número da mesa para pedidos no salão.", exception.getMessage());
 	}
 
 	@Test
@@ -328,7 +328,7 @@ class DeliveryOrderServiceTest {
 				DataIntegrityViolationException.class,
 				() -> orderService.addItemsFromDigitalMenu(1L, List.of(buildItemRequest())));
 
-		assertEquals("Pedidos pelo cardapio digital estao desativados.", exception.getMessage());
+		assertEquals("Pedidos pelo cardápio digital estão desativados.", exception.getMessage());
 	}
 
 	@Test
@@ -380,7 +380,7 @@ class DeliveryOrderServiceTest {
 				DataIntegrityViolationException.class,
 				() -> orderService.requestCheckout(42L, request, "tester"));
 
-		assertEquals("Pedidos fechados ou cancelados nao podem solicitar a conta.", exception.getMessage());
+		assertEquals("Pedidos fechados ou cancelados não podem solicitar a conta.", exception.getMessage());
 	}
 
 	@Test
@@ -456,7 +456,7 @@ class DeliveryOrderServiceTest {
 		address.setNumber("123");
 		address.setDistrict("Centro");
 		address.setPostalCode("12345-678");
-		address.setCity("Sao Paulo");
+		address.setCity("São Paulo");
 		address.setStatus(Boolean.TRUE);
 		return address;
 	}

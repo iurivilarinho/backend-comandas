@@ -38,7 +38,7 @@ public class RecipeService {
 				recipeItemRepository.deleteByFinalProductId(productId);
 				return List.of();
 			}
-			throw new DataIntegrityViolationException("Receitas so podem ser vinculadas a produtos finais.");
+			throw new DataIntegrityViolationException("Receitas só podem ser vinculadas a produtos finais.");
 		}
 
 		recipeItemRepository.deleteByFinalProductId(productId);

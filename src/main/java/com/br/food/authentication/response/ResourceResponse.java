@@ -8,15 +8,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Resposta completa do recurso.")
 public record ResourceResponse(
 
-		@Schema(description = "Identificador Ãºnico do recurso.", example = "1") Long id,
+		@Schema(description = "Identificador único do recurso.", example = "1") Long id,
 
 		@Schema(description = "Tipo do recurso.", example = "SCREEN") ResourceType type,
 
-		@Schema(description = "ReferÃªncia do componente no front-end.", example = "users.list.table") String componentReference,
+		@Schema(description = "Referência do componente no front-end.", example = "users.list.table") String componentReference,
 
-		@Schema(description = "TÃ­tulo do recurso.", example = "Listar usuÃ¡rios") String title,
+		@Schema(description = "Título do recurso.", example = "Listar usuários") String title,
 
-		@Schema(description = "DescriÃ§Ã£o do recurso.", example = "Permite visualizar a listagem de usuÃ¡rios.") String description,
+		@Schema(description = "Descrição do recurso.", example = "Permite visualizar a listagem de usuários.") String description,
 
 		@Schema(description = "Status do recurso (ativo/inativo).", example = "true") Boolean active
 

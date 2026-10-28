@@ -5,7 +5,7 @@ import com.br.food.authentication.models.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public class RoleBasicResponse {
-	@Schema(description = "Identificador Ãºnico do perfil.", example = "1")
+	@Schema(description = "Identificador único do perfil.", example = "1")
 	private Long id;
 
 	@Schema(description = "Nome do perfil.", example = "ROLE_ADMIN")

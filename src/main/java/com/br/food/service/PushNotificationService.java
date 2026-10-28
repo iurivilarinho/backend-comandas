@@ -190,13 +190,13 @@ public class PushNotificationService {
 					"VAPID keys ausentes — push desativado.", null, null);
 		}
 		if (endpoint == null || endpoint.isBlank()) {
-			return new PushTestResponse(false, null, "Endpoint nao informado.", null, null);
+			return new PushTestResponse(false, null, "Endpoint não informado.", null, null);
 		}
 
 		List<PushSubscription> records = subscriptionRepository.findByEndpoint(endpoint);
 		if (records.isEmpty()) {
 			return new PushTestResponse(false, null,
-					"Subscription nao encontrada no servidor para este dispositivo.", null, null);
+					"Subscription não encontrada no servidor para este dispositivo.", null, null);
 		}
 		// Mesmo endpoint pode ter varias topics; chaves de criptografia sao as mesmas,
 		// entao qualquer record serve para enviar o push de teste.
@@ -205,8 +205,8 @@ public class PushNotificationService {
 		String payload;
 		try {
 			payload = objectMapper.writeValueAsString(Map.of(
-					"title", "Teste de notificacao",
-					"body", "Se voce esta vendo isso, o push chegou neste dispositivo.",
+					"title", "Teste de notificação",
+					"body", "Se você está vendo isso, o push chegou neste dispositivo.",
 					"url", "/admin/diagnostico"));
 		} catch (Exception exception) {
 			log.error("[push] falha serializando payload de teste", exception);

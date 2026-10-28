@@ -245,7 +245,7 @@ class TenantIsolationIntegrationTest {
 	@Order(8)
 	void onlyTheAdministratorOfTheTenantManagesItsAddress() {
 		inTenant(ZIL, () -> app.bean(UserRepository.class)
-				.save(new User("Garcom", null, "garcom", "Garcom@1234pw", "garcom@example.com", null)));
+				.save(new User("Garçom", null, "garcom", "Garcom@1234pw", "garcom@example.com", null)));
 		Reply waiter = call("POST", ZIL, "/auth/login", Map.of("login", "garcom", "password", "Garcom@1234pw"), null);
 		assertThat(waiter.status()).isEqualTo(200);
 

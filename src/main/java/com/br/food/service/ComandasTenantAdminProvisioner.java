@@ -53,7 +53,7 @@ public class ComandasTenantAdminProvisioner implements TenantAdminProvisioner {
 			passwordRecoveryService.sendSetPasswordLink(admin, request.accessUrl(), request.tenantName());
 		} catch (RuntimeException exception) {
 			// The tenant must exist even when the mail server is down: the administrator can use "forgot my password".
-			log.warn("[tenant:{}] Nao foi possivel enviar o link de definir senha: {}", request.slug(),
+			log.warn("[tenant:{}] Não foi possível enviar o link de definir senha: {}", request.slug(),
 					exception.getMessage());
 		}
 	}

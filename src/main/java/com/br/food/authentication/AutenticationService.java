@@ -25,7 +25,7 @@ public class AutenticationService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByLogin(username)
-                .orElseThrow(() -> new EntityNotFoundException("UsuÃ¡rio nÃ£o encontrado para o login: " + username));
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o login: " + username));
         if (handleValidCredentialUser(user)) {
             throw new AccessDeniedException(
                     "Senha expirada. Por favor, altere sua senha na opção 'Esqueci minha senha'.");

@@ -14,39 +14,39 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-@Schema(description = "PermissÃµes de um role para um recurso (CRUD).")
+@Schema(description = "Permissões de um role para um recurso (CRUD).")
 @Entity
 @Table(name = "permission_resources", uniqueConstraints = @UniqueConstraint(columnNames = { "fk_Id_Role",
 		"fk_Id_Resource" }))
 public class PermissionResource {
 
-	@Schema(description = "Identificador Ãºnico do registro de permissÃ£o.", example = "1")
+	@Schema(description = "Identificador único do registro de permissão.", example = "1")
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Schema(description = "Recurso ao qual as permissÃµes se aplicam.")
+	@Schema(description = "Recurso ao qual as permissões se aplicam.")
 	@JsonIgnore
 	@ManyToOne
 	@JoinColumn(name = "fk_Id_Resource", foreignKey = @ForeignKey(name = "FK_FROM_TBRESOURCE_FOR_TBPERMISSIONRESOURCE"))
 	private Resource resource;
 
-	@Schema(description = "Role ao qual as permissÃµes pertencem.")
+	@Schema(description = "Role ao qual as permissões pertencem.")
 	@JsonIgnore
 	@ManyToOne
 	@JoinColumn(name = "fk_Id_Role", foreignKey = @ForeignKey(name = "FK_FROM_TBROLE_FOR_TBPERMISSIONRESOURCE"))
 	private Role role;
 
-	@Schema(description = "PermissÃ£o para criar.", example = "true")
+	@Schema(description = "Permissão para criar.", example = "true")
 	private Boolean canCreate;
 
-	@Schema(description = "PermissÃ£o para ler.", example = "true")
+	@Schema(description = "Permissão para ler.", example = "true")
 	private Boolean canRead;
 
-	@Schema(description = "PermissÃ£o para atualizar.", example = "true")
+	@Schema(description = "Permissão para atualizar.", example = "true")
 	private Boolean canUpdate;
 
-	@Schema(description = "PermissÃ£o para excluir.", example = "false")
+	@Schema(description = "Permissão para excluir.", example = "false")
 	private Boolean canDelete;
 
 	protected PermissionResource() {

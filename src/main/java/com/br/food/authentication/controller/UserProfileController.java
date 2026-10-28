@@ -17,7 +17,7 @@ import jakarta.persistence.EntityNotFoundException;
 @RestController
 @Validated
 @RequestMapping("/user")
-@Tag(name = "User Profile", description = "Endpoints do usuario autenticado")
+@Tag(name = "User Profile", description = "Endpoints do usuário autenticado")
 public class UserProfileController {
 
 	private final UserService userService;
@@ -26,13 +26,13 @@ public class UserProfileController {
 		this.userService = userService;
 	}
 
-	@Operation(summary = "Consultar usuario autenticado")
+	@Operation(summary = "Consultar usuário autenticado")
 	@GetMapping("/me")
 	public ResponseEntity<UserProfileResponse> me() {
 		User user = userService.findUserLoggedIn();
 
 		if (user == null) {
-			throw new EntityNotFoundException("Usuario autenticado nao encontrado.");
+			throw new EntityNotFoundException("Usuário autenticado não encontrado.");
 		}
 
 		return ResponseEntity.ok(new UserProfileResponse(user));

@@ -17,12 +17,12 @@ import jakarta.validation.constraints.NotNull;
 @Schema(description = "Order payload")
 public class OrderRequest {
 
-	@Schema(description = "Cliente vinculado ao pedido. Opcional para pedidos criados pelo garcom no painel admin; obrigatorio em pedidos do cardapio digital.")
+	@Schema(description = "Cliente vinculado ao pedido. Opcional para pedidos criados pelo garçom no painel admin; obrigatório em pedidos do cardápio digital.")
 	private Long customerId;
 
 	private String tableNumber;
 
-	@Schema(description = "Token do QR code da mesa. Obrigatorio em pedido de consumo no local feito pelo cardapio digital; a mesa vem do token e o numero informado e ignorado.")
+	@Schema(description = "Token do QR code da mesa. Obrigatório em pedido de consumo no local feito pelo cardápio digital; a mesa vem do token e o número informado e ignorado.")
 	private String tableAccessToken;
 
 	@NotNull(message = "Order channel is required.")

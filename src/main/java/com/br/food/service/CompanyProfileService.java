@@ -108,7 +108,7 @@ public class CompanyProfileService {
 //				throw new DataIntegrityViolationException("Close time must be after open time.");
 //			}
 			if (!dayOfWeeks.add(openingHour.getDayOfWeek())) {
-				throw new DataIntegrityViolationException("Apenas um horario de funcionamento por dia da semana e permitido.");
+				throw new DataIntegrityViolationException("Apenas um horário de funcionamento por dia da semana e permitido.");
 			}
 		}
 	}

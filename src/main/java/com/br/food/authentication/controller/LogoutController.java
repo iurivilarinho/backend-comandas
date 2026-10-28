@@ -22,7 +22,7 @@ public class LogoutController {
         this.refreshService = refreshService;
     }
 
-    @Operation(summary = "Logout", description = "Revoga o refresh token atual e apaga cookies de autenticaÃ§Ã£o.")
+    @Operation(summary = "Logout", description = "Revoga o refresh token atual e apaga cookies de autenticação.")
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
         boolean secure = isSecureRequest(request);

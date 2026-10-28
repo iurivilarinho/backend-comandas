@@ -14,12 +14,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
-@Schema(description = "Recurso do sistema vinculado a uma tela, utilizado no controle de permissÃµes.")
+@Schema(description = "Recurso do sistema vinculado a uma tela, utilizado no controle de permissões.")
 @Entity
 @Table(name = "resources")
 public class Resource {
 
-	@Schema(description = "Identificador Ãºnico do recurso.", example = "1")
+	@Schema(description = "Identificador único do recurso.", example = "1")
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -29,11 +29,11 @@ public class Resource {
 	@Column(name = "type")
 	private ResourceType type;
 
-	@Schema(description = "ReferÃªncia do componente no front-end.", example = "users.list.table")
+	@Schema(description = "Referência do componente no front-end.", example = "users.list.table")
 	@Column(name = "componenteReference")
 	private String componentReference;
 
-	@Schema(description = "TÃ­tulo do recurso.", example = "Listar usuÃ¡rios")
+	@Schema(description = "Título do recurso.", example = "Listar usuários")
 	@Column(name = "title")
 	private String title;
 
@@ -41,7 +41,7 @@ public class Resource {
 	@Column(name = "status")
 	private Boolean active;
 
-	@Schema(description = "DescriÃ§Ã£o do recurso.", example = "Permite visualizar a listagem de usuÃ¡rios.")
+	@Schema(description = "Descrição do recurso.", example = "Permite visualizar a listagem de usuários.")
 	@Column(name = "description")
 	private String description;
 

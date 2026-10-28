@@ -38,74 +38,74 @@ import jakarta.persistence.UniqueConstraint;
 @Entity
 @Table(name = "users", indexes = { @Index(name = "login", columnList = "login"),
 		@Index(name = "google_subject", columnList = "google_subject") }, uniqueConstraints = @UniqueConstraint(name = "cpf", columnNames = "cpf"))
-@Schema(name = "User", description = "Entidade que representa um usuario do sistema.")
+@Schema(name = "User", description = "Entidade que representa um usuário do sistema.")
 public class User implements UserDetails {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Schema(description = "Identificador unico do usuario.", example = "1")
+	@Schema(description = "Identificador único do usuário.", example = "1")
 	private Long id;
 
 	@Column(length = 100, nullable = false)
-	@Schema(description = "Nome completo do usuario.", example = "Samuel Rocha Oliveira")
+	@Schema(description = "Nome completo do usuário.", example = "Samuel Rocha Oliveira")
 	private String name;
 
 	@Column(length = 14)
-	@Schema(description = "CPF do usuario.", example = "12345678901")
+	@Schema(description = "CPF do usuário.", example = "12345678901")
 	private String cpf;
 
 	@Column(length = 100, nullable = false)
-	@Schema(description = "Login utilizado para autenticacao no sistema.", example = "samuel.oliveira")
+	@Schema(description = "Login utilizado para autenticação no sistema.", example = "samuel.oliveira")
 	private String login;
 
 	@JsonIgnore
 	@Column(length = 200, nullable = false)
-	@Schema(description = "Senha criptografada do usuario.", accessMode = Schema.AccessMode.READ_ONLY)
+	@Schema(description = "Senha criptografada do usuário.", accessMode = Schema.AccessMode.READ_ONLY)
 	private String password;
 
 	@Column(name = "password_last_changed", nullable = false)
-	@Schema(description = "Data e hora da ultima alteracao de senha.", example = "2026-02-08T18:06:02")
+	@Schema(description = "Data e hora da última alteração de senha.", example = "2026-02-08T18:06:02")
 	private LocalDateTime passwordLastChanged;
 
 	@Column(name = "force_password_change", nullable = false)
-	@Schema(description = "Indica se o usuario deve alterar a senha no proximo acesso.", example = "false")
+	@Schema(description = "Indica se o usuário deve alterar a senha no próximo acesso.", example = "false")
 	private boolean forcePasswordChange = false;
 
 	@Column(length = 100)
-	@Schema(description = "E-mail do usuario.", example = "samuel.oliveira@empresa.com")
+	@Schema(description = "E-mail do usuário.", example = "samuel.oliveira@empresa.com")
 	private String email;
 
-	@Schema(description = "Telefone corporativo do usuario.", example = "31999999999")
+	@Schema(description = "Telefone corporativo do usuário.", example = "31999999999")
 	private String cellphoneCorporate;
 
 	@Column(name = "google_subject", length = 100)
-	@Schema(description = "Identificador estavel do usuario no Google.", example = "114572938475629384756")
+	@Schema(description = "Identificador estável do usuário no Google.", example = "114572938475629384756")
 	private String googleSubject;
 
 	@Column(name = "registration_completed", nullable = false)
-	@Schema(description = "Indica se o cadastro obrigatorio do usuario ja foi finalizado.", example = "true")
+	@Schema(description = "Indica se o cadastro obrigatório do usuário já foi finalizado.", example = "true")
 	private Boolean registrationCompleted;
 
 	@JsonIgnore
 	@ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	@JoinColumn(name = "fk_Id_Image", foreignKey = @ForeignKey(name = "FK_FROM_TBDOCUMENT_FOR_TBUSER"))
-	@Schema(description = "Imagem de perfil associada ao usuario.")
+	@Schema(description = "Imagem de perfil associada ao usuário.")
 	private Document image;
 
 	@Column(name = "status")
-	@Schema(description = "Indica se o usuario esta ativo no sistema.", example = "true")
+	@Schema(description = "Indica se o usuário está ativo no sistema.", example = "true")
 	private Boolean active;
 
-	@Schema(description = "Data e hora de criacao do usuario.", example = "2026-02-08T18:06:02")
+	@Schema(description = "Data e hora de criação do usuário.", example = "2026-02-08T18:06:02")
 	private LocalDateTime createdAt;
 
 	@ManyToMany(fetch = FetchType.LAZY)
 	@JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "fk_Id_User"), inverseJoinColumns = @JoinColumn(name = "fk_Id_Role"), foreignKey = @ForeignKey(name = "FK_FROM_USER"), inverseForeignKey = @ForeignKey(name = "FK_FROM_ROLE"))
 	@Fetch(FetchMode.JOIN)
-	@Schema(description = "Perfis de acesso associados ao usuario.")
+	@Schema(description = "Perfis de acesso associados ao usuário.")
 	private Set<Role> roles = new HashSet<>();
 
-	@Schema(description = "Matricula ou registro interno do usuario.", example = "MAT-2026-001")
+	@Schema(description = "Matrícula ou registro interno do usuário.", example = "MAT-2026-001")
 	private String registration;
 
 	public User() {
@@ -297,7 +297,7 @@ public class User implements UserDetails {
 	}
 
 	@Override
-	@Schema(description = "Nome de usuario utilizado na autenticacao.", example = "samuel.oliveira")
+	@Schema(description = "Nome de usuário utilizado na autenticação.", example = "samuel.oliveira")
 	public String getUsername() {
 		return login;
 	}

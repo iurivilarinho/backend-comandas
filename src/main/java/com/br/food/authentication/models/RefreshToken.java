@@ -17,7 +17,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-@Schema(name = "RefreshToken", description = "Token de renovaÃ§Ã£o (opaco) persistido no servidor, com rotaÃ§Ã£o e revogaÃ§Ã£o")
+@Schema(name = "RefreshToken", description = "Token de renovação (opaco) persistido no servidor, com rotação e revogação")
 @Entity
 @Table(name = "refresh_tokens", indexes = {@Index(name = "IDX_RT_TOKENHASH", columnList = "tokenHash", unique = true), @Index(name = "IDX_RT_USER", columnList = "fk_Id_User")})
 public class RefreshToken {
@@ -27,24 +27,24 @@ public class RefreshToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Schema(description = "UsuÃ¡rio dono do refresh token")
+    @Schema(description = "Usuário dono do refresh token")
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_Id_User", nullable = false, foreignKey = @ForeignKey(name = "FK_FROM_TBUSER_FOR_TBREFRESHTOKEN"))
     private User user;
 
-    @Schema(description = "Hash do refresh token (valor em claro nunca Ã© persistido)", example = "yZ0iJ6... (Base64URL)")
+    @Schema(description = "Hash do refresh token (valor em claro nunca é persistido)", example = "yZ0iJ6... (Base64URL)")
     @Column(nullable = false, unique = true, length = 120)
     private String tokenHash;
 
-    @Schema(description = "Data/hora de expiraÃ§Ã£o do refresh token", example = "2025-10-10T23:59:59")
+    @Schema(description = "Data/hora de expiração do refresh token", example = "2025-10-10T23:59:59")
     @Column(nullable = false)
     private LocalDateTime expiresAt;
 
-    @Schema(description = "Flag de revogaÃ§Ã£o (true = invÃ¡lido)", example = "false")
+    @Schema(description = "Flag de revogação (true = inválido)", example = "false")
     @Column(nullable = false)
     private boolean revoked = false;
 
-    @Schema(description = "LigaÃ§Ã£o com o novo token apÃ³s rotaÃ§Ã£o (opcional)", example = "84")
+    @Schema(description = "Ligação com o novo token após rotação (opcional)", example = "84")
     private Long replacedById;
 
     @Schema(description = "User-Agent de quem recebeu o token (auditoria)", example = "Mozilla/5.0 ...")

@@ -9,7 +9,7 @@ import com.br.food.response.DocumentResponse;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(name = "UserProfileResponse", description = "Dados do perfil do usuario autenticado.")
+@Schema(name = "UserProfileResponse", description = "Dados do perfil do usuário autenticado.")
 public class UserProfileResponse {
 
 	private Long id;

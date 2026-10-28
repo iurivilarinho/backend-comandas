@@ -109,7 +109,7 @@ public class FinancialService {
 		Map<String, List<?>> sheets = new LinkedHashMap<>();
 		sheets.put("Resumo", summaryRows);
 		if (!movementRows.isEmpty()) {
-			sheets.put("Movimentacoes", movementRows);
+			sheets.put("Movimentações", movementRows);
 		}
 
 		return generatorExcel.gerarAbas(sheets).toByteArray();
@@ -188,7 +188,7 @@ public class FinancialService {
 		List<FinancialBreakdownResponse> breakdown = new ArrayList<>();
 		addBreakdownLine(breakdown, "Produtos", subtotalAmount.multiply(ratio));
 		addBreakdownLine(breakdown, "Descontos", discountAmount.multiply(ratio).negate());
-		addBreakdownLine(breakdown, "Taxa de servico", serviceFeeAmount.multiply(ratio));
+		addBreakdownLine(breakdown, "Taxa de serviço", serviceFeeAmount.multiply(ratio));
 		addBreakdownLine(breakdown, "Couvert", coverChargeAmount.multiply(ratio));
 
 		return new FinancialEntryResponse("order-payment-" + payment.getId(), FinanceOrigin.ORDER,

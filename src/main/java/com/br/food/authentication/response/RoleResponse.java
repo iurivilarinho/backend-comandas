@@ -7,13 +7,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Retorno de perfil (role).")
 public class RoleResponse {
 
-	@Schema(description = "Identificador Ãºnico do perfil.", example = "1")
+	@Schema(description = "Identificador único do perfil.", example = "1")
 	private Long id;
 
 	@Schema(description = "Nome do perfil.", example = "ROLE_ADMIN")
 	private String name;
 
-	@Schema(description = "DecriÃ§Ã£o do perfil.", example = "ROLE_ADMIN")
+	@Schema(description = "Decrição do perfil.", example = "ROLE_ADMIN")
 	private String description;
 
 	@Schema(description = "Status do perfil (ativo/inativo).", example = "true")

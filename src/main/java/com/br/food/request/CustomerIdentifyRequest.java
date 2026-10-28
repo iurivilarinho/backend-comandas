@@ -3,7 +3,7 @@ package com.br.food.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
-@Schema(description = "Dados para o cliente do cardapio digital recuperar o proprio cadastro em outro aparelho")
+@Schema(description = "Dados para o cliente do cardápio digital recuperar o próprio cadastro em outro aparelho")
 public class CustomerIdentifyRequest {
 
 	@Schema(description = "Telefone cadastrado, com ou sem mascara.", example = "31999998888", requiredMode = Schema.RequiredMode.REQUIRED)

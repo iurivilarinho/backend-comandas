@@ -46,7 +46,7 @@ public class CustomerAccessTokenService {
 			TenantClaim.requireCurrent(decoded);
 			return Long.valueOf(decoded.getSubject());
 		} catch (JWTVerificationException | NumberFormatException exception) {
-			throw new AccessDeniedException("Identificacao do cliente invalida ou expirada.");
+			throw new AccessDeniedException("Identificação do cliente inválida ou expirada.");
 		}
 	}
 }

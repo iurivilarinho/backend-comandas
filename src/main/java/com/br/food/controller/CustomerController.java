@@ -49,7 +49,7 @@ public class CustomerController {
 		this.clientRateLimiter = clientRateLimiter;
 	}
 
-	@Operation(summary = "Create customer", description = "Publico (cadastro pelo cardapio digital). A resposta traz o token do cliente.")
+	@Operation(summary = "Create customer", description = "Público (cadastro pelo cardápio digital). A resposta traz o token do cliente.")
 	@PostMapping
 	public ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerRequest request) {
 		Customer customer = customerService.create(request);
@@ -57,7 +57,7 @@ public class CustomerController {
 				.body(new CustomerResponse(customer, customerAccessTokenService.generate(customer.getId())));
 	}
 
-	@Operation(summary = "Identify customer", description = "Publico. Recupera o proprio cadastro com telefone e CPF que casam; devolve o token do cliente. Qualquer outra combinacao responde 404. No maximo 10 tentativas por minuto por endereco (429).")
+	@Operation(summary = "Identify customer", description = "Público. Recupera o próprio cadastro com telefone e CPF que casam; devolve o token do cliente. Qualquer outra combinação responde 404. No máximo 10 tentativas por minuto por endereço (429).")
 	@PostMapping("/identify")
 	public ResponseEntity<CustomerResponse> identify(@Valid @RequestBody CustomerIdentifyRequest request,
 			HttpServletRequest http) {
@@ -68,7 +68,7 @@ public class CustomerController {
 				.orElseGet(() -> ResponseEntity.notFound().build());
 	}
 
-	@Operation(summary = "Find customer by id", description = "Equipe, ou o proprio cliente com X-Customer-Token.")
+	@Operation(summary = "Find customer by id", description = "Equipe, ou o próprio cliente com X-Customer-Token.")
 	@GetMapping("/{id}")
 	public ResponseEntity<CustomerResponse> findById(@PathVariable Long id,
 			@RequestHeader(name = PortalAccessService.CUSTOMER_TOKEN_HEADER, required = false) String customerToken) {
@@ -98,7 +98,7 @@ public class CustomerController {
 		return ResponseEntity.ok(customerService.findAll(pageable).map(CustomerResponse::new));
 	}
 
-	@Operation(summary = "Update customer", description = "Equipe, ou o proprio cliente com X-Customer-Token.")
+	@Operation(summary = "Update customer", description = "Equipe, ou o próprio cliente com X-Customer-Token.")
 	@PutMapping("/{id}")
 	public ResponseEntity<CustomerResponse> update(@PathVariable Long id, @Valid @RequestBody CustomerRequest request,
 			@RequestHeader(name = PortalAccessService.CUSTOMER_TOKEN_HEADER, required = false) String customerToken) {

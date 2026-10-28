@@ -36,7 +36,7 @@ public class PermissionResourceService {
 	@Transactional(readOnly = true)
 	public PermissionResource findById(Long id) {
 		return permissionRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("PermissÃ£o nÃ£o encontrada para ID " + id));
+				.orElseThrow(() -> new EntityNotFoundException("Permissão não encontrada para ID " + id));
 	}
 
 	@Transactional

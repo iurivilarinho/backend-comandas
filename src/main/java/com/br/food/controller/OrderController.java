@@ -71,7 +71,7 @@ public class OrderController {
 		return ResponseEntity.ok(new OrderResponse(order));
 	}
 
-	@Operation(summary = "Search orders", description = "Equipe. O cliente do cardapio digital so lista os proprios pedidos (X-Customer-Token).")
+	@Operation(summary = "Search orders", description = "Equipe. O cliente do cardápio digital só lista os próprios pedidos (X-Customer-Token).")
 	@GetMapping
 	public ResponseEntity<Page<OrderResponse>> findAll(
 			@RequestParam(required = false) OrderStatus status,

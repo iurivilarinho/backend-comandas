@@ -28,7 +28,7 @@ public class ResourceService {
 	@Transactional(readOnly = true)
 	public Resource findById(Long id) {
 		return resourceRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Recurso nÃ£o encontrado para ID " + id));
+				.orElseThrow(() -> new EntityNotFoundException("Recurso não encontrado para ID " + id));
 	}
 
 	@Transactional

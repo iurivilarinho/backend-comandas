@@ -19,7 +19,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/auth/password-recovery")
-@Tag(name = "RecuperaÃ§Ã£o de Senha", description = "Endpoints para envio e validaÃ§Ã£o de cÃ³digo e redefiniÃ§Ã£o de senha.")
+@Tag(name = "Recuperação de Senha", description = "Endpoints para envio e validação de código e redefinição de senha.")
 public class PasswordRecoveryController {
 
 	private final PasswordRecoveryService passwordRecoveryService;
@@ -29,27 +29,27 @@ public class PasswordRecoveryController {
 	}
 
 	@PostMapping("/send")
-	@Operation(summary = "Enviar cÃ³digo de recuperaÃ§Ã£o por e-mail", description = "Gera um cÃ³digo de 4 dÃ­gitos e envia para o e-mail informado.")
-	@ApiResponse(responseCode = "204", description = "E-mail de recuperaÃ§Ã£o enviado com sucesso.")
-	@ApiResponse(responseCode = "403", description = "NÃ£o foi possÃ­vel enviar o e-mail de recuperaÃ§Ã£o.", content = @Content)
+	@Operation(summary = "Enviar código de recuperação por e-mail", description = "Gera um código de 4 dígitos e envia para o e-mail informado.")
+	@ApiResponse(responseCode = "204", description = "E-mail de recuperação enviado com sucesso.")
+	@ApiResponse(responseCode = "403", description = "Não foi possível enviar o e-mail de recuperação.", content = @Content)
 	public ResponseEntity<Void> send(@RequestBody SendRecoveryEmailRequest body) {
 		passwordRecoveryService.sendRecoveryEmail(body.getEmail());
 		return ResponseEntity.noContent().build();
 	}
 
 	@PostMapping("/validate")
-	@Operation(summary = "Validar cÃ³digo de recuperaÃ§Ã£o", description = "Valida se o cÃ³digo informado estÃ¡ correto e dentro do prazo de expiraÃ§Ã£o para o e-mail.")
-	@ApiResponse(responseCode = "204", description = "CÃ³digo vÃ¡lido.")
-	@ApiResponse(responseCode = "403", description = "CÃ³digo invÃ¡lido ou expirado.", content = @Content)
+	@Operation(summary = "Validar código de recuperação", description = "Valida se o código informado está correto e dentro do prazo de expiração para o e-mail.")
+	@ApiResponse(responseCode = "204", description = "Código válido.")
+	@ApiResponse(responseCode = "403", description = "Código inválido ou expirado.", content = @Content)
 	public ResponseEntity<Void> validate(@RequestBody ValidateRecoveryCodeRequest body) {
 		passwordRecoveryService.validateCode(body.getCode(), body.getEmail());
 		return ResponseEntity.noContent().build();
 	}
 
 	@PostMapping("/reset")
-	@Operation(summary = "Redefinir senha", description = "Redefine a senha do usuÃ¡rio apÃ³s validar o cÃ³digo informado.")
+	@Operation(summary = "Redefinir senha", description = "Redefine a senha do usuário após validar o código informado.")
 	@ApiResponse(responseCode = "204", description = "Senha redefinida com sucesso.")
-	@ApiResponse(responseCode = "403", description = "CÃ³digo invÃ¡lido ou expirado.", content = @Content)
+	@ApiResponse(responseCode = "403", description = "Código inválido ou expirado.", content = @Content)
 	public ResponseEntity<Void> reset(@RequestBody @Valid RecoveryPasswordRequest body) {
 		passwordRecoveryService.resetPassword(body);
 		return ResponseEntity.noContent().build();

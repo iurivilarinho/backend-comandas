@@ -45,11 +45,11 @@ public class TableAccessTokenService {
 			String tableNumber = decoded.getClaim(TABLE_CLAIM).asString();
 			Integer version = decoded.getClaim(VERSION_CLAIM).asInt();
 			if (tableNumber == null || version == null) {
-				throw new AccessDeniedException("Token de acesso da mesa invalido.");
+				throw new AccessDeniedException("Token de acesso da mesa inválido.");
 			}
 			return new TableAccessClaims(tableNumber, version);
 		} catch (JWTVerificationException exception) {
-			throw new AccessDeniedException("Token de acesso da mesa invalido.");
+			throw new AccessDeniedException("Token de acesso da mesa inválido.");
 		}
 	}
 }

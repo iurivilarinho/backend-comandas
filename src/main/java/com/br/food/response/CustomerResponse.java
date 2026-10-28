@@ -15,7 +15,7 @@ public class CustomerResponse {
 	private final Boolean blocked;
 	private final AddressResponse address;
 
-	@Schema(description = "Token do cliente para o cardapio digital, enviado em X-Customer-Token. So vem no cadastro e na identificacao.")
+	@Schema(description = "Token do cliente para o cardápio digital, enviado em X-Customer-Token. So vem no cadastro e na identificação.")
 	private final String accessToken;
 
 	public CustomerResponse(Customer customer) {

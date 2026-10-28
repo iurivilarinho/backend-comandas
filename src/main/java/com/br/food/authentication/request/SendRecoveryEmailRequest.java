@@ -2,9 +2,9 @@ package com.br.food.authentication.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(name = "SendRecoveryEmailRequest", description = "Dados para solicitaÃ§Ã£o de envio de cÃ³digo de recuperaÃ§Ã£o.")
+@Schema(name = "SendRecoveryEmailRequest", description = "Dados para solicitação de envio de código de recuperação.")
 public class SendRecoveryEmailRequest {
-	@Schema(description = "E-mail do usuÃ¡rio que solicita recuperaÃ§Ã£o de senha.", example = "usuario@exemplo.com")
+	@Schema(description = "E-mail do usuário que solicita recuperação de senha.", example = "usuario@exemplo.com")
 	private String email;
 
 	public SendRecoveryEmailRequest() {

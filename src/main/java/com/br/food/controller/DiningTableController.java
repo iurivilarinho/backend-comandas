@@ -72,7 +72,7 @@ public class DiningTableController {
 		return ResponseEntity.ok(diningTableService.generateAccessToken(tableNumber));
 	}
 
-	@Operation(summary = "Resolve secure access token for table QR code", description = "Publico. Devolve o numero da mesa se o QR for o vigente.")
+	@Operation(summary = "Resolve secure access token for table QR code", description = "Público. Devolve o número da mesa se o QR for o vigente.")
 	@GetMapping("/resolve-access-token")
 	public ResponseEntity<String> resolveAccessToken(@RequestParam String token) {
 		return ResponseEntity.ok(diningTableService.resolveAccessToken(token));

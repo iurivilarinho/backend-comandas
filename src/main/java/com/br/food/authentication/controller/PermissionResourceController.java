@@ -25,7 +25,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
-@Tag(name = "Permissions", description = "Endpoints para gerenciamento de permissÃµes por role e recurso.")
+@Tag(name = "Permissions", description = "Endpoints para gerenciamento de permissões por role e recurso.")
 @RestController
 @RequestMapping("/auth/permissions")
 public class PermissionResourceController {
@@ -36,7 +36,7 @@ public class PermissionResourceController {
 		this.permissionService = permissionService;
 	}
 
-	@Operation(summary = "Listar permissÃµes", description = "Retorna a lista de permissÃµes cadastradas.")
+	@Operation(summary = "Listar permissões", description = "Retorna a lista de permissões cadastradas.")
 	@ApiResponse(responseCode = "200", description = "Lista retornada com sucesso.")
 	@GetMapping
 	public ResponseEntity<List<PermissionResponse>> findAll(@RequestParam(required = false) Long resourceId) {
@@ -46,27 +46,27 @@ public class PermissionResourceController {
 		return ResponseEntity.ok(result);
 	}
 
-	@Operation(summary = "Buscar permissÃ£o por ID", description = "Retorna uma permissÃ£o pelo identificador.")
-	@ApiResponse(responseCode = "200", description = "PermissÃ£o encontrada com sucesso.")
-	@ApiResponse(responseCode = "404", description = "PermissÃ£o nÃ£o encontrada.")
+	@Operation(summary = "Buscar permissão por ID", description = "Retorna uma permissão pelo identificador.")
+	@ApiResponse(responseCode = "200", description = "Permissão encontrada com sucesso.")
+	@ApiResponse(responseCode = "404", description = "Permissão não encontrada.")
 	@GetMapping("/{id}")
 	public ResponseEntity<PermissionResponse> findById(@PathVariable Long id) {
 		PermissionResource permission = permissionService.findById(id);
 		return ResponseEntity.ok(new PermissionResponse(permission));
 	}
 
-	@Operation(summary = "Criar permissÃ£o", description = "Cria um vÃ­nculo de permissÃµes (CRUD) entre role e recurso.")
-	@ApiResponse(responseCode = "201", description = "PermissÃ£o criada com sucesso.")
-	@ApiResponse(responseCode = "400", description = "Payload invÃ¡lido.")
+	@Operation(summary = "Criar permissão", description = "Cria um vínculo de permissões (CRUD) entre role e recurso.")
+	@ApiResponse(responseCode = "201", description = "Permissão criada com sucesso.")
+	@ApiResponse(responseCode = "400", description = "Payload inválido.")
 	@PostMapping
 	public ResponseEntity<PermissionResponse> create(@Valid @RequestBody PermissionRequest payload) {
 		PermissionResource created = permissionService.create(payload);
 		return ResponseEntity.status(HttpStatus.CREATED).body(new PermissionResponse(created));
 	}
 
-	@Operation(summary = "Atualizar permissÃ£o", description = "Atualiza um vÃ­nculo de permissÃµes (CRUD).")
-	@ApiResponse(responseCode = "200", description = "PermissÃ£o atualizada com sucesso.")
-	@ApiResponse(responseCode = "404", description = "PermissÃ£o nÃ£o encontrada.")
+	@Operation(summary = "Atualizar permissão", description = "Atualiza um vínculo de permissões (CRUD).")
+	@ApiResponse(responseCode = "200", description = "Permissão atualizada com sucesso.")
+	@ApiResponse(responseCode = "404", description = "Permissão não encontrada.")
 	@PutMapping("/{id}")
 	public ResponseEntity<PermissionResponse> update(@PathVariable Long id,
 			@Valid @RequestBody PermissionRequest payload) {
@@ -74,8 +74,8 @@ public class PermissionResourceController {
 		return ResponseEntity.ok(new PermissionResponse(updated));
 	}
 
-	@Operation(summary = "Excluir permissÃ£o", description = "Remove uma permissÃ£o pelo identificador.")
-	@ApiResponse(responseCode = "204", description = "PermissÃ£o removida com sucesso.")
+	@Operation(summary = "Excluir permissão", description = "Remove uma permissão pelo identificador.")
+	@ApiResponse(responseCode = "204", description = "Permissão removida com sucesso.")
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> delete(@PathVariable Long id) {
 		permissionService.delete(id);

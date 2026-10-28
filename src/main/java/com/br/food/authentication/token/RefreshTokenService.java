@@ -17,7 +17,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 
-@Schema(name = "RefreshTokenService", description = "Regras de negÃ³cio de emissÃ£o, rotaÃ§Ã£o, revogaÃ§Ã£o e cookies do refresh token")
+@Schema(name = "RefreshTokenService", description = "Regras de negócio de emissão, rotação, revogação e cookies do refresh token")
 @Service
 public class RefreshTokenService {
 
@@ -30,7 +30,7 @@ public class RefreshTokenService {
         this.refreshTokenRepository = refreshTokenRepository;
     }
 
-    /** Emite e persiste um refresh token para o usuÃ¡rio; retorna o valor em claro (para cookie) */
+    /** Emite e persiste um refresh token para o usuário; retorna o valor em claro (para cookie) */
     @Transactional
     public String issue(User user, String ip, String userAgent) {
         String raw = TokenUtil.generateOpaqueToken();
@@ -74,7 +74,7 @@ public class RefreshTokenService {
         refreshTokenRepository.save(rt);
     }
 
-    /** Revoga todos os refresh tokens de um usuÃ¡rio (logout de todos os dispositivos) */
+    /** Revoga todos os refresh tokens de um usuário (logout de todos os dispositivos) */
     @Transactional
     public void revokeAllForUser(User user) {
         refreshTokenRepository.findAll().stream().filter(t -> t.getUsuario().getId().equals(user.getId()) && !t.isRevoked())
@@ -84,11 +84,11 @@ public class RefreshTokenService {
                 });
     }
 
-    /** ObtÃ©m o registro ativo (nÃ£o revogado e nÃ£o expirado) a partir do valor em claro do cookie */
+    /** Obtém o registro ativo (não revogado e não expirado) a partir do valor em claro do cookie */
     public RefreshToken mustFindActive(String rawToken) {
         String hash = TokenUtil.sha256(rawToken);
         RefreshToken rt = refreshTokenRepository.findByTokenHash(hash)
-                .orElseThrow(() -> new AccessDeniedException("refresh token invÃ¡lido"));
+                .orElseThrow(() -> new AccessDeniedException("refresh token inválido"));
 
         if (rt.isRevoked() || rt.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new AccessDeniedException("refresh token expirado ou revogado");

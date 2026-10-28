@@ -115,7 +115,7 @@ public class DocumentService {
 	@Transactional(readOnly = true)
 	public Document buscarPorId(Long id) {
 		return documentRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Document nao encontrado para ID " + id));
+				.orElseThrow(() -> new EntityNotFoundException("Document não encontrado para ID " + id));
 	}
 
 	private Document buildDocument(String originalFilename, String contentType, byte[] bytes) throws IOException {

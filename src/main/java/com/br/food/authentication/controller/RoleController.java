@@ -27,7 +27,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/role")
-@Tag(name = "Perfil", description = "Endpoints responsÃ¡veis pelo gerenciamento de perfis")
+@Tag(name = "Perfil", description = "Endpoints responsáveis pelo gerenciamento de perfis")
 public class RoleController {
 
 	private final RoleService roleService;
@@ -40,13 +40,13 @@ public class RoleController {
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Perfis listados com sucesso") })
 	@GetMapping
 	public ResponseEntity<List<RoleResponse>> findAll(
-			@Parameter(description = "Status do perfil para filtro. Quando nÃ£o informado, retorna todos os perfis.") @RequestParam(required = false) Boolean status) {
+			@Parameter(description = "Status do perfil para filtro. Quando não informado, retorna todos os perfis.") @RequestParam(required = false) Boolean status) {
 		return ResponseEntity.ok(roleService.findAll(status).stream().map(RoleResponse::new).toList());
 	}
 
 	@Operation(summary = "Buscar perfil por ID", description = "Retorna os dados de um perfil com base no identificador informado.")
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Perfil encontrado com sucesso"),
-			@ApiResponse(responseCode = "404", description = "Perfil nÃ£o encontrado", content = @Content) })
+			@ApiResponse(responseCode = "404", description = "Perfil não encontrado", content = @Content) })
 	@GetMapping("/{id}")
 	public ResponseEntity<RoleResponse> findById(
 			@Parameter(description = "ID do perfil", required = true) @PathVariable Long id) {
@@ -55,26 +55,26 @@ public class RoleController {
 
 	@Operation(summary = "Cadastrar perfil", description = "Cria um novo perfil com os dados informados.")
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Perfil criado com sucesso"),
-			@ApiResponse(responseCode = "400", description = "Dados invÃ¡lidos para criaÃ§Ã£o do perfil", content = @Content) })
+			@ApiResponse(responseCode = "400", description = "Dados inválidos para criação do perfil", content = @Content) })
 	@PostMapping
 	public ResponseEntity<Role> create(
-			@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Dados para criaÃ§Ã£o do perfil", required = true) @RequestBody RoleRequest form) {
+			@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Dados para criação do perfil", required = true) @RequestBody RoleRequest form) {
 		return ResponseEntity.ok(roleService.create(form));
 	}
 
 	@Operation(summary = "Atualizar perfil", description = "Atualiza os dados de um perfil existente.")
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Perfil atualizado com sucesso"),
-			@ApiResponse(responseCode = "400", description = "Dados invÃ¡lidos para atualizaÃ§Ã£o do perfil", content = @Content),
-			@ApiResponse(responseCode = "404", description = "Perfil nÃ£o encontrado", content = @Content) })
+			@ApiResponse(responseCode = "400", description = "Dados inválidos para atualização do perfil", content = @Content),
+			@ApiResponse(responseCode = "404", description = "Perfil não encontrado", content = @Content) })
 	@PutMapping("/{id}")
 	public ResponseEntity<Role> update(@Parameter(description = "ID do perfil", required = true) @PathVariable Long id,
-			@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Dados para atualizaÃ§Ã£o do perfil", required = true) @RequestBody RoleRequest form) {
+			@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Dados para atualização do perfil", required = true) @RequestBody RoleRequest form) {
 		return ResponseEntity.ok(roleService.update(form, id));
 	}
 
 	@Operation(summary = "Alterar status do perfil", description = "Ativa ou desativa um perfil com base no status informado.")
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Status do perfil alterado com sucesso"),
-			@ApiResponse(responseCode = "404", description = "Perfil nÃ£o encontrado", content = @Content) })
+			@ApiResponse(responseCode = "404", description = "Perfil não encontrado", content = @Content) })
 	@PutMapping("/status/{status}/{id}")
 	public ResponseEntity<?> enableDisable(
 			@Parameter(description = "ID do perfil", required = true) @PathVariable Long id,
@@ -83,24 +83,24 @@ public class RoleController {
 		return ResponseEntity.ok().build();
 	}
 
-	@Operation(summary = "Vincular perfil ao usuÃ¡rio", description = "Realiza o vÃ­nculo de um perfil com um usuÃ¡rio.")
-	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Perfil vinculado ao usuÃ¡rio com sucesso"),
-			@ApiResponse(responseCode = "404", description = "UsuÃ¡rio ou perfil nÃ£o encontrado", content = @Content) })
+	@Operation(summary = "Vincular perfil ao usuário", description = "Realiza o vínculo de um perfil com um usuário.")
+	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Perfil vinculado ao usuário com sucesso"),
+			@ApiResponse(responseCode = "404", description = "Usuário ou perfil não encontrado", content = @Content) })
 	@PatchMapping("/link/{userId}/{roleId}")
 	public ResponseEntity<?> linkRoleWithUser(
-			@Parameter(description = "ID do usuÃ¡rio", required = true) @PathVariable Long userId,
+			@Parameter(description = "ID do usuário", required = true) @PathVariable Long userId,
 			@Parameter(description = "ID do perfil", required = true) @PathVariable Long roleId) {
 		roleService.linkRoleWithUser(userId, roleId);
 		return ResponseEntity.ok().build();
 	}
 
-	@Operation(summary = "Desvincular perfil do usuÃ¡rio", description = "Remove o vÃ­nculo entre um perfil e um usuÃ¡rio.")
+	@Operation(summary = "Desvincular perfil do usuário", description = "Remove o vínculo entre um perfil e um usuário.")
 	@ApiResponses(value = {
-			@ApiResponse(responseCode = "200", description = "Perfil desvinculado do usuÃ¡rio com sucesso"),
-			@ApiResponse(responseCode = "404", description = "UsuÃ¡rio ou perfil nÃ£o encontrado", content = @Content) })
+			@ApiResponse(responseCode = "200", description = "Perfil desvinculado do usuário com sucesso"),
+			@ApiResponse(responseCode = "404", description = "Usuário ou perfil não encontrado", content = @Content) })
 	@PatchMapping("/unlink/{userId}/{roleId}")
 	public ResponseEntity<?> unlinkRoleWithUser(
-			@Parameter(description = "ID do usuÃ¡rio", required = true) @PathVariable Long userId,
+			@Parameter(description = "ID do usuário", required = true) @PathVariable Long userId,
 			@Parameter(description = "ID do perfil", required = true) @PathVariable Long roleId) {
 		roleService.unlinkRoleWithUser(userId, roleId);
 		return ResponseEntity.ok().build();

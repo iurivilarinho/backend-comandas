@@ -116,13 +116,13 @@ public class KitchenService {
 
 	private void validateCurrentStatus(OrderItem item) {
 		if (item.getStatus() == OrderItemStatus.SERVED) {
-			throw new DataIntegrityViolationException("Este item ja foi entregue.");
+			throw new DataIntegrityViolationException("Este item já foi entregue.");
 		}
 		if (item.getStatus() == OrderItemStatus.DECLINED) {
-			throw new DataIntegrityViolationException("Este item ja foi recusado.");
+			throw new DataIntegrityViolationException("Este item já foi recusado.");
 		}
 		if (item.getStatus() == OrderItemStatus.CANCELED) {
-			throw new DataIntegrityViolationException("Este item ja foi cancelado.");
+			throw new DataIntegrityViolationException("Este item já foi cancelado.");
 		}
 	}
 }

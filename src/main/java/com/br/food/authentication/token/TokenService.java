@@ -94,7 +94,7 @@ public class TokenService {
 			String id = decodedJWT.getSubject();
 			return userRepository.findById(Long.parseLong(id)).orElseThrow();
 		} catch (JWTDecodeException e) {
-			throw new DataIntegrityViolationException("Token invalido.");
+			throw new DataIntegrityViolationException("Token inválido.");
 		}
 	}
 

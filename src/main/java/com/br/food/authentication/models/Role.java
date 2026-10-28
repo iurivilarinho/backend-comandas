@@ -22,7 +22,7 @@ import jakarta.persistence.Table;
 @Table(name = "roles")
 public class Role implements GrantedAuthority {
 
-	@Schema(description = "Identificador Ãºnico do perfil.", example = "1")
+	@Schema(description = "Identificador único do perfil.", example = "1")
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;

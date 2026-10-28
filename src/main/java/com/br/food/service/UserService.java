@@ -51,7 +51,7 @@ public class UserService {
 	@Transactional(readOnly = true)
 	public User findByEmail(String email) {
 		return userRepository.findByEmail(email)
-				.orElseThrow(() -> new EntityNotFoundException("Email nao encontrado na nossa base de dados."));
+				.orElseThrow(() -> new EntityNotFoundException("Email não encontrado na nossa base de dados."));
 	}
 
 	@Transactional(readOnly = true)
@@ -107,7 +107,7 @@ public class UserService {
 	public void emailValidate(String email) {
 		if (email != null) {
 			userRepository.findByEmail(email).ifPresent(user -> {
-				throw new DataIntegrityViolationException("O e-mail " + user.getEmail() + " ja esta cadastrado.");
+				throw new DataIntegrityViolationException("O e-mail " + user.getEmail() + " já está cadastrado.");
 			});
 		}
 	}
@@ -116,7 +116,7 @@ public class UserService {
 	public void cpfValidate(String cpf) {
 		if (cpf != null) {
 			userRepository.findByCpf(cpf).ifPresent(user -> {
-				throw new DataIntegrityViolationException("O cpf " + user.getCpf() + " ja esta cadastrado.");
+				throw new DataIntegrityViolationException("O cpf " + user.getCpf() + " já está cadastrado.");
 			});
 		}
 	}
@@ -124,7 +124,7 @@ public class UserService {
 	@Transactional(readOnly = true)
 	public void loginValidate(String login) {
 		userRepository.findByLogin(login).ifPresent(user -> {
-			throw new DataIntegrityViolationException("O login " + user.getLogin() + " ja esta cadastrado.");
+			throw new DataIntegrityViolationException("O login " + user.getLogin() + " já está cadastrado.");
 		});
 	}
 
@@ -192,7 +192,7 @@ public class UserService {
 	@Transactional
 	public User completeGoogleRegistration(User user, GoogleRegistrationCompletionRequest request) {
 		if (Boolean.TRUE.equals(user.getRegistrationCompleted())) {
-			throw new DataIntegrityViolationException("O cadastro deste usuario ja foi finalizado.");
+			throw new DataIntegrityViolationException("O cadastro deste usuário já foi finalizado.");
 		}
 
 		updateBasicUserData(user, request.name(), request.login(), request.cpf(), request.cellphoneCorporate());
@@ -231,7 +231,7 @@ public class UserService {
 	@Transactional(readOnly = true)
 	public User findById(Long userId) {
 		return userRepository.findById(userId)
-				.orElseThrow(() -> new EntityNotFoundException("Usuario nao encontrado para o ID: " + userId));
+				.orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o ID: " + userId));
 	}
 
 	@Transactional(readOnly = true)

@@ -424,7 +424,7 @@ class RestaurantFlowIntegrationTest {
 		address.setNumber("100");
 		address.setDistrict("Centro");
 		address.setPostalCode("01001000");
-		address.setCity("Sao Paulo");
+		address.setCity("São Paulo");
 		address.setStatus(true);
 		return address;
 	}
