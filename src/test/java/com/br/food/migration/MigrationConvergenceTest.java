@@ -56,12 +56,14 @@ class MigrationConvergenceTest {
 
 			assertThat(jdbc.queryForList(
 					"SELECT version || ':' || type FROM flyway_schema_history WHERE success ORDER BY installed_rank",
-					String.class)).containsExactly("1:SQL", "2:SQL");
+					String.class)).containsExactly("1:SQL", "2:SQL", "3:SQL");
 			assertThat(snapshot(ds)).isEqualTo(entitySchema);
 
 			// The seed runs on top of the migrations: base data and the administrator role with a readable name.
 			assertThat(jdbc.queryForObject("SELECT count(*) FROM roles WHERE nome = 'ROLE_ADMIN'", Integer.class))
 					.isEqualTo(1);
+			assertThat(jdbc.queryForList("SELECT nome FROM roles ORDER BY nome", String.class)).containsExactly(
+					"ROLE_ADMIN", "ROLE_CASHIER", "ROLE_KITCHEN", "ROLE_MANAGER", "ROLE_WAITER");
 			assertThat(jdbc.queryForObject("SELECT count(*) FROM payment_methods", Integer.class)).isPositive();
 			// No admin user without APP_ADMIN_PASSWORD (CMD-015).
 			assertThat(jdbc.queryForObject("SELECT count(*) FROM users", Integer.class)).isZero();
@@ -82,22 +84,36 @@ class MigrationConvergenceTest {
 				"ALTER TABLE orders DROP CONSTRAINT orders_channel_check",
 				"ALTER TABLE orders ADD CONSTRAINT orders_channel_check CHECK (channel IN ('DINE_IN', 'DELIVERY'))",
 				"DELETE FROM flyway_schema_history", "DROP TABLE flyway_schema_history");
+		jdbc.update("DELETE FROM user_roles");
 		jdbc.update("DELETE FROM roles");
 		jdbc.update("INSERT INTO roles (status, description, nome) VALUES (true, 'ROLE_ADMIN', NULL)");
 		jdbc.update("INSERT INTO dining_tables (table_number, active, occupied) VALUES ('1', true, false)");
+		// two users of the old days: one without any role, one with a role the app never used
+		jdbc.update("INSERT INTO roles (id, status, description, nome) VALUES (900, true, 'Inspetor', 'ROLE_INSPECTOR')");
+		for (String login : List.of("old-one", "old-two")) {
+			jdbc.update("INSERT INTO users (login, name, password, password_last_changed, force_password_change, registration_completed, status)"
+					+ " VALUES (?, ?, 'hash', now(), false, true, true)", login, login);
+		}
+		jdbc.update("INSERT INTO user_roles (fk_id_user, fk_id_role) SELECT id, 900 FROM users WHERE login = 'old-two'");
 		assertThat(snapshot(ds)).isNotEqualTo(entitySchema);
 
 		try (ConfigurableApplicationContext ctx = boot(url)) {
 			assertThat(jdbc.queryForList(
 					"SELECT version || ':' || type FROM flyway_schema_history WHERE success ORDER BY installed_rank",
-					String.class)).containsExactly("1:BASELINE", "2:SQL");
+					String.class)).containsExactly("1:BASELINE", "2:SQL", "3:SQL");
 			assertThat(snapshot(ds)).isEqualTo(entitySchema);
 
 			// existing data survives; the old administrator role is found by its name now instead of duplicated
 			assertThat(jdbc.queryForObject("SELECT count(*) FROM dining_tables WHERE access_version = 1",
 					Integer.class)).isEqualTo(1);
-			assertThat(jdbc.queryForObject("SELECT count(*) FROM roles", Integer.class)).isEqualTo(1);
-			assertThat(jdbc.queryForObject("SELECT nome FROM roles", String.class)).isEqualTo("ROLE_ADMIN");
+			assertThat(jdbc.queryForObject("SELECT count(*) FROM roles WHERE nome = 'ROLE_ADMIN'", Integer.class)).isEqualTo(1);
+			assertThat(jdbc.queryForObject("SELECT count(*) FROM roles", Integer.class)).isEqualTo(6);
+
+			// V3: every user that existed before roles becomes administrator, and nobody gets a second role
+			assertThat(jdbc.queryForList(
+					"SELECT u.login || ':' || r.nome FROM users u JOIN user_roles ur ON ur.fk_id_user = u.id"
+							+ " JOIN roles r ON r.id = ur.fk_id_role WHERE r.nome = 'ROLE_ADMIN' ORDER BY 1",
+					String.class)).containsExactly("old-one:ROLE_ADMIN", "old-two:ROLE_ADMIN");
 
 			// V2 is idempotent: running it again changes nothing and does not fail.
 			List<String> after = snapshot(ds);

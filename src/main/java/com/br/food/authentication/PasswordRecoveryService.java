@@ -13,7 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.br.food.authentication.models.RecoveryPassword;
 import com.br.food.authentication.repository.RecoveryPasswordRepository;
 import com.br.food.authentication.request.RecoveryPasswordRequest;
+import com.br.food.models.CompanyProfile;
 import com.br.food.models.User;
+import com.br.food.service.CompanyProfileService;
 import com.br.food.service.UserService;
 import com.br.food.util.EmailSenderService;
 
@@ -33,13 +35,15 @@ public class PasswordRecoveryService {
 	private final EmailSenderService emailService;
 	private final UserService userService;
 	private final RecoveryPasswordRepository recoveryRepository;
+	private final CompanyProfileService companyProfileService;
 
 	public PasswordRecoveryService(EmailSenderService emailService, UserService userService,
-			RecoveryPasswordRepository recoveryRepository) {
+			RecoveryPasswordRepository recoveryRepository, CompanyProfileService companyProfileService) {
 
 		this.emailService = emailService;
 		this.userService = userService;
 		this.recoveryRepository = recoveryRepository;
+		this.companyProfileService = companyProfileService;
 
 	}
 
@@ -68,6 +72,33 @@ public class PasswordRecoveryService {
 	 */
 	@Transactional
 	public void sendSetPasswordLink(User user, String accessUrl, String siteName) {
+		sendCodeLink(user, accessUrl, "Defina sua senha - " + siteName,
+				"Sua conta de administrador foi criada. Clique no link para definir sua senha (válido por "
+						+ SETUP_EXPIRATION_DAYS + " dias):",
+				siteName);
+	}
+
+	/** Set-password link for a user an administrator invited. Uses the name of the restaurant. */
+	@Transactional
+	public void sendInviteLink(User user, String accessUrl) {
+		String siteName = siteName();
+		sendCodeLink(user, accessUrl, "Defina sua senha - " + siteName,
+				"Você foi convidado para a equipe. Clique no link para definir sua senha (válido por "
+						+ SETUP_EXPIRATION_DAYS + " dias):",
+				siteName);
+	}
+
+	/** Same link for an existing user whose password an administrator asked to reset. */
+	@Transactional
+	public void sendPasswordResetLink(User user, String accessUrl) {
+		String siteName = siteName();
+		sendCodeLink(user, accessUrl, "Redefina sua senha - " + siteName,
+				"O administrador pediu a redefinição da sua senha. Clique no link para escolher uma nova (válido por "
+						+ SETUP_EXPIRATION_DAYS + " dias):",
+				siteName);
+	}
+
+	private void sendCodeLink(User user, String accessUrl, String subject, String intro, String siteName) {
 		recoveryRepository.deleteByUserId(user.getId());
 
 		String code = generateSetupCode();
@@ -76,11 +107,16 @@ public class PasswordRecoveryService {
 		String base = accessUrl.endsWith("/") ? accessUrl.substring(0, accessUrl.length() - 1) : accessUrl;
 		String link = base + "/recuperar-senha?email=" + URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8)
 				+ "&code=" + code;
-		String html = "<html><body><h2>" + escapeHtml(siteName) + "</h2>"
-				+ "<p>Sua conta de administrador foi criada. Clique no link para definir sua senha (válido por "
-				+ SETUP_EXPIRATION_DAYS + " dias):</p><p><a href=\"" + escapeHtml(link) + "\">" + escapeHtml(link)
-				+ "</a></p></body></html>";
-		emailService.send(user.getEmail(), "Defina sua senha - " + siteName, html, true);
+		String html = "<html><body><h2>" + escapeHtml(siteName) + "</h2><p>" + escapeHtml(intro) + "</p><p><a href=\""
+				+ escapeHtml(link) + "\">" + escapeHtml(link) + "</a></p></body></html>";
+		emailService.send(user.getEmail(), subject, html, true);
+	}
+
+	private String siteName() {
+		CompanyProfile profile = companyProfileService.findCurrent();
+		return profile != null && profile.getCompanyName() != null && !profile.getCompanyName().isBlank()
+				? profile.getCompanyName().trim()
+				: "Comandas";
 	}
 
 	@Transactional(readOnly = true)

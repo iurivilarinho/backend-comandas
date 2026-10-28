@@ -29,7 +29,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.br.food.enums.Types.OrderStatus;
+import com.br.food.enums.Types.StaffRole;
 import com.br.food.migration.EmbeddedPostgresSupport;
+import com.br.food.platform.TestUsers;
 import com.br.food.enums.Types.ProductType;
 import com.br.food.models.Address;
 import com.br.food.models.Customer;
@@ -98,8 +100,9 @@ class RestaurantFlowIntegrationTest {
 	@BeforeEach
 	void setUp() {
 		tenantScope = TenantContext.bind(TenantInfo.owner("Test"));
+		User adminUser = TestUsers.with(StaffRole.ADMIN);
 		SecurityContextHolder.getContext()
-				.setAuthentication(new UsernamePasswordAuthenticationToken(new User(), null, List.of()));
+				.setAuthentication(new UsernamePasswordAuthenticationToken(adminUser, null, adminUser.getAuthorities()));
 		orderRepository.deleteAll();
 		recipeItemRepository.deleteAll();
 		stockEntryRepository.deleteAll();

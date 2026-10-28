@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.br.food.config.StaffAuthorities;
 import com.br.food.enums.Types.ProductType;
 import com.br.food.models.Product;
 import com.br.food.models.User;
@@ -74,16 +76,19 @@ public class ProductResponse {
 	}
 
 	/**
-	 * Cost is for the staff only (CMD-015). Decided when the response is serialized, not when it is built, because the
+	 * Cost is for the administrator and the manager only (CMD-015, CMD-017). Decided when the response is serialized, not when it is built, because the
 	 * menu is cached and the same object serves the staff and the visitor.
 	 */
 	public BigDecimal getCostPrice() {
-		return isStaffRequest() ? costPrice : null;
+		return canSeeCost() ? costPrice : null;
 	}
 
-	private static boolean isStaffRequest() {
+	private static boolean canSeeCost() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		return authentication != null && authentication.getPrincipal() instanceof User;
+		return authentication != null && authentication.getPrincipal() instanceof User
+				&& StaffAuthorities.holdsAny(
+						authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList(),
+						StaffAuthorities.MANAGEMENT);
 	}
 
 	public BigDecimal getMinimumStock() {

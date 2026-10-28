@@ -25,7 +25,6 @@ import com.br.food.models.User;
 import com.br.food.repository.UserRepository;
 import com.br.food.request.UserRequest;
 import com.br.food.request.UserUpdateRequest;
-import com.br.food.specification.UserSpecification;
 
 import br.com.gloomy.platform.entitlements.Entitlements;
 import jakarta.persistence.EntityManager;
@@ -243,12 +242,6 @@ public class UserService {
 	@Transactional(readOnly = true)
 	public List<User> findAllById(Set<Long> userIds) {
 		return userRepository.findAllById(userIds);
-	}
-
-	@Transactional(readOnly = true)
-	public Page<User> findAllPage(Long idCargo, List<Long> rolesIds, Boolean status, String search, Pageable page) {
-		return userRepository.findAll(UserSpecification.searchAllFields(search, entityManager)
-				.and(UserSpecification.statusIgual(status)).and(UserSpecification.hasAnyRoleIds(rolesIds)), page);
 	}
 
 	@Transactional

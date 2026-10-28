@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.util.List;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,7 +11,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.br.food.enums.Types.StaffRole;
 import com.br.food.models.User;
+import com.br.food.platform.TestUsers;
 import com.br.food.platform.TestTenants;
 
 import br.com.gloomy.platform.tenant.TenantContext;
@@ -51,11 +51,29 @@ class PortalAccessServiceTest {
 
 	@Test
 	void theStaffPassesWithoutAToken() {
-		loginAsStaff();
+		loginAs(StaffRole.CASHIER);
 
 		assertThatCode(() -> portal.requireStaffOrCustomer(null, 5L)).doesNotThrowAnyException();
 		assertThatCode(() -> portal.requireStaffOrCustomer(null, null)).doesNotThrowAnyException();
 		assertThatCode(portal::requireStaff).doesNotThrowAnyException();
+	}
+
+	@Test
+	void theKitchenIsStaffButNotFrontOfHouse() {
+		loginAs(StaffRole.KITCHEN);
+
+		assertThat(portal.isStaff()).isTrue();
+		assertThat(portal.isFrontOfHouse()).isFalse();
+		assertThatCode(portal::requireStaff).doesNotThrowAnyException();
+		assertThatThrownBy(() -> portal.requireStaffOrCustomer(null, 5L)).isInstanceOf(AccessDeniedException.class);
+	}
+
+	@Test
+	void everyOtherRoleIsFrontOfHouse() {
+		for (StaffRole role : new StaffRole[] { StaffRole.ADMIN, StaffRole.MANAGER, StaffRole.CASHIER, StaffRole.WAITER }) {
+			loginAs(role);
+			assertThat(portal.isFrontOfHouse()).as(role.name()).isTrue();
+		}
 	}
 
 	@Test
@@ -82,7 +100,7 @@ class PortalAccessServiceTest {
 		assertThatThrownBy(() -> portal.resolveCustomerFilter(token, 6L)).isInstanceOf(AccessDeniedException.class);
 		assertThatThrownBy(() -> portal.resolveCustomerFilter(null, null)).isInstanceOf(AccessDeniedException.class);
 
-		loginAsStaff();
+		loginAs(StaffRole.CASHIER);
 		assertThat(portal.resolveCustomerFilter(null, null)).isNull();
 		assertThat(portal.resolveCustomerFilter(null, 9L)).isEqualTo(9L);
 	}
@@ -102,8 +120,9 @@ class PortalAccessServiceTest {
 		}, order -> 5L)).isInstanceOf(AccessDeniedException.class);
 	}
 
-	private void loginAsStaff() {
+	private void loginAs(StaffRole role) {
+		User user = TestUsers.with(role);
 		SecurityContextHolder.getContext()
-				.setAuthentication(new UsernamePasswordAuthenticationToken(new User(), null, List.of()));
+				.setAuthentication(new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities()));
 	}
 }

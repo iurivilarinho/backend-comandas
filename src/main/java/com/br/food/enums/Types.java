@@ -1,8 +1,10 @@
 package com.br.food.enums;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -241,6 +243,42 @@ public final class Types {
             transitions.put(CONSUMED, Collections.emptySet());
             transitions.put(CANCELED, Collections.emptySet());
             return Collections.unmodifiableMap(transitions);
+        }
+    }
+
+    @Schema(description = "Papel de um usuário da equipe do estabelecimento")
+    public enum StaffRole {
+        @Schema(description = "Administrador: tudo, inclusive usuários e endereço do site")
+        ADMIN("ROLE_ADMIN", "Administrador"),
+        @Schema(description = "Gerente: operação, cardápio, estoque, financeiro e lucratividade")
+        MANAGER("ROLE_MANAGER", "Gerente"),
+        @Schema(description = "Caixa: pedidos, fechamento de conta, delivery e clientes")
+        CASHIER("ROLE_CASHIER", "Caixa"),
+        @Schema(description = "Garçom: atendimento de salão, mesas, pedidos e clientes")
+        WAITER("ROLE_WAITER", "Garçom"),
+        @Schema(description = "Cozinha: fila de preparo")
+        KITCHEN("ROLE_KITCHEN", "Cozinha");
+
+        private final String authority;
+        private final String label;
+
+        StaffRole(String authority, String label) {
+            this.authority = authority;
+            this.label = label;
+        }
+
+        /** The name of the Spring Security authority, which is also the {@code nome} of the role row. */
+        public String authority() {
+            return authority;
+        }
+
+        /** The name shown to people. */
+        public String label() {
+            return label;
+        }
+
+        public static Optional<StaffRole> fromAuthority(String authority) {
+            return Arrays.stream(values()).filter(role -> role.authority.equals(authority)).findFirst();
         }
     }
 }

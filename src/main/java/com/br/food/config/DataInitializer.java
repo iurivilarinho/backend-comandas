@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.br.food.authentication.models.Role;
+import com.br.food.enums.Types.StaffRole;
 import com.br.food.models.User;
 import com.br.food.repository.RoleRepository;
 import com.br.food.repository.UserRepository;
@@ -26,7 +27,7 @@ import com.br.food.service.SystemSettingService;
 @Component
 public class DataInitializer {
 
-	public static final String ROLE_ADMIN = "ROLE_ADMIN";
+	public static final String ROLE_ADMIN = StaffRole.ADMIN.authority();
 
 	private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 	private static final String DEFAULT_ADMIN_LOGIN = "admin";
@@ -56,7 +57,10 @@ public class DataInitializer {
 		systemSettingService.createIfAbsent(SystemSettingService.SERVICE_FEE_PERCENT, "10.00");
 		systemSettingService.createIfAbsent(SystemSettingService.COVER_CHARGE_AMOUNT, "0.00");
 
-		Role adminRole = ensureAdminRole();
+		Role adminRole = ensureRole(StaffRole.ADMIN);
+		for (StaffRole staffRole : StaffRole.values()) {
+			ensureRole(staffRole);
+		}
 
 		Optional<User> existingAdmin = userRepository.findByLogin(DEFAULT_ADMIN_LOGIN);
 		if (existingAdmin.isEmpty() && initialAdminPassword.isBlank()) {
@@ -79,16 +83,16 @@ public class DataInitializer {
 		return adminRole;
 	}
 
-	private Role ensureAdminRole() {
-		Optional<Role> byName = roleRepository.findByNameIgnoreCase(ROLE_ADMIN);
+	private Role ensureRole(StaffRole staffRole) {
+		Optional<Role> byName = roleRepository.findByNameIgnoreCase(staffRole.authority());
 		if (byName.isPresent()) {
 			return byName.get();
 		}
 		// Databases created before CMD-015 stored ROLE_ADMIN only in the description and left the name empty.
-		Role legacy = roleRepository.findByDescription(ROLE_ADMIN);
+		Role legacy = staffRole == StaffRole.ADMIN ? roleRepository.findByDescription(ROLE_ADMIN) : null;
 		Role role = legacy != null ? legacy : new Role();
-		role.setName(ROLE_ADMIN);
-		role.setDescription(ROLE_ADMIN);
+		role.setName(staffRole.authority());
+		role.setDescription(staffRole == StaffRole.ADMIN ? ROLE_ADMIN : staffRole.label());
 		return roleRepository.save(role);
 	}
 }

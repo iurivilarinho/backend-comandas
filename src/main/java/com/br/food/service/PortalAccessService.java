@@ -5,9 +5,11 @@ import java.util.function.Supplier;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.br.food.config.StaffAuthorities;
 import com.br.food.models.User;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -28,9 +30,17 @@ public class PortalAccessService {
 		this.customerAccessTokenService = customerAccessTokenService;
 	}
 
+	/** A signed-in user who holds any staff role. */
 	public boolean isStaff() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		return authentication != null && authentication.getPrincipal() instanceof User;
+		return holdsAny(StaffAuthorities.ALL_STAFF);
+	}
+
+	/**
+	 * Staff who may see the data of customers and orders: everyone but the kitchen. The customer routes are open to
+	 * the filter chain, so this is what keeps a kitchen user out of them.
+	 */
+	public boolean isFrontOfHouse() {
+		return holdsAny(StaffAuthorities.FRONT_OF_HOUSE);
 	}
 
 	public void requireStaff() {
@@ -39,12 +49,21 @@ public class PortalAccessService {
 		}
 	}
 
+	private boolean holdsAny(String[] group) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
+			return false;
+		}
+		return StaffAuthorities.holdsAny(authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList(),
+				group);
+	}
+
 	/**
 	 * Staff passes; anyone else needs the token of the customer {@code customerId}. A {@code null} owner (an order
 	 * without a customer) is staff only.
 	 */
 	public void requireStaffOrCustomer(String customerToken, Long customerId) {
-		if (isStaff()) {
+		if (isFrontOfHouse()) {
 			return;
 		}
 		Long tokenCustomerId = customerAccessTokenService.resolve(customerToken);
@@ -59,7 +78,7 @@ public class PortalAccessService {
 	 * ids exist.
 	 */
 	public <T> T loadOwned(String customerToken, Supplier<T> loader, Function<T, Long> ownerOf) {
-		if (isStaff()) {
+		if (isFrontOfHouse()) {
 			return loader.get();
 		}
 		Long tokenCustomerId = customerAccessTokenService.resolve(customerToken);
@@ -79,7 +98,7 @@ public class PortalAccessService {
 	 * registration, which is also what is applied when none is asked.
 	 */
 	public Long resolveCustomerFilter(String customerToken, Long requestedCustomerId) {
-		if (isStaff()) {
+		if (isFrontOfHouse()) {
 			return requestedCustomerId;
 		}
 		Long tokenCustomerId = customerAccessTokenService.resolve(customerToken);

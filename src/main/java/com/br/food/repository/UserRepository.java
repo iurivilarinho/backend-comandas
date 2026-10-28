@@ -5,6 +5,8 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.br.food.models.User;
@@ -22,4 +24,8 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 	Optional<User> findByCpf(String cpf);
 
 	Optional<User> findByGoogleSubject(String googleSubject);
+
+	/** Users who can still sign in and hold the role. */
+	@Query("select count(distinct u) from User u join u.roles r where r.name = :role and u.active = true")
+	long countActiveByRoleName(@Param("role") String role);
 }

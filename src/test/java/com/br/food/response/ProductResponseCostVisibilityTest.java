@@ -3,15 +3,15 @@ package com.br.food.response;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
-import java.util.List;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.br.food.enums.Types.StaffRole;
 import com.br.food.models.Product;
 import com.br.food.models.User;
+import com.br.food.platform.TestUsers;
 
 class ProductResponseCostVisibilityTest {
 
@@ -29,12 +29,29 @@ class ProductResponseCostVisibilityTest {
 	}
 
 	@Test
-	void costIsShownToTheStaffEvenWhenTheObjectWasBuiltBeforeTheLogin() {
+	void costIsShownToAdministratorAndManagerEvenWhenTheObjectWasBuiltBeforeTheLogin() {
 		ProductResponse response = new ProductResponse(productWithCost());
-		SecurityContextHolder.getContext()
-				.setAuthentication(new UsernamePasswordAuthenticationToken(new User(), null, List.of()));
 
-		assertThat(response.getCostPrice()).isEqualByComparingTo("9.00");
+		for (StaffRole role : new StaffRole[] { StaffRole.ADMIN, StaffRole.MANAGER }) {
+			login(role);
+			assertThat(response.getCostPrice()).as(role.name()).isEqualByComparingTo("9.00");
+		}
+	}
+
+	@Test
+	void costIsHiddenFromCashierWaiterAndKitchen() {
+		ProductResponse response = new ProductResponse(productWithCost());
+
+		for (StaffRole role : new StaffRole[] { StaffRole.CASHIER, StaffRole.WAITER, StaffRole.KITCHEN }) {
+			login(role);
+			assertThat(response.getCostPrice()).as(role.name()).isNull();
+		}
+	}
+
+	private void login(StaffRole role) {
+		User user = TestUsers.with(role);
+		SecurityContextHolder.getContext()
+				.setAuthentication(new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities()));
 	}
 
 	private Product productWithCost() {
